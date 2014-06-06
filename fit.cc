@@ -909,7 +909,7 @@ void slopex(Char_t *histin, Float_t slope=1, Float_t offset=-99,
 	    Bool_t scale=1, Float_t min=0, Float_t max=0)
 { //Copies and scales a 1D histogram with given slope and offset.
   //"scale" sets whether the bin size is scaled.
-  //The axis range may be set manually with min and max.
+  //If no slope and offset are given, the values in temp.lst are used.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
 
   Float_t xmin,xmax; 
@@ -936,7 +936,6 @@ void slopex(Char_t *histin, Float_t slope=1, Float_t offset=-99,
     slope=fslope;
     offset=foffset;
   }
-
 
   if(min>=max){//i.e. no/bad range given
     if(slope<0){
@@ -2247,12 +2246,22 @@ void getline(void)
   slope=(y2-y1)/(x2-x1);
   b=y1-slope*x1;
   theta=atan(slope)/(4.0*atan(1.0))*180;
-  if(fabs(slope)>.01) 
-    printf("Slope of TLine is %6.6f\n",slope);
+  printf("Angle of TLine is %6.3f\n",theta);
+  if(x1==x2){
+    printf("TLine is vertical at %f\n",x1);
+  }
   else
-    printf("Slope of TLine is %6.3e\n",slope);
-  printf("Intercept of TLine is %6.3f\n",b);
-  printf("TLine angle is %6.3f\n",theta);
+    if(y1==y2){
+      printf("TLine is horizontal at %f\n",y1);
+    }
+    else
+      {
+	if(fabs(slope)>.01) 
+	  printf("Slope of TLine is %6.6f\n",slope);
+	else
+	  printf("Slope of TLine is %6.3e\n",slope);
+	printf("Intercept of TLine is %6.3f\n",b);
+      }
 }
 
 void getpave()
