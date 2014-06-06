@@ -321,13 +321,13 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
     
     cFit->Divide(col,row);
     printf("Dividing Canvas as %d,%d\n",col,row);
-    
+
     TPad *pOutput=0;
     
     for(int i=1;i<(no+1);++i){
       TString pname="cFit_";
       pname+=i;
-      
+
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       
       cFit->cd(i);
@@ -336,12 +336,12 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
       hname+=suffix;
       
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")){
-	
+
 	if(log)
 	  pOutput->SetLogz();
-	
+
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
-	
+	      
 	if(maxX==minX){
 	  minX=hInput->GetXaxis()->GetXmin();
 	  maxX=hInput->GetXaxis()->GetXmax();
@@ -1105,6 +1105,80 @@ void scale_slope(Char_t *histin,Float_t slope=1)
  fprintf(outfile,"%d, %g\n",2048,-slope); 
  printf("2048, %g\n",slope);
  fclose(outfile);
+}
+
+void trim_xfxn(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
+{//copies a 2D histogram with zero suppression
+if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+ Float_t xmin,xmax; 
+ Float_t ymin,ymax; 
+ Int_t xbin;
+ Int_t ybin,entry=0;
+ Float_t x,y,z;
+  
+ TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+
+ xbin=hInput->GetXaxis()->GetNbins();
+ ybin=hInput->GetYaxis()->GetNbins();
+
+ xmax=hInput->GetXaxis()->GetXmax();
+ ymax=hInput->GetYaxis()->GetXmax();
+ xmin=hInput->GetXaxis()->GetXmin();
+ ymin=hInput->GetYaxis()->GetXmin();
+
+ if(maxz==-1)
+   maxz=xmax+ymax;
+ printf("Sum gate is %d to %d\n",minz,maxz);
+
+ hname=histin;
+ hname+="_trim"; 
+ Char_t *htitle = hInput->GetTitle();
+ printf("Output histogram is \"%s\"\n",hname.Data());
+
+ if ((TH2F *) gROOT->FindObject(hname)) {
+   gROOT->FindObject(hname)->Delete();  
+   printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+ }
+
+ // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+ TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+
+ for(int i=0;i<(xbin+2);i++){
+   for(int j=0;j<(ybin+2);j++){
+     //Note: The 0 bin contains the underflow, so the loop starts at 0;
+     //      and the max_bin+1 contains overflow, so the loop terminates at max_bin+2
+     x=hInput->GetXaxis()->GetBinCenter(i);
+     y=hInput->GetYaxis()->GetBinCenter(j);
+     z=hInput->GetBinContent(i,j);
+     //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
+     if(((x+y)>minz)&&((x+y)<maxz))
+     if(z!=0){
+       if((Int_t)z-z)printf("Warning!  The content of bin (%d,%d) is not an integer! (%f)\n",i,j,z);
+       for(int k=0;k<(z-0);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+	   hOutput->Fill(x,y,1);
+       }
+     }
+   }
+ }
+
+ switch (plot){
+ case 0: 
+   break;
+ case 1:
+   cFit->Clear();
+   hOutput->Draw("colz");
+   break;
+ case 2:
+   cFit->Clear();
+   cFit->Divide(1,2);
+   cFit->cd(1);
+   hInput->Draw("colz");
+   cFit->cd(2);
+   hOutput->Draw("colz");
+   break;
+ defualt:
+   break;
+ }
 }
 
 void comb1(Char_t *histin1,Char_t *histin2 )
@@ -2151,6 +2225,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   Int_t npeaks,nlist=0;
   TSpectrum *spectrum=new TSpectrum();
   ifstream listfile(filename);
+  if(!(listfile)) printf("No such file!\n");
   while(listfile>>ein) {
     energies[nlist]=ein;
     if(nlist==0)min=energies[nlist];//added
