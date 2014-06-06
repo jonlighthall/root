@@ -134,7 +134,7 @@ void hlowstat(Char_t *histname, Int_t style=20, Int_t size=1, Int_t color=1)
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//Extension to fillhist2(), includes reset option.  
+{//Extension to fillhist0(), includes reset option.  
  //Fills a 1-dimensional histogram from a text file.
  //File is to be formatted as x-value, y-value, weight.
   Float_t x,y,w;
@@ -323,8 +323,10 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
   
   if(no!=0){
     printf("Plotting %2d Histograms with name %s%s...\n",no,histin,suffix);  
-    if(no>6)
+    if(no>6){
       col=6;
+      col=(Int_t)TMath::Nint(TMath::Sqrt(no));
+    }
     else
       col=ceil(no/2.);
     row=ceil(no/(Float_t)col);
@@ -511,8 +513,10 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
   
   if(no!=0){
     printf("Plotting %2d Histograms with name %s%s...\n",no,histin,suffix);  
-    if(no>6)
+    if(no>6){
       col=6;
+    col=(Int_t)TMath::Nint(TMath::Sqrt(no));
+    }
     else
       col=ceil(no/2.);
     row=ceil(no/(Float_t)col);
