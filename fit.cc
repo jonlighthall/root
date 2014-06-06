@@ -6,7 +6,7 @@
  *       Adapted from "util.cc" by Alan Wuosmaa
  *       Adapted from "bkffit.cc" by Alan Wuosmaa
  * Purpose: 
- *       A pagage of utilities intened for use with HEILOS data analysis.  The utilites are
+ *       A package of utilities intended for use with HELIOS data analysis.  The utilities are
  *       divided into five groups: 1). Extension Utilities
  *                                 2). Plotting Utilities
  *                                 3). Fitting Utilities
@@ -27,17 +27,19 @@ TH2F *hOutput=0;
 TH2F *h;
 
 Float_t array[24][11];
-
+Int_t det=0;
 TString hname;
 
 /* 1). Extension Utilities-----------------------
- * Extends the function of pre-existing utilites. 
+ * Extends the function of pre-existing utilities. 
  */
 void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0, Float_t scale1=1.0, Float_t scale2=1.0)
 {//Adds two 2D histograms.  If no output is given, a new histogram is made with copy2().
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
+  if(!gROOT->FindObject(histin1)) printf("Histogram \"%s\" not found.\n",histin1);
+  if(!gROOT->FindObject(histin2)) printf("Histogram \"%s\" not found.\n",histin2);
   if(!histout){
     printf("No output histogram given.\n");
     hname=histin1; 
@@ -70,21 +72,21 @@ void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0, Float_t scale1=1.
   cFit->Clear();
   cFit->Divide(1,3);
   cFit->cd(1);
-  //  hist1->Draw("COL");
+  hist1->Draw("COL");
   cFit->cd(2);
-  // hist2->Draw("COL");
+  hist2->Draw("COL");
   hist3->Add(hist1,hist2,scale1,scale2); 
   cFit->cd(3);
-  //hist3->Draw("COL");
+  hist3->Draw("COL");
   }
 
 void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin=-999999.,
-	Float_t ymax=999999.)
-{//Extention to draw() and draw2().  
+	Float_t ymax=999999., Bool_t clear=1)
+{//Extension to draw() and draw2().  
  //Accepts either 1-, 2- or 3-D histograms as input, then via the whatis() command, draws the
- //hisogram.  Makes the cFit canvas, if it is not present, and clears it if it is.
+ //histogram.  Makes the cFit canvas, if it is not present, and clears it if it is.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
-  cFit->Clear();
+  if(clear) cFit->Clear();
   if(gROOT->FindObject(histname)){
       if(whatis(histname,0)==1||whatis(histname,0)==2){
 	draw(histname,"",xmin,xmax);//draw() takes the draw option as the second argument.
@@ -99,9 +101,9 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//Extension to fillhist2(), incudes reset option.  
+{//Extension to fillhist2(), includes reset option.  
  //Fills a 1-dimensional histogram from a text file.
- //File is to be formated as x-value, y-value, weight.
+ //File is to be formatted as x-value, y-value, weight.
   Float_t x,y,w;
   TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
   if (reset){
@@ -118,9 +120,9 @@ void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
 }
 
 void fill2(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//Extension to fillhist2(), incudes reset option.
+{//Extension to fillhist2(), includes reset option.
  //Fills a 2-dimensional histogram from a text file.
- //File is to be formated as x-value, y-value, weight.
+ //File is to be formatted as x-value, y-value, weight.
   Float_t x,y,w;
   TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
   if (reset){
@@ -221,12 +223,15 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
-  Int_t no=0;
+  Int_t no=0,no1=0, no2=0; //number of histograms with given name
   for(Int_t i=1;i<25;++i){
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
-    if((TH2F*)gROOT->FindObject(hname.Data())) no++;
+    if(gROOT->FindObject(hname.Data())) no++;
+    //if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) no1++;
+    //if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) no2++;
   }
+  printf("Histograms with name: %d.  1D: %d.  2D: %d.\n",no,no1,no2);
   cFit->Clear();
   
   if(no!=0){
@@ -244,37 +249,58 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
       hname=histin;
       hname+=i;
       
-      hInput=(TH2F*)gROOT->FindObject(hname.Data());
-      
-      if(maxX==minX){
-	minX=hInput->GetXaxis()->GetXmin();
-	maxX=hInput->GetXaxis()->GetXmax();
-      }
-    
-      if(maxY==minY){
-	minY=hInput->GetYaxis()->GetXmin();
-	maxY=hInput->GetYaxis()->GetXmax();
-      } 
-      if(scale==1){
-	hInput->SetAxisRange(minX,maxX,"X");
-	hInput->SetAxisRange(minY,maxY,"Y");
-      }
-      else{
-	hInput->SetAxisRange(-1,-1,"X");
-	hInput->SetAxisRange(-1,-1,"Y");
-      }
-      hInput->Draw("COL2");
-    }
-  }
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")){
 
-    else{
-      hname=histin;
-      hInput=(TH2F*)gROOT->FindObject(hname.Data());
-      hInput->Draw("COL2");
+	hInput=(TH2F*)gROOT->FindObject(hname.Data());
+	//	->InheritsFrom("TH1F"))
+      
+	if(maxX==minX){
+	  minX=hInput->GetXaxis()->GetXmin();
+	  maxX=hInput->GetXaxis()->GetXmax();
+	}
+	
+	if(maxY==minY){
+	  minY=hInput->GetYaxis()->GetXmin();
+	  maxY=hInput->GetYaxis()->GetXmax();
+	} 
+	if(scale==1){
+	  hInput->SetAxisRange(minX,maxX,"X");
+	  hInput->SetAxisRange(minY,maxY,"Y");
+	}
+	else{
+	  hInput->SetAxisRange(-1,-1,"X");
+	  hInput->SetAxisRange(-1,-1,"Y");
+	}
+	hInput->Draw("COL2");
+	   }
+	   else{
+	     hProj=(TH1F*)gROOT->FindObject(hname.Data());
+
+	     if(maxX==minX){
+	       minX=hProj->GetXaxis()->GetXmin();
+	       maxX=hProj->GetXaxis()->GetXmax();
+	     }
+	
+	     if(scale==1){
+	       hProj->SetAxisRange(minX,maxX,"X");
+	     }
+	     else{
+	       hProj->SetAxisRange(-1,-1,"X");
+	     	     }
+	     hProj->Draw("");
+
+	     }
     }
-    
-  
+}
+  else{
+    hname=histin;
+    dr(hname);   
+    //hInput=(TH2F*)gROOT->FindObject(hname.Data());
+    //hInput->Draw("COL2");
   }
+}
+  
+
 
 void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//note, mins and maxs not used.  consider matching input to pjx()
@@ -385,7 +411,7 @@ void setrange(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_
 }
 
 void setscale(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1){
-  //this program doesn't work becasue the variable go out of scope!
+  //this program doesn't work because the variable go out of scope!
  Float_t xmin,xmax; 
  Float_t ymin,ymax; 
 
@@ -469,7 +495,7 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
      //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
      if(z!=0){
        if((Int_t)z-z)printf("Warning!  The content of bin (%d,%d) is not an integer! (%f)\n",i,j,z);
-       for(int k=0;k<(z-minz);k++){//Each bin is filled with a for loop so the number of enteries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+       for(int k=0;k<(z-minz);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
 	 hOutput->Fill(x,y,1);
 	 // entry++;
 	 //	 printf("Entry %2d is %2f,%2f,%2.0f\n",entry,x,y,1);
@@ -530,7 +556,7 @@ void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
      z=hInput->GetBinContent(i,j);
      //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
      if(z!=0){
-       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of enteries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
 	 hOutput->Fill(x+shift,y,1);
 	 //	 entry++;
 	 //	 printf("Entry %2d is %2f,%2f,%2.0f\n",entry,x,y,1);
@@ -545,6 +571,7 @@ void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
    hInput->Draw("colz");
    cFit->cd(2);
  }
+ if(plot==1)cFit->Clear();
  if(plot>0) hOutput->Draw("colz");
 }
 
@@ -632,6 +659,190 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
  }
 }
 
+void slopexy(Char_t *histin, Float_t slopex=1, Float_t offsetx=0,
+	     Float_t slopey=1, Float_t offsety=0)
+{ //Copies and scales a 1D histogram with given slope and offset.
+  //"scale" sets whether the bin size is scaled. (disabled)
+  //The axis range may be set manually with min and max. (disabled)
+  Bool_t scale=1; Float_t min=0; Float_t max=0;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  
+  Float_t xmin,xmax; 
+  Float_t ymin,ymax; 
+  Int_t xbin_in,xbin_out;
+  Int_t ybin_in,ybin_out;
+  Int_t entry=0;
+  Float_t x,y,z;
+  Float_t xwidth_in;
+  Float_t ywidth_in;
+  
+  TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+  
+  xbin_in=hInput->GetXaxis()->GetNbins();
+  xbin_out=xbin_in;
+  xmax=hInput->GetXaxis()->GetXmax();
+  xmin=hInput->GetXaxis()->GetXmin(); 
+  xwidth_in=hInput->GetXaxis()->GetBinWidth(0);
+  
+  ybin_in=hInput->GetYaxis()->GetNbins();
+  ybin_out=ybin_in;
+  ymax=hInput->GetYaxis()->GetXmax();
+  ymin=hInput->GetYaxis()->GetXmin(); 
+  ywidth_in=hInput->GetYaxis()->GetBinWidth(0);
+  
+  if(slopex<0){
+    Float_t min=xmin;
+    xmin=(xmax-offsetx)/slopex;
+    xmax=(min-offsetx)/slopex;
+  }
+  else{
+    xmax=(xmax-offsetx)/slopex;
+    xmin=(xmin-offsetx)/slopex;
+  }
+
+  if(slopey<0){
+    Float_t min=xmin;
+    ymin=(ymax-offsety)/slopey;
+    ymax=(min-offsety)/slopey;
+  }
+  else{
+    ymax=(ymax-offsety)/slopey;
+    ymin=(ymin-offsety)/slopey;
+  }
+    
+  hname=histin;
+  hname+="_slope"; 
+  Char_t *htitle = hInput->GetTitle();
+  if ((TH2F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+  printf("Output histogram is constructed as:\n TH1F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%f,%f,%f)\n",         hname.Data(),htitle,xbin_out,xmin,xmax,ybin_out,ymin,ymax);
+  TH2F * hOutput=new  TH2F(hname,htitle,xbin_out,xmin,xmax,ybin_out,ymin,ymax);
+  
+  for(int i=1;i<(xbin_in+1);i++){
+    for(int j=0;j<(ybin_in+1);j++){
+      x=hInput->GetXaxis()->GetBinCenter(i);
+      y=hInput->GetYaxis()->GetBinCenter(j);
+      z=hInput->GetBinContent(i,j);
+      if(z!=0){
+	for(int k=0;k<(z);k++){
+	  hOutput->Fill((x-offsetx)/slopex,(y-offsety)/slopey,1);
+	}
+      }
+    }
+  }
+  cFit->Clear();
+  cFit->Divide(1,2);
+  cFit->cd(1);
+  hInput->Draw();
+  cFit->cd(2);
+  hOutput->Draw();
+ 
+  //output warnings
+ Float_t xwidth_out=hOutput->GetXaxis()->GetBinWidth(0);
+  if(offsetx<xwidth_out&&offsetx!=0)
+    printf("offset smaller than bin size\n");
+  
+  if((fabs(xwidth_in-fabs(xwidth_out*slopex))/xwidth_in)>0){
+    printf("Warning: Bin width miss-match!\n");
+    printf("Input bin width is  %f\n",xwidth_in);
+    printf("Output bin width is %f",xwidth_out);
+    printf(" (Scaled bin width is %f)\n",xwidth_out*slopex);
+  }
+}
+
+void reflect(Char_t *histin, Float_t size=1)
+{//reflects a 2d histogram about y=x and overlays it onto itself
+if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+ Float_t xmin,xmax; 
+ Float_t ymin,ymax; 
+ Int_t xbin;
+ Int_t ybin;
+ Float_t x,y,z;
+  
+ TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+
+ xbin=hInput->GetXaxis()->GetNbins();
+ ybin=hInput->GetYaxis()->GetNbins();
+ if(xbin!=ybin)
+   printf("Warning: histogram not symmetric about y=x\n");
+ xmax=hInput->GetXaxis()->GetXmax();
+ ymax=hInput->GetYaxis()->GetXmax();
+ xmin=hInput->GetXaxis()->GetXmin();
+ ymin=hInput->GetYaxis()->GetXmin();
+
+ hname=histin;
+ hname+="_reflect"; 
+ Char_t *htitle = hInput->GetTitle();
+ printf("Output histogram is \"%s\"\n",hname.Data());
+
+ if ((TH2F *) gROOT->FindObject(hname)) {
+   gROOT->FindObject(hname)->Delete();  
+   printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+ }
+
+ // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+ TH2F * hOutput=new  TH2F(hname,htitle,ybin,ymin,ymax,xbin,xmin,xmax);
+
+ for(int i=0;i<(xbin+2);i++){
+   for(int j=0;j<(ybin+2);j++){
+     //Note: The 0 bin contains the underflow, so the loop starts at 0;
+     //      and the max_bin+1 contains overflow, so the loop terminates at max_bin+2
+     x=hInput->GetXaxis()->GetBinCenter(i);
+     y=hInput->GetYaxis()->GetBinCenter(j);
+     z=hInput->GetBinContent(i,j);
+     //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
+     if(z!=0){
+       if((Int_t)z-z)printf("Warning!  The content of bin (%d,%d) is not an integer! (%f)\n",i,j,z);
+       for(int k=0;k<z;k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+	 hOutput->Fill(y,x,1);
+       }
+     }
+   }
+ }
+ cFit->Clear();
+ if(size!=1){
+   hInput ->SetMarkerStyle(21);
+   hOutput->SetMarkerStyle(21);
+ }
+ else{
+   hInput ->SetMarkerStyle(1);
+   hOutput->SetMarkerStyle(1);
+ }
+ 
+ hInput->SetMarkerColor(1);
+ hInput->SetMarkerSize(size);
+ hInput->Draw("");
+
+ hOutput->SetMarkerColor(2);
+ hOutput->SetMarkerSize(size);
+ hOutput->Draw("same");
+}
+
+void scale_slope(Char_t *histin,Float_t slope=1)
+{
+  if(slope>1){
+    printf("Scale XN (x) by %f with slopexy(\"%s\",%f)\n",slope,histin,(1/slope));
+    slopexy(histin,(1/slope));
+  }
+  else{
+    printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",1/slope,histin,slope);
+    slopexy(histin,1,0,slope);
+  }
+  hname=histin;
+  hname+="_slope";
+  reflect(hname.Data());
+
+ FILE * outfile;
+ outfile=fopen("temp.lst","w");
+ printf("The contents of \"temp.lst\" is: ");
+ //in order to conform to a polynomial fit output, an arbitrary scaler offset is given.
+ fprintf(outfile,"%d, %g\n",2048,-slope); 
+ printf("2048, %g\n",slope);
+ fclose(outfile);
+}
+
 void comb1(Char_t *histin1,Char_t *histin2 )
 {//copies 1D histogram with given slope and offset
 if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
@@ -681,7 +892,7 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   
      z=hProj->GetBinContent(i);
          if(z!=0){
-       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of enteries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
 	 hResult->Fill(x,1);
        }
      }
@@ -693,7 +904,7 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
      x=hInput->GetXaxis()->GetBinCenter(i);
        z=hInput->GetBinContent(i);
          if(z!=0){
-       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of enteries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+       for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
 	 hResult->Fill(x,1);
        }
      }
@@ -724,11 +935,23 @@ void shiftadd2(Char_t *histin1, Float_t shift1=0, Char_t *histin2, Float_t shift
  */
 
 void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1)
-{//same first three parameters as pfx(), next three same as pfit() (developed independantly)
+{//same first three parameters as pfx(), next three same as pfit() (developed independently)
   Float_t cp=0 ;  
-  Float_t a=0,b=0;  
+  Float_t a=0,b=0,c=0,d=0;  
   Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
   Float_t fits[10];
+  hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
+
+  printf("Detector number %d is being read.\n",det);
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   cFit->Clear();
   cFit->SetWindowPosition(0,0);
@@ -765,7 +988,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   printf("Projection Limits are %3.2f to %3.2f\n",minpf,maxpf);  
   minpf=hInput->GetYaxis()->FindBin(minpf);
   maxpf=hInput->GetYaxis()->FindBin(maxpf);
-  printf("Fit Limits are %3.2f to %3.2f\n",minfit,maxfit);
+  printf("       Fit Limits are %3.2f to %3.2f\n",minfit,maxfit);
 
   hname=histin;
   hname+="_pfx"; 
@@ -785,7 +1008,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   }
   hname="pol";
   hname+=ord;
-  printf("Fit funciont is is \"%s\"\n",hname.Data()); 
+  printf("Fit function is is \"%s\"\n",hname.Data()); 
  hProf->Fit(hname,"V","",minfit,maxfit);
  hProf->SetStats(kFALSE);
  switch(ord){
@@ -795,27 +1018,81 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     printf("p1 = %7.3f\n",p1);  
     break;
  case 2://copied from minfit() - used to find minimum (center) of hEX plots - then generalize to fit2pfx()
-    p0=hProf->GetFunction("pol2")->GetParameter(0);
-    p1=hProf->GetFunction("pol2")->GetParameter(1);
-    p2=hProf->GetFunction("pol2")->GetParameter(2);
-    cp=(-p1/(2*p2));
-    printf("p1 = %7.3f p2=%7.3f\ncp = %7.3f\n",p1,p2,cp);
-    break;
-  case 4:
-    p0=hProf->GetFunction("pol4")->GetParameter(0);
-    p1=hProf->GetFunction("pol4")->GetParameter(1);
-    p2=hProf->GetFunction("pol4")->GetParameter(2);
-    p3=hProf->GetFunction("pol4")->GetParameter(3);
-    p4=hProf->GetFunction("pol4")->GetParameter(4);
-    printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\ncp = %7.3f\n",p1,p2,p3,p4);
-    break;
+   p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
+   p1=hProf->GetFunction("pol2")->GetParameter(1);//"b"
+   p2=hProf->GetFunction("pol2")->GetParameter(2);//"a"
+   cp=(-p1/(2*p2));
+   Float_t zero1=(-p1-sqrt(p1*p1-(4*p2*p0)))/(2*p2);
+   Float_t zero2=(-p1+sqrt(p1*p1-(4*p2*p0)))/(2*p2);
+   printf("p1 = %7.3f p2=%7.3f\n",p1,p2);
+   printf("Fit has critical point = %7.3f\n",p1,p2,cp);
+   Float_t slope=0;
+   if((p1*p1-(4*p2*p0))>0){
+     printf("Fit has roots = %.1f, %.1f\n",zero1,zero2);
+     TLine *line = new TLine(0,p0,zero1,0);
+     line->SetLineStyle(2);
+     line->SetLineWidth(2);
+     line->Draw();
+     slope=(0-p0)/(zero1-0);
+     printf("Linear fit has slope %f\n",slope);
+   }
+   else{
+     printf("Fit has imaginary root(s).\n");
+     TLine *line = new TLine(minfit,minfit*minfit*p2+minfit*p1+p0,maxfit,maxfit*maxfit*p2+maxfit*p1+p0);
+     line->SetLineStyle(2);
+     line->SetLineWidth(2);
+     line->Draw();
+     slope=((maxfit*maxfit*p2+maxfit*p1+p0)-(minfit*minfit*p2+minfit*p1+p0))/(maxfit-minfit);
+     printf("Linear fit has slope %f\n",slope);
+   }
+   if(slope<-1)
+     printf("Scale XN (x) by %f with slopexy(\"%s\",%f)\n",-slope,histin,(-1/slope));
+   else
+     printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
+   
+   FILE * outfile;
+   outfile=fopen("slope.lst","w");
+   printf("The contents of \"slope.lst\" is: ");
+   fprintf(outfile,"%g\n",slope);
+   printf("%g\n",slope);
+   fclose(outfile);
+   
+   break;
+ case 3:
+   p0=hProf->GetFunction("pol3")->GetParameter(0);
+   p1=hProf->GetFunction("pol3")->GetParameter(1);
+   p2=hProf->GetFunction("pol3")->GetParameter(2);
+   p3=hProf->GetFunction("pol3")->GetParameter(3);
+   a=p3;
+   b=p2;
+   c=p1;
+   d=p0;
+   Float_t disc=18*a*b*c*d-4*b*b*b*d+b*b*c*c-27*a*a*d*d;
+   if(disc<0){
+     printf("Fit has one real root\n");
+     Float_t zero=0;
+     //     TF1 *fit = hProf->GetFuction("pol3");
+     //     printf("Fit at zero is %f\n",fit(zero));
+   }
+   else
+     printf("Fit discriminant = %f, yeilding all real roots.\n",disc);
+
+   break;
+ case 4:
+   p0=hProf->GetFunction("pol4")->GetParameter(0);
+   p1=hProf->GetFunction("pol4")->GetParameter(1);
+   p2=hProf->GetFunction("pol4")->GetParameter(2);
+   p3=hProf->GetFunction("pol4")->GetParameter(3);
+   p4=hProf->GetFunction("pol4")->GetParameter(4);
+   printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\ncp = %7.3f\n",p1,p2,p3,p4);
+   break;
  default:
    break; 
-  }
+ }
  
  FILE * outfile;
  outfile=fopen("temp.lst","w");
- //printf("The contents of \"%s\" are:\n",outfile);
+ printf("The contents of \"temp.lst\" are: ");
  for(Int_t i=0;i<=ord;i++){
    fprintf(outfile,"%g, ",hProf->GetFunction(hname)->GetParameter(i));
    printf("%g ",hProf->GetFunction(hname)->GetParameter(i));
@@ -828,8 +1105,19 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
 void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
 {
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-Float_t p0=0,p1=0,p2=0;
+  Float_t p0=0,p1=0,p2=0;
   
+  hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
+
   cFit->Clear();
   cFit->Divide(1,2);
   cFit->cd(1);
@@ -975,7 +1263,7 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
       }
       
       if(i==0){
-	printf("Projectin range is %f to %f\n",minpj,maxpj);
+	printf("Projection range is %f to %f\n",minpj,maxpj);
 	printf("Fit range is %f %f\n",minfit,maxfit);
       }
 
@@ -996,7 +1284,7 @@ for(int i=0;i<6;i++){
       hProj->Draw();
       fname="pol";
       fname+=ord;
-      if(i==0)printf("Fit funcion is \"%s\"\n",fname.Data()); 
+      if(i==0)printf("Fit function is \"%s\"\n",fname.Data()); 
       hProj->Fit(fname,"Q","",minfit,maxfit);
        
       for (int j=0;j<ord+1;j++){
@@ -1263,7 +1551,7 @@ hProf->GetXaxis()->UnZoom();
        p2=hProf->GetFunction("pol2")->GetParameter(2);
        cp=(-p1/(2*p2));
 
-      printf("Reiniating loop with tolerance set to %2.0f%%\n",tol*100);
+      printf("Re-initiating loop with tolerance set to %2.0f%%\n",tol*100);
 
      i=0;
     }
@@ -1368,7 +1656,7 @@ hProf->GetXaxis()->UnZoom();
       p2=hProf->GetFunction("pol2")->GetParameter(2);
       cp=(-p1/(2*p2));
       
-      printf("Reiniating loop with tolerance set to %2.0f%%\n",tol*100); cp=-1;
+      printf("Re-initiating loop with tolerance set to %2.0f%%\n",tol*100); cp=-1;
 
       i=0;
     }
@@ -1529,6 +1817,17 @@ Float_t a,b,c,d,e,f,g,h;
 void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+  hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
+
   cFit->Clear();
   cFit->Divide(1,2);
   Float_t *positions;//moved * before variable name
@@ -1548,7 +1847,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
     nlist++;
   }
 if(nlist<=1){
-    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carrige return on the last line!\n",nlist,filename);
+    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
   }
   TH1F *hProj=(TH1F *) gROOT->FindObject(histin);//hInput changed to hProj from here on.
   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
@@ -1563,7 +1862,7 @@ if(nlist<=1){
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
   if(gROOT->GetVersionInt()<52400)
-    printf("Depricated (online) ROOT version.\n");
+    printf("Deprecated (online) ROOT version.\n");
   else{
     printf("Modern (offline) ROOT version.\n");
     Float_t sorted[100];
@@ -1599,7 +1898,7 @@ if(nlist<=1){
   hProj->Fit("gaus","QW","",positions[npeaks-1]-25,positions[npeaks-1]+25);
   width=hProj->GetFunction("gaus")->GetParameter(2);
   cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-  printf("Fit parameters are: Slope = %3.3f, Ofset = %3.3f\n",slope,offset);
+  printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
   hfit->SetMarkerStyle(2);
   hfit->SetMarkerColor(2);
   hfit->SetMarkerSize(3);
@@ -1614,6 +1913,16 @@ FILE * outfile;
 
 void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
+ hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
   Float_t * positions;
   Float_t energies[100];
   Float_t slope,offset,width;
@@ -1633,7 +1942,7 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
     nlist++;
   }
   if(nlist<=1){
-    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carrige return on the last line!\n",nlist,filename);
+    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
   }
   
   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
@@ -1666,7 +1975,7 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
   if(gROOT->GetVersionInt()<52400)
-    printf("Depricated (online) ROOT version.\n");
+    printf("Deprecated (online) ROOT version.\n");
   else{
     printf("Modern (offline) ROOT version.\n");
     Float_t sorted[10];
@@ -1698,7 +2007,7 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
   width=hProj->GetFunction("gaus")->GetParameter(2);
   cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-  printf("Fit parameters are: Slope = %3.3f, Ofset = %3.3f\n",slope,offset);
+  printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
   hfit->SetMarkerStyle(2);
   hfit->SetMarkerColor(2);
   hfit->SetMarkerSize(3);
@@ -1713,6 +2022,17 @@ FILE * outfile;
 
 void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
+hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
+
   Float_t * positions;
   Float_t energies[10];
   Float_t slope,offset,width;
@@ -1733,7 +2053,7 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
     nlist++;
   }
   if(nlist<=1){
-    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carrige return on the last line!\n",nlist,filename);
+    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
   }
   
   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
@@ -1765,7 +2085,7 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
   if(gROOT->GetVersionInt()<52400)
-    printf("Depricated (online) ROOT version.\n");
+    printf("Deprecated (online) ROOT version.\n");
   else{
     printf("Modern (offline) ROOT version.\n");
     Float_t sorted[10];
@@ -1801,7 +2121,7 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
  hfit->Fit("pol1","","P");
  slope=hfit->GetFunction("pol1")->GetParameter(1);
  offset=hfit->GetFunction("pol1")->GetParameter(0);
- printf("Fit parameters are: Slope = %3.3f, Ofset = %3.3f\n",slope,offset);
+ printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
  // cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
  FILE * outfile;
  outfile=fopen("temp.lst","w");
@@ -1828,7 +2148,7 @@ void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t th
   Int_t nbins;
   TSpectrum *spectrum=new TSpectrum();
  
-  //The non-histogram-decaration lines in the following block were added to copy the input histogram automatically.
+  //The non-histogram-declaration lines in the following block were added to copy the input histogram automatically.
   TH1F * hProj=(TH1F *) gROOT->FindObject(histin);
   hname=histin;
   hname+="_bkg"; 
@@ -1922,16 +2242,27 @@ void printcaldata(void)
   printf("p0 average is %5.1f for %d entries\n",p0av,entries);
 }
 
-void createfile(void)
-{
+void createfile(Int_t numbered=0)
+{//writes array[i][j] to file or creates blank file
   ofstream outfile("calibration.cal");
   for(int i=0;i<24;i++){
     outfile<<i+1<<" ";
     for(int j=0;j<11;j++){
-	  outfile<<array[i][j]<<" ";
-	}
-    outfile<<endl;
+      switch(numbered){
+      case 0:
+	outfile<<array[i][j]<<" ";
+	break;
+      case 1:
+	outfile<<0<<" ";
+	break;
+      case 2:
+	outfile<<j<<" ";
+	break;
+      default:break;  
+      }
     }
+    outfile<<endl;
+  }
 }
 
 void readfile(Char_t *filename="test.cal", Bool_t showtest=1)
@@ -2054,8 +2385,10 @@ void truncfile(Char_t *filename="source.cal",Char_t *output="shortsource.cal",In
 File \"%s\" not written.\n",filename,size,errorline,output);
 }
 
-void writetemp(Char_t *calfile="calibration.cal", Int_t det=1, Char_t *tempfile="temp.lst",Bool_t overwrite=1,Bool_t showtest=0)
+void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0)
 {
+  if(detno==-1)
+    detno=det;
   Float_t param[24][50]; 
   Int_t errorline=-1;
   Int_t size=sizeof(param[0])/sizeof(param[0][0]);
@@ -2107,8 +2440,7 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t det=1, Char_t *tempfile=
      
     k++;
   }
-  
-  
+    
   if(fit){   
     Float_t Fit[10];
     Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
@@ -2117,7 +2449,8 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t det=1, Char_t *tempfile=
       for(Int_t l=0;l<size;l++){
 	if(fscanf(infile,"%f, ",&Fit[l])==-1)
 	  Fit[l]=0;
-	param[det-1][l+1]=Fit[l];
+	if(Fit[l])//added
+	  param[detno-1][l+1+index]=Fit[l];//note use of index
       }
       fclose(infile);
     }
