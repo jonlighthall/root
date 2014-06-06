@@ -15,7 +15,6 @@
  * Requires:
  *       util.cc
  */
-//hello world!  I am using SVN!
 #include <iostream.h>
 TH1F *hProj=0;
 TH1F *hProf=0;
@@ -260,10 +259,20 @@ void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", Char_t *
  * Utilities for viewing, copying, shifting, and scaling histograms.
  */
 void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=675,Int_t wh=615)
-{
+{//make a TCanvas 
   TCanvas * cFit=new TCanvas(cvname,cvtitle,0,0,ww,wh);
   if(!(cFit->GetShowEventStatus()))cFit->ToggleEventStatus();
   if(!(cFit->GetShowToolBar()))cFit->ToggleToolBar();
+}
+
+void prop(Float_t x_prop=1,Float_t y_prop=1,Float_t x_size=1000,Char_t* cvname="cFit")
+{//set the proportion and size of the canvas for printing
+  if(!((TCanvas *) gROOT->FindObject(cvname))) mkCanvas2(cvname,cvname);
+  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cvname);
+  Float_t ref=thecanvas->GetWindowWidth();
+  ref=x_size;
+  thecanvas->SetWindowSize(ref,(ref/x_prop)*y_prop);
+
 }
 
 void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr="f1-phaser")
@@ -280,7 +289,7 @@ void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr
 void doprint3(Int_t printer_no=0)
 {
   switch(printer_no){
-  case 0:
+  case 0://same as dorprint2()
     printf("Sending canvas \"cFit\" to Room F154 Phaser...\n");
     doprint2("cFit","print.ps","f1-phaser");
     break;
@@ -840,7 +849,7 @@ void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
  if(plot>0) hOutput->Draw("colz");
 }
 
-void slopex(Char_t *histin, Float_t slope=1, Float_t offset=0,
+void slopex(Char_t *histin, Float_t slope=1, Float_t offset=-99,
 	    Bool_t scale=1, Float_t min=0, Float_t max=0)
 { //Copies and scales a 1D histogram with given slope and offset.
   //"scale" sets whether the bin size is scaled.
@@ -858,6 +867,20 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
  xmax=hProj->GetXaxis()->GetXmax();
  xmin=hProj->GetXaxis()->GetXmin(); 
  xwidth_in=hProj->GetBinWidth(0);
+
+ FILE * infile;
+ Float_t fslope=1,foffset=0;
+ infile = fopen ("temp.lst","r");
+ fscanf(infile,"%f, ",&fslope);
+ fscanf(infile,"%f",&foffset);
+ fclose(infile);
+ printf("Contents of temp.lst: %f, %f\n",fslope,foffset);
+
+ if((slope==1)&&(offset==-99)){
+   slope=fslope;
+   offset=foffset;
+ }
+
 
  if(min>=max){//i.e. no/bad range given
    if(slope<0){
@@ -914,10 +937,10 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
  hResult->Draw();
  Float_t xwidth_out=hResult->GetBinWidth(0);
  if(offset<xwidth_out&&offset!=0)
-   printf("offset smaller than bin size\n");
+   printf("Notice: offset (%f) is smaller than bin size (%f).\n",offset,xwidth_out);
 
- if((fabs(xwidth_in-fabs(xwidth_out*slope))/xwidth_in)>0){
-   printf("Warning: Bin width miss-match!\n");
+ if((fabs(xwidth_in-fabs(xwidth_out*slope))/xwidth_in)>1E-5){
+   printf("Warning: Bin width mismatch! (%f)\n",(fabs(xwidth_in-fabs(xwidth_out*slope))/xwidth_in));
    printf("Input bin width is  %f\n",xwidth_in);
    printf("Output bin width is %f",xwidth_out);
    printf(" (Scaled bin width is %f)\n",xwidth_out*slope);
@@ -1010,7 +1033,7 @@ void slopexy(Char_t *histin, Float_t slopex=1, Float_t offsetx=0,
     printf("offset smaller than bin size\n");
   
   if((fabs(xwidth_in-fabs(xwidth_out*slopex))/xwidth_in)>0){
-    printf("Warning: Bin width miss-match!\n");
+    printf("Warning: Bin width mismatch!\n");
     printf("Input bin width is  %f\n",xwidth_in);
     printf("Output bin width is %f",xwidth_out);
     printf(" (Scaled bin width is %f)\n",xwidth_out*slopex);
@@ -2226,7 +2249,6 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   Int_t npeaks,nlist=0;
   TSpectrum *spectrum=new TSpectrum();
   ifstream listfile(filename);
-  if(!(listfile)) printf("No such file!\n");
   while(listfile>>ein) {
     energies[nlist]=ein;
     if(nlist==0)min=energies[nlist];//added
@@ -2369,7 +2391,7 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
     printf("Deprecated (online) ROOT version.\n");
   else{
     printf("Modern (offline) ROOT version.\n");
-    Float_t sorted[10];
+    Float_t sorted[100];
     sorted[0]=positions[0];//initializes sorted array with a valid position
     for(Int_t i=0;i<npeaks;i++){
       if((positions[i])<(sorted[0])){
@@ -2480,7 +2502,7 @@ hname=histin;
     printf("Deprecated (online) ROOT version.\n");
   else{
     printf("Modern (offline) ROOT version.\n");
-    Float_t sorted[10];
+    Float_t sorted[100];
     sorted[0]=positions[0];//initializes sorted array with a valid position
     for(Int_t i=0;i<npeaks;i++){
       if((positions[i])<(sorted[0])){
