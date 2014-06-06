@@ -16,6 +16,10 @@ TString hname;
 //TFile *_file1;
 //TFile *_file2 = new TFile("100_cut.root");
 
+void plotsim(Char_t* hname="test.dat"){
+  filltree(hname.Data(),"tree");
+  analyze("tree");
+}
 
 void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=640,Int_t wh=646){
   TCanvas * cFit=new TCanvas(cvname,cvtitle,0,0,ww,wh);
@@ -59,7 +63,95 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
       hInput->SetAxisRange(-1,-1,"X");
       hInput->SetAxisRange(-1,-1,"Y");
     }
-    hInput->Draw("COL2");
+    hInput->Draw();
+  }
+}
+
+void plotallpjx(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1){
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
+  Int_t no=0;
+  for(int i=1;i<25;++i){
+    hname=histin;
+    hname=hname+i;
+    if((TH2F*)gROOT->FindObject(hname.Data()))
+      no++;
+  }
+  printf("Plotting %2d Histograms...\n",no);
+  cFit->Clear();
+  cFit->Divide(6,(no/6));
+  for(int i=1;i<(no+1);++i){
+    cFit->cd(i);
+    hname=histin;
+    hname=hname+i;
+    
+    hInput=(TH2F*)gROOT->FindObject(hname.Data());
+    /*    
+    if(maxX==minX){
+      minX=hInput->GetXaxis()->GetXmin();
+      maxX=hInput->GetXaxis()->GetXmax();
+    }
+    
+    if(maxY==minY){
+      minY=hInput->GetYaxis()->GetXmin();
+      maxY=hInput->GetYaxis()->GetXmax();
+    } 
+    if(scale==1){
+      hInput->SetAxisRange(minX,maxX,"X");
+      hInput->SetAxisRange(minY,maxY,"Y");
+    }
+    else{
+      hInput->SetAxisRange(-1,-1,"X");
+      hInput->SetAxisRange(-1,-1,"Y");
+    }
+    */
+    hInput->ProjectionX();
+    hname=hname+"_px";
+    hProj=(TH1F *) gROOT->FindObject(hname.Data());
+    hProj->Draw();
+  }
+}
+
+void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1){
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
+  Int_t no=0;
+  for(int i=1;i<25;++i){
+    hname=histin;
+    hname=hname+i;
+    if((TH2F*)gROOT->FindObject(hname.Data()))
+      no++;
+  }
+  printf("Plotting %2d Histograms...\n",no);
+  cFit->Clear();
+  cFit->Divide(6,(no/6));
+  for(int i=1;i<(no+1);++i){
+    cFit->cd(i);
+    hname=histin;
+    hname=hname+i;
+    
+    hInput=(TH2F*)gROOT->FindObject(hname.Data());
+    /*    
+    if(maxX==minX){
+      minX=hInput->GetXaxis()->GetXmin();
+      maxX=hInput->GetXaxis()->GetXmax();
+    }
+    
+    if(maxY==minY){
+      minY=hInput->GetYaxis()->GetXmin();
+      maxY=hInput->GetYaxis()->GetXmax();
+    } 
+    if(scale==1){
+      hInput->SetAxisRange(minX,maxX,"X");
+      hInput->SetAxisRange(minY,maxY,"Y");
+    }
+    else{
+      hInput->SetAxisRange(-1,-1,"X");
+      hInput->SetAxisRange(-1,-1,"Y");
+    }
+    */
+    hInput->ProjectionY();
+    hname=hname+"_py";
+    hProj=(TH1F *) gROOT->FindObject(hname.Data());
+    hProj->Draw();
   }
 }
 
@@ -110,6 +202,31 @@ void setscale(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_
  
  hInput->Draw("COL2");
 }
+
+void opjy(Char_t *histin,Int_t col=2)
+{
+  hInput=(TH2F *) gROOT->FindObject(histin);
+  hInput->ProjectionY();
+  hname=histin;
+  hname+="_py";
+
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  hProj->SetLineColor(col);
+  hProj->Draw("same");
+}
+
+void opjx(Char_t *histin,Int_t col=2)
+{
+  hInput=(TH2F *) gROOT->FindObject(histin);
+  hInput->ProjectionX();
+  hname=histin;
+  hname+="_px";
+
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  hProj->SetLineColor(col);
+  hProj->Draw("same");
+}
+
 
 
 void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
@@ -289,9 +406,6 @@ Float_t cp=0 ;
   printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\ncp = %7.3f\n",p1,p2,p3,p4);
 }
 
-
-
-
 void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
 {
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
@@ -337,7 +451,7 @@ Float_t p0=0,p1=0,p2=0;
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
   hProf->SetAxisRange(a,b,"Y");
- hProf->Draw();
+  hProf->Draw();
  
   hProf->Fit("pol1","V","",minfit,maxfit);
   p0=hProf->GetFunction("pol1")->GetParameter(0);
@@ -445,16 +559,16 @@ void fitallpjx(Char_t *histin,Float_t minpj=0,Float_t maxpj=0,Float_t minfit=0,F
     createfile();
     printf("Fit parameters written to file \"calibration.cal\"\n");
   }
-  
 }
 
 void pfitallpjx(Char_t *histin,Float_t minpj=0,Float_t maxpj=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=6,Int_t writetofile=0)
+  //to be used with addpositions.C
 {
 if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
  TString fname;
   for(int i=0;i<24;i++)
     for(int j=0;j<11;j++)
-      array[i][j]=0;
+      array[i][j]=0;//initializes array to zero
   
   cFit->Clear();
   cFit->Divide(1,2);
@@ -1217,7 +1331,6 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   hfit->SetMarkerColor(2);
   hfit->SetMarkerSize(3);
   cFit->cd(3);
-  
   hfit->Draw("P");
   delete spectrum;
 }
@@ -1242,7 +1355,7 @@ if(nlist==0)min=energies[nlist];
   }
 
   TH1F *hfit=(TH1F *) gROOT->FindObject("hPeakFit");
-  if(!((TH1F *) gROOT->FindObject("hPeakFit"))) hfit=new TH1F("hPeakFit","hPeakFit",1000,0,100);
+  if(!((TH1F *) gROOT->FindObject("hPeakFit"))) hfit=new TH1F("hPeakFit","hPeakFit",1000,-100,100);
   hfit->Reset();
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
@@ -1293,6 +1406,65 @@ void loadfile(Char_t *histin="")
   hname+=".root"; 
   printf("Input File is %s\n",hname.Data());
   TFile *_file0 = new TFile(hname.Data());
+}
+
+void readfile(Char_t *filename="test.cal")
+{
+  Float_t param[24][50];
+  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+  Bool_t fit=kFALSE;
+  for(Int_t i=0;i<24;i++)
+    for(Int_t j=0;j<size;j++)
+      param[i][j]=0;//initializes all array elements to zero
+ 
+  FILE * infile;
+  
+  Int_t k=1;
+  while(!fit&&k<=(size))
+{
+    infile = fopen (filename,"r");
+    for(Int_t i=0;i<24;i++){
+      for(Int_t j=0;j<k;j++){
+        fscanf(infile,"%f",&param[i][j]);
+      }
+    }
+  
+    fclose(infile);
+    for(Int_t i=0;i<24;i++){
+            printf("%2.0f ",param[i][0]);
+      if (param[0][0]==1)fit=kTRUE;
+      else fit=kFALSE;
+      fit=(fit&&(param[i][0]==(i+1)));
+          for(Int_t j=1;j<k;j++){
+              printf("%7.3f ",param[i][j]);
+        }
+            printf("\n");
+	  
+    }
+    if(fit)printf("File has %d elements per line.\n",k);
+     else printf("Array length %d does not fit\n",k);
+    k++;
+}
+
+
+  if(fit){   
+  FILE * outfile;
+  outfile=fopen("output.txt","w");
+  printf("The contents of \"%s\" are:\n",filename);
+  for(Int_t i=0;i<24;i++){
+    fprintf(outfile,"%2.0f ",param[i][0]);
+    printf("%2.0f ",param[i][0]);
+    for(Int_t j=1;j<k-1;j++){
+      fprintf(outfile,"%7.3f ",param[i][j]);
+      printf("%7.3f ",param[i][j]);
+    }
+    fprintf(outfile,"\n");
+    printf("\n");
+  }
+  fclose(outfile);
+  }
+  else
+    printf("File is larger than array!\n");
 }
 
 void merge(Char_t *histin)
@@ -1351,4 +1523,72 @@ void loadfiles(Char_t *histin="")
   hname+=".root"; 
   printf("Input File is %s\n",hname.Data());
   TFile *_file2 = new TFile(hname.Data());
+}
+
+//The following files have been copied from my personal modifications to helios_plottools.cc and util.cc
+
+void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr="f1-phaser")
+{
+  const char cmd[255];
+  char * fl = reinterpret_cast<char *>(filename);
+  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
+  thecanvas->SaveAs(filename);
+  sprintf(cmd,"lpr -P %s %s",pr,fl);
+  gSystem->Exec(cmd);
+  cout<<fl<<" was sent to printer "<<pr<<endl;
+}
+
+void add2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
+{
+  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
+  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
+  TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
+  hist3->Add(hist1,hist2,scale1,scale2);
+  hist3->Draw("COL");
+}
+
+void copy2(Char_t *histin, Float_t minz=0)
+{
+if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+
+ Float_t xmin,xmax; 
+ Float_t ymin,ymax; 
+ Int_t xbin;
+ Int_t ybin;
+ Float_t x,y,z;
+ TString hname;
+  
+ TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+
+ xbin=hInput->GetXaxis()->GetNbins();
+ ybin=hInput->GetYaxis()->GetNbins();
+
+ xmax=hInput->GetXaxis()->GetXmax();
+ ymax=hInput->GetYaxis()->GetXmax();
+ xmin=hInput->GetXaxis()->GetXmin();
+ ymin=hInput->GetYaxis()->GetXmin();
+
+ hname=histin;
+ hname+="_copy"; 
+ Char_t *htitle = hInput->GetTitle();
+
+ if ((TH2F *) gROOT->FindObject(hname)) gROOT->FindObject(hname)->Delete();  
+ TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+
+ for(int i=0;i<xbin;i++){
+   for(int j=0;j<ybin;j++){
+     x=hInput->GetXaxis()->GetBinCenter(i);
+     y=hInput->GetYaxis()->GetBinCenter(j);
+     z=hInput->GetBinContent(i,j);
+     if(z>minz)
+       hOutput->Fill(x,y,z-minz);
+   }
+ }
+ 
+ cFit->Clear();
+ cFit->Divide(1,2);
+ cFit->cd(1);
+ hInput->Draw("col");
+ cFit->cd(2);
+ hOutput->Draw("col");
 }
