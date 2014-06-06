@@ -63,7 +63,7 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
       hInput->SetAxisRange(-1,-1,"X");
       hInput->SetAxisRange(-1,-1,"Y");
     }
-    hInput->Draw();
+    hInput->Draw("COL2");
   }
 }
 
@@ -1431,14 +1431,14 @@ void readfile(Char_t *filename="test.cal")
   
     fclose(infile);
     for(Int_t i=0;i<24;i++){
-            printf("%2.0f ",param[i][0]);
+      //      printf("%2.0f ",param[i][0]);
       if (param[0][0]==1)fit=kTRUE;
       else fit=kFALSE;
       fit=(fit&&(param[i][0]==(i+1)));
-          for(Int_t j=1;j<k;j++){
-              printf("%7.3f ",param[i][j]);
-        }
-            printf("\n");
+      //    for(Int_t j=1;j<k;j++){
+      //        printf("%7.3f ",param[i][j]);
+      //  }
+      //      printf("\n");
 	  
     }
     if(fit)printf("File has %d elements per line.\n",k);
