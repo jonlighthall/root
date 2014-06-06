@@ -1,4 +1,4 @@
-/*----------------------PostScript "pretty-print" page width (97 columns)----------------------*/
+/*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
 /* Program: fit.cc
  *       Created  by Jon Lighthall
  *       Adapted from "linefit.cc" by Jack Winkelbauer
@@ -29,6 +29,8 @@ TH2F *h;
 Float_t array[24][11];
 Int_t det=0;
 TString hname;
+
+TCutG *cWindow;
 
 /* 1). Extension Utilities-----------------------
  * Extends the function of pre-existing utilities. 
@@ -98,6 +100,21 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
     }
   else
     printf("Histogram \"%s\" not recognized.\n",histname);
+}
+
+void hdr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin=-999999.,
+	Float_t ymax=999999., Bool_t clear=1)
+{//Extension to dr() for online use.
+  hup();
+  dr(histname,xmin,xmax,ymin,ymax,1);
+}
+
+void lowstat(Int_t style=1)
+{
+  switch(style){
+  case 0:
+
+  }
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
@@ -198,10 +215,34 @@ void opjy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2)
   hProj->Draw("same");
 }
 
+void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", Char_t *cutname="cEDE0_B13_big")
+{
+  //TCutG *tempcut;  
+  //hup();
+  
+  gROOT->ProcessLine("TDirectory *_home=gDirectory"); 
+  if(gROOT->FindObject("_file0"))
+    _filename0=_file0;
+  dr(histname);
+  getfile(filename);
+  cWindow=(TCutG *) gROOT->FindObject(cutname);
+  cWindow->Draw();
+  if(gROOT->FindObject("_file0"))
+    _file0->cd();
+  pjxwin(histname,cutname);
+  //hProj=(TH1F *) gROOT->FindObject("xwproj");
+  xwproj->Integral();
+  printf("The integral of %s in %s is %d\n",cutname,histname,xwproj->Integral());
+  _home->cd();
+ //  hInput=(TH2F *) gROOT->FindObject(hname.Data());
+  dr(histname);
+  cWindow->Draw();
+}
+
 /* 2). Plotting Utilities-------------------------
  * Utilities for viewing, copying, shifting, and scaling histograms.
  */
-void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=632,Int_t wh=646)
+void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=675,Int_t wh=615)
 {
   TCanvas * cFit=new TCanvas(cvname,cvtitle,0,0,ww,wh);
   if(!(cFit->GetShowEventStatus()))cFit->ToggleEventStatus();
@@ -219,17 +260,36 @@ void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr
   cout<<fl<<" was sent to printer "<<pr<<endl;
 }
 
-void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
+void doprint3(Int_t printer_no=0)
+{
+  switch(printer_no){
+  case 0:
+    printf("Sending canvas \"cFit\" to Room F154 Phaser...\n");
+    doprint2("cFit","print.ps","f1-phaser");
+    break;
+  case 1:
+    printf("Sending canvas \"cFit\" to ATLAS Data Room HP LaserJet...\n");
+    doprint2("cFit","print.ps","m0-clj3700");
+    break;
+  defualt:
+    printf("No printer assigned to printer_n0=%d\n",printer_no);
+    // break;
+  }
+}
+
+void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
   for(Int_t i=1;i<25;++i){
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
-    if(gROOT->FindObject(hname.Data())) no++;
-    //if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) no1++;
-    //if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) no2++;
+    if(gROOT->FindObject(hname.Data())) {
+      no++;
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) no1++;
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) no2++;
+    }
   }
   printf("Histograms with name: %d.  1D: %d.  2D: %d.\n",no,no1,no2);
   cFit->Clear();
@@ -244,16 +304,26 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
     
     cFit->Divide(col,row);
     printf("Dividing Canvas as %d,%d\n",col,row);
+
+    TPad *pOutput=0;
+    
     for(int i=1;i<(no+1);++i){
+      TString pname="cFit_";
+      pname+=i;
+
+      pOutput=(TPad*)gROOT->FindObject(pname.Data());
+      
       cFit->cd(i);
       hname=histin;
       hname+=i;
-      
+            
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")){
 
+	if(log)
+	  pOutput->SetLogz();
+
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
-	//	->InheritsFrom("TH1F"))
-      
+	      
 	if(maxX==minX){
 	  minX=hInput->GetXaxis()->GetXmin();
 	  maxX=hInput->GetXaxis()->GetXmax();
@@ -271,9 +341,12 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
 	  hInput->SetAxisRange(-1,-1,"X");
 	  hInput->SetAxisRange(-1,-1,"Y");
 	}
+	
 	hInput->Draw("COL2");
 	   }
 	   else{
+	     if(log)
+	       pOutput->SetLogy();
 	     hProj=(TH1F*)gROOT->FindObject(hname.Data());
 
 	     if(maxX==minX){
@@ -299,8 +372,13 @@ void plotall(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t
     //hInput->Draw("COL2");
   }
 }
-  
 
+void hplotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
+{//online version of plotall()
+  hup();
+  plotall(histin,log,minX,maxX,minY,maxY,scale);
+
+}
 
 void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//note, mins and maxs not used.  consider matching input to pjx()
@@ -434,6 +512,19 @@ void setscale(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_
  hInput->Draw("COL2");
 }
 
+void settime(Bool_t bdisplay=kTRUE)
+{//turns timestamp on/off.  copied from /net/helios/H008/oneline/rootlogon.C
+  if(bdisplay)
+    {
+      gStyle->SetOptDate(4);
+      gStyle->GetAttDate()->SetTextSize(0.015);
+      gStyle->SetDateX(0);
+      gStyle->SetDateY(0);
+    }
+  else
+    gStyle->SetOptDate(0);
+}
+
 void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
 {//creates a small histogram to test copy2()
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
@@ -453,7 +544,7 @@ void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
   h->Draw("colz");
 }
 
-void copy2(Char_t *histin, Float_t minz=0)
+void copy2(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
 {//copies a 2D histogram with zero suppression
 if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
  Float_t xmin,xmax; 
@@ -496,19 +587,109 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
      if(z!=0){
        if((Int_t)z-z)printf("Warning!  The content of bin (%d,%d) is not an integer! (%f)\n",i,j,z);
        for(int k=0;k<(z-minz);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
-	 hOutput->Fill(x,y,1);
+	 if(maxz==-1)
+	   hOutput->Fill(x,y,1);
+	 else
+	   if(k<maxz)
+	     hOutput->Fill(x,y,1);
 	 // entry++;
 	 //	 printf("Entry %2d is %2f,%2f,%2.0f\n",entry,x,y,1);
        }
      }
    }
  }
+
+ switch (plot){
+ case 0: 
+   break;
+ case 1:
+   cFit->Clear();
+   hOutput->Draw("colz");
+   break;
+ case 2:
+   cFit->Clear();
+   cFit->Divide(1,2);
+   cFit->cd(1);
+   hInput->Draw("colz");
+   cFit->cd(2);
+   hOutput->Draw("colz");
+   break;
+ defualt:
+   break;
+ }
+}
+
+void trimbin(Char_t *histin, Int_t left=0, Int_t right=0, Int_t top=0, Int_t bottom=0, Int_t plot=2)
+{//copies a 2D histogram with zero suppression
+if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+ Float_t xmin,xmax; 
+ Float_t ymin,ymax; 
+ Int_t xbin;
+ Int_t ybin,entry=0;
+ Float_t x,y,z;
+  
+ TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+
+ xbin=hInput->GetXaxis()->GetNbins();
+ ybin=hInput->GetYaxis()->GetNbins();
+
+ xmax=hInput->GetXaxis()->GetXmax();
+ ymax=hInput->GetYaxis()->GetXmax();
+ xmin=hInput->GetXaxis()->GetXmin();
+ ymin=hInput->GetYaxis()->GetXmin();
+
+ hname=histin;
+ hname+="_copy"; 
+ Char_t *htitle = hInput->GetTitle();
+ printf("Output histogram is \"%s\"\n",hname.Data());
+
+ if ((TH2F *) gROOT->FindObject(hname)) {
+   gROOT->FindObject(hname)->Delete();  
+   printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+ }
+
+ // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+ TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+
+ for(int i=left;i<(xbin+2-right);i++){
+   for(int j=bottom;j<(ybin+2-top);j++){
+     //Note: The 0 bin contains the underflow, so the loop starts at 0;
+     //      and the max_bin+1 contains overflow, so the loop terminates at max_bin+2
+     x=hInput->GetXaxis()->GetBinCenter(i);
+     y=hInput->GetYaxis()->GetBinCenter(j);
+     z=hInput->GetBinContent(i,j);
+     //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
+     if(z!=0){
+       if((Int_t)z-z)printf("Warning!  The content of bin (%d,%d) is not an integer! (%f)\n",i,j,z);
+       for(int k=0;k<z;k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
+	 
+	   hOutput->Fill(x,y,1);
+	 
+	 // entry++;
+	 //	 printf("Entry %2d is %2f,%2f,%2.0f\n",entry,x,y,1);
+       }
+     }
+   }
+ }
+
+ switch (plot){
+ case 0: 
+   break;
+ case 1:
+   cFit->Clear();
+   hOutput->Draw("colz");
+   break;
+ case 2:
  cFit->Clear();
- cFit->Divide(1,2);
- cFit->cd(1);
- hInput->Draw("colz");
- cFit->cd(2);
- hOutput->Draw("colz");
+   cFit->Divide(1,2);
+   cFit->cd(1);
+   hInput->Draw("colz");
+   cFit->cd(2);
+   hOutput->Draw("colz");
+   break;
+ defualt:
+   break;
+ }
 }
 
 void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
@@ -661,7 +842,7 @@ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
 
 void slopexy(Char_t *histin, Float_t slopex=1, Float_t offsetx=0,
 	     Float_t slopey=1, Float_t offsety=0)
-{ //Copies and scales a 1D histogram with given slope and offset.
+{ //Copies and scales a 2D histogram with given slope and offset.
   //"scale" sets whether the bin size is scaled. (disabled)
   //The axis range may be set manually with min and max. (disabled)
   Bool_t scale=1; Float_t min=0; Float_t max=0;
@@ -837,14 +1018,14 @@ void scale_slope(Char_t *histin,Float_t slope=1)
  FILE * outfile;
  outfile=fopen("temp.lst","w");
  printf("The contents of \"temp.lst\" is: ");
- //in order to conform to a polynomial fit output, an arbitrary scaler offset is given.
+ //in order to conform to a polynomial fit output, an arbitrary scalar offset is given.
  fprintf(outfile,"%d, %g\n",2048,-slope); 
  printf("2048, %g\n",slope);
  fclose(outfile);
 }
 
 void comb1(Char_t *histin1,Char_t *histin2 )
-{//copies 1D histogram with given slope and offset
+{//combines two 1D histograms
 if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
 
  Float_t xmin,xmax; 
@@ -1015,7 +1196,18 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
  case 1://original fitpfx()
     p0=hProf->GetFunction("pol1")->GetParameter(0);
     p1=hProf->GetFunction("pol1")->GetParameter(1);
+    Float_t slope=p1;
     printf("p1 = %7.3f\n",p1);  
+    if(p1==0)
+      printf("Fit has no roots\n");
+    else
+      printf("Fit has root %f\n",-p0/p1);
+    if(fabs(p0)<hInput->GetYaxis()->GetBinWidth(1))
+      printf("p0 = %7.3f is less than bin width.\n",p0);  
+    if(slope<-1)
+      printf("Scale XN (x) by %f with slopexy(\"%s\",%f)\n",-slope,histin,(-1/slope));
+    else
+      printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
     break;
  case 2://copied from minfit() - used to find minimum (center) of hEX plots - then generalize to fit2pfx()
    p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
@@ -1029,12 +1221,14 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
    Float_t slope=0;
    if((p1*p1-(4*p2*p0))>0){
      printf("Fit has roots = %.1f, %.1f\n",zero1,zero2);
+      
      TLine *line = new TLine(0,p0,zero1,0);
      line->SetLineStyle(2);
      line->SetLineWidth(2);
      line->Draw();
      slope=(0-p0)/(zero1-0);
      printf("Linear fit has slope %f\n",slope);
+
    }
    else{
      printf("Fit has imaginary root(s).\n");
@@ -1073,9 +1267,43 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
      Float_t zero=0;
      //     TF1 *fit = hProf->GetFuction("pol3");
      //     printf("Fit at zero is %f\n",fit(zero));
+
+
    }
    else
-     printf("Fit discriminant = %f, yeilding all real roots.\n",disc);
+     printf("Fit discriminant = %f, yielding all real roots.\n",disc);
+
+ Float_t tol=1000;
+     Float_t x0=0; 
+     Bool_t bPos=kTRUE;
+Int_t i=0;
+ Int_t j=0;
+    while(tol>.0001&&i<100){
+      if((x0*x0*x0*p3+x0*x0*p2+x0*p1+p0)>0){
+	bPos=kTRUE;
+	x0+=tol;
+	i++;
+      }
+      else{
+	x0-=tol;
+	tol=tol/10;
+	bPos=kFALSE;
+	i=0;
+      }
+      // printf("f(%f) = %f\n",x0,x0*x0*x0*p3+x0*x0*p2+x0*p1+p0);
+      j++;
+    }
+    printf("Loop exited in %d steps.  First zero located at %.3f\n",j,x0);  
+    Float_t slope=(p0)/(x0);
+    printf("Linear slope is %f.\n",slope);
+    if(slope<1)
+      printf("Intercept is %.1f(%.1f), slope is %.1f(%.1f)\n",p0,p0/slope,x0,x0);
+    else
+      printf("Intercept is %.1f(%.1f), slope is %.1f(%.1f)\n",p0,p0,x0,x0*slope);
+    TLine *line = new TLine(0,p0,x0,0);
+    line->SetLineStyle(2);
+    line->SetLineWidth(2);
+    line->Draw();
 
    break;
  case 4:
@@ -1558,6 +1786,7 @@ hProf->GetXaxis()->UnZoom();
   }
     printf("Loop Exited at Iteration %3d.\nEndpoint tolerance is %2.0f%%\nFit range is %6.3f to %6.3f\nCritical Point is %5.3f\np0 = %7.3f, p1 = %7.3f, p2 = %7.3f\n",i,tol*100,minfit,maxfit,cp,p0,p1,p2);
     printf("Emax = %5.2f, p1 = %4.0f, p2 = %7.2f\n",cp,p1,p2);
+
 }
 void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
 {//"Fit piece-wise quadratic, ProfileX"
@@ -1763,7 +1992,7 @@ hProf->GetXaxis()->UnZoom();
       p2=hProf->GetFunction("pol2")->GetParameter(2);
       cp=(-p1/(2*p2));
 
-      printf("Reiniating loop with tolerance set to %2.0f%%\n",tol*100);
+      printf("Reinitiating loop with tolerance set to %2.0f%%\n",tol*100);
       i=0;
 	}
   }
