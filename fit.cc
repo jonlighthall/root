@@ -2249,6 +2249,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   Int_t npeaks,nlist=0;
   TSpectrum *spectrum=new TSpectrum();
   ifstream listfile(filename);
+  if(!(listfile)) printf("No such file!\n");
   while(listfile>>ein) {
     energies[nlist]=ein;
     if(nlist==0)min=energies[nlist];//added
