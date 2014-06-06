@@ -87,9 +87,9 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
 {//Extension to draw() and draw2().  
  //Accepts either 1-, 2- or 3-D histograms as input, then via the whatis() command, draws the
  //histogram.  Makes the cFit canvas, if it is not present, and clears it if it is.
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
-  if(clear) cFit->Clear();
-  if(gROOT->FindObject(histname)){
+  if(gROOT->FindObject(histname)) {//take no action if histogram not found.
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+    if(clear) cFit->Clear();  
     if(whatis(histname,0)==1||whatis(histname,0)==2){
       draw(histname,"",xmin,xmax);//draw() takes the draw option as the second argument.
     }
