@@ -109,12 +109,28 @@ void hdr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymi
   dr(histname,xmin,xmax,ymin,ymax,1);
 }
 
-void lowstat(Int_t style=1)
-{
-  switch(style){
-  case 0:
-
+void lowstat(Char_t *histname, Int_t style=7, Int_t size=1, Int_t color=1)
+{//Drawing options for low statistics
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit");  
+  hInput=(TH2F *) gROOT->FindObject(histname);
+  cFit->cd();
+  if(style==0){//Draw color histogram on black background
+    cFit->SetFrameFillColor(1);
+    draw2(histname);  
   }
+  else{//Manually set marker
+    cFit->SetFrameFillColor(0);
+    hInput->SetMarkerStyle(style);
+    hInput->SetMarkerSize(size);
+    hInput->SetMarkerColor(color);
+    hInput->Draw();
+  }
+}
+
+void hlowstat(Char_t *histname, Int_t style=20, Int_t size=1, Int_t color=1)
+{//Extension to lowstat() for online use.
+  hup();
+  lowstat(histname,style,size,color);
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
@@ -277,7 +293,7 @@ void doprint3(Int_t printer_no=0)
   }
 }
 
-void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
+void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
@@ -285,17 +301,18 @@ void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t m
   for(Int_t i=1;i<25;++i){
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
+    hname+=suffix;//updated to be compatible with poorly named histograms
     if(gROOT->FindObject(hname.Data())) {
       no++;
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) no1++;
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) no2++;
     }
   }
-  printf("Histograms with name: %d.  1D: %d.  2D: %d.\n",no,no1,no2);
+  printf("Histograms with name %s%s: %d.  1D: %d.  2D: %d.\n",histin,suffix,no,no1,no2);
   cFit->Clear();
   
   if(no!=0){
-    printf("Plotting %2d Histograms...\n",no);  
+    printf("Plotting %2d Histograms with name %s%s...\n",no,histin,suffix);  
     if(no>6)
       col=6;
     else
@@ -304,26 +321,27 @@ void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t m
     
     cFit->Divide(col,row);
     printf("Dividing Canvas as %d,%d\n",col,row);
-
+    
     TPad *pOutput=0;
     
     for(int i=1;i<(no+1);++i){
       TString pname="cFit_";
       pname+=i;
-
+      
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       
       cFit->cd(i);
       hname=histin;
       hname+=i;
-            
+      hname+=suffix;
+      
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")){
-
+	
 	if(log)
 	  pOutput->SetLogz();
-
+	
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
-	      
+	
 	if(maxX==minX){
 	  minX=hInput->GetXaxis()->GetXmin();
 	  maxX=hInput->GetXaxis()->GetXmax();
@@ -344,28 +362,28 @@ void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t m
 	
 	hInput->Draw("COL2");
 	   }
-	   else{
-	     if(log)
-	       pOutput->SetLogy();
-	     hProj=(TH1F*)gROOT->FindObject(hname.Data());
+      else{//if histograms are 1-D
+	if(log)
+	  pOutput->SetLogy();
+	hProj=(TH1F*)gROOT->FindObject(hname.Data());
 
-	     if(maxX==minX){
-	       minX=hProj->GetXaxis()->GetXmin();
-	       maxX=hProj->GetXaxis()->GetXmax();
-	     }
+	if(maxX==minX){
+	  minX=hProj->GetXaxis()->GetXmin();
+	  maxX=hProj->GetXaxis()->GetXmax();
+	}
 	
-	     if(scale==1){
-	       hProj->SetAxisRange(minX,maxX,"X");
-	     }
-	     else{
-	       hProj->SetAxisRange(-1,-1,"X");
-	     	     }
-	     hProj->Draw("");
-
-	     }
+	if(scale==1){
+	  hProj->SetAxisRange(minX,maxX,"X");
+	}
+	else{
+	  hProj->SetAxisRange(-1,-1,"X");
+	}
+	hProj->Draw("");
+	
+      }
     }
-}
-  else{
+  }
+  else{//if only one histogram
     hname=histin;
     dr(hname);   
     //hInput=(TH2F*)gROOT->FindObject(hname.Data());
@@ -373,10 +391,10 @@ void plotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t m
   }
 }
 
-void hplotall(Char_t *histin,Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
+void hplotall(Char_t *histin,Char_t *suffix="", Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//online version of plotall()
   hup();
-  plotall(histin,log,minX,maxX,minY,maxY,scale);
+  plotall(histin,suffix,log,minX,maxX,minY,maxY,scale);
 
 }
 
@@ -461,6 +479,71 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 
     hProj->Draw();
   }
+}
+
+void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, Int_t color=1)
+{//script to replace all of the macros in helios_plottools.cc
+  Int_t col=0,row=0;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
+  Int_t no=0,no1=0, no2=0; //number of histograms with given name
+  for(Int_t i=1;i<25;++i){
+    hname=histin;
+    hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
+    hname+=suffix;
+    if(gROOT->FindObject(hname.Data())) {
+      no++;
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) no1++;
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) no2++;
+    }
+  }
+  printf("Histograms with name %s%s: %d.  1D: %d.  2D: %d.\n",histin,suffix,no,no1,no2);
+  cFit->Clear();
+  
+  if(no!=0){
+    printf("Plotting %2d Histograms with name %s%s...\n",no,histin,suffix);  
+    if(no>6)
+      col=6;
+    else
+      col=ceil(no/2.);
+    row=ceil(no/(Float_t)col);
+    
+    cFit->Divide(col,row);
+    printf("Dividing Canvas as %d,%d\n",col,row);
+    
+    TPad *pOutput=0;
+    
+    for(int i=1;i<(no+1);++i){
+      TString pname="cFit_";
+      pname+=i;
+      
+      pOutput=(TPad*)gROOT->FindObject(pname.Data());
+      
+      cFit->cd(i);
+      hname=histin;
+      hname+=i;
+      hname+=suffix;
+      
+      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")){
+	hInput=(TH2F*)gROOT->FindObject(hname.Data());
+	if(style==0){//Draw color histogram on black background
+	  pOutput->SetFrameFillColor(1);
+	  hInput->Draw("col2");
+	}
+	else{
+	  hInput->SetMarkerStyle(style);
+	  hInput->SetMarkerSize(size);
+	  hInput->SetMarkerColor(color);
+	  hInput->Draw();
+	}
+      }
+    }
+  }
+}
+
+void hplotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, Int_t color=1)
+{//online version of plotalllow()
+  hup();
+  plotalllow(histin,suffix,style,size,color);
 }
 
 void setrange(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
@@ -2061,6 +2144,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   cFit->Divide(1,2);
   Float_t *positions;//moved * before variable name
   Float_t energies[100];
+  Float_t min_space=25;
   Float_t slope,offset,width;
   Float_t ein;
   Float_t max=0,min=0;//added
@@ -2087,7 +2171,7 @@ if(nlist<=1){
   cFit->cd(1);
   spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
-  positions=spectrum->GetPositionX();//in ROOT 5.26 this array is ordered by peak height!
+  positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
   if(gROOT->GetVersionInt()<52400)
@@ -2112,7 +2196,8 @@ if(nlist<=1){
   }//end version IF 
   for (Int_t i=0; i<npeaks; i++){
     cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    //  printf("                        %f\n",sorted[i]);
+    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
+      min_space=positions[i+1]-positions[i];
   }
   hProj->Draw();
   for (Int_t i=0; i<npeaks; i++) {
@@ -2124,10 +2209,11 @@ if(nlist<=1){
   hfit->SetStats(kFALSE);//
   slope=hfit->GetFunction("pol1")->GetParameter(1);
   offset=hfit->GetFunction("pol1")->GetParameter(0);
-  hProj->Fit("gaus","QW","",positions[npeaks-1]-25,positions[npeaks-1]+25);
+  hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
   width=hProj->GetFunction("gaus")->GetParameter(2);
   cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
   printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+  printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
   hfit->SetMarkerStyle(2);
   hfit->SetMarkerColor(2);
   hfit->SetMarkerSize(3);
@@ -2263,7 +2349,8 @@ hname=histin;
   }
 
   Float_t * positions;
-  Float_t energies[10];
+  Float_t energies[100];
+  Float_t min_space=25;
   Float_t slope,offset,width;
   Float_t ein;
   Float_t max=0,min=0;
@@ -2335,11 +2422,13 @@ hname=histin;
   }//end version IF  
   for (Int_t i=0; i<npeaks; i++){
       cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
+      if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
+	min_space=positions[i+1]-positions[i];
     }
   for (Int_t i=0; i<npeaks; i++) {
     hfit->Fill(energies[i],positions[i]);
   }
-  hProj->Fit("gaus","","",positions[npeaks-1]-25,positions[npeaks-1]+25);
+  hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);  
   width=hProj->GetFunction("gaus")->GetParameter(2);
 
  cFit->cd(3);
@@ -2350,8 +2439,9 @@ hname=histin;
  hfit->Fit("pol1","","P");
  slope=hfit->GetFunction("pol1")->GetParameter(1);
  offset=hfit->GetFunction("pol1")->GetParameter(0);
+ cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
  printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
- // cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+ printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
  FILE * outfile;
  outfile=fopen("temp.lst","w");
  fprintf(outfile,"%g, %g\n",slope,offset);
