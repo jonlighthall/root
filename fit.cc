@@ -2748,14 +2748,15 @@ void createfile(Int_t numbered=0)
   }
 }
 
-void readfile(Char_t *filename="test.cal", Bool_t showtest=1)
+void readfile(Char_t *filename="test.cal", Bool_t showtest=1, const int numdet=24)
 {
-  Float_t param[24][50]; 
+  printf("numdet=%d\n",numdet);
+  Float_t param[numdet][50]; 
   Int_t errorline=-1;
   Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  printf("param array size is: [24][%d].\n",size); 
+  printf("param array size is: [%d][%d].\n",(sizeof(param)/sizeof(param[0])),size); 
   Bool_t fit=kFALSE;
-  for(Int_t i=0;i<24;i++)
+  for(Int_t i=0;i<numdet;i++)
     for(Int_t j=0;j<size;j++)
       param[i][j]=0;//initializes all array elements to zero
  
@@ -2763,7 +2764,7 @@ void readfile(Char_t *filename="test.cal", Bool_t showtest=1)
   Int_t k=1;
   while(!fit&&k<=(size)){
     infile = fopen (filename,"r");
-    for(Int_t i=0;i<24;i++){
+    for(Int_t i=0;i<numdet;i++){
       for(Int_t j=0;j<k;j++){
 	fscanf(infile,"%f",&param[i][j]);
       }
@@ -2773,7 +2774,7 @@ void readfile(Char_t *filename="test.cal", Bool_t showtest=1)
 
     if (param[0][0]==1)fit=kTRUE;
     else fit=kFALSE;
-    for(Int_t i=0;i<24;i++){
+    for(Int_t i=0;i<numdet;i++){
       fit=(fit&&(param[i][0]==(i+1)));	
       if(fit){
 	if(showtest) printf("%2.0f ",param[i][0]);
@@ -2793,7 +2794,7 @@ void readfile(Char_t *filename="test.cal", Bool_t showtest=1)
     FILE * outfile;
     outfile=fopen("output.txt","w");
     printf("The contents of \"%s\" are:\n",filename);
-    for(Int_t i=0;i<24;i++){
+    for(Int_t i=0;i<numdet;i++){
       fprintf(outfile,"%2.0f ",param[i][0]);
       printf("%2.0f ",param[i][0]);
       for(Int_t j=1;j<k-1;j++){
