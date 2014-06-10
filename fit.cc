@@ -355,7 +355,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
     printf("Dividing Canvas as %d,%d\n",col,row);
 
     TPad *pOutput=0;
-     Int_t pno=0;
+    Int_t pno=0;
     for(int i=0;i<((no1+no2)+1);++i){
       TString pname="cFit_";
       pname+=pno+1;
@@ -565,7 +565,7 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
     printf("Plotting %2d Histograms with name %s%s...\n",no,histin,suffix);  
     if(no>6){
       col=6;
-    col=(Int_t)TMath::Nint(TMath::Sqrt(no));
+      col=(Int_t)TMath::Nint(TMath::Sqrt(no));
     }
     else
       col=ceil(no/2.);
@@ -588,19 +588,19 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
       
       if(gROOT->FindObject(hname.Data())) {
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
-	 if(hInput->GetEntries()>0) {
-	    pno++;
-	if(style==0){//Draw color histogram on black background
-	  pOutput->SetFrameFillColor(1);
-	  hInput->Draw("col2");
+	if(hInput->GetEntries()>0) {
+	  pno++;
+	  if(style==0){//Draw color histogram on black background
+	    pOutput->SetFrameFillColor(1);
+	    hInput->Draw("col2");
+	  }
+	  else{
+	    hInput->SetMarkerStyle(style);
+	    hInput->SetMarkerSize(size);
+	    hInput->SetMarkerColor(color);
+	    hInput->Draw();
+	  }
 	}
-	else{
-	  hInput->SetMarkerStyle(style);
-	  hInput->SetMarkerSize(size);
-	  hInput->SetMarkerColor(color);
-	  hInput->Draw();
-	}
-	 }
       }
     }
   }
@@ -2748,55 +2748,59 @@ void createfile(Int_t numbered=0)
   }
 }
 
-void readfile(Char_t *filename="test.cal", Bool_t showtest=1, const int numdet=24)
+void readfile(Char_t *filename="test.cal", Bool_t showtest=1, const int numdet=24, int start_no=1)
 {
-  printf("numdet=%d\n",numdet);
   Float_t param[numdet][50]; 
   Int_t errorline=-1;
   Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  printf("param array size is: [%d][%d].\n",(sizeof(param)/sizeof(param[0])),size); 
+  printf("param array size is: [%d][%d].\n",(int)(sizeof(param)/sizeof(param[0])),size); 
   Bool_t fit=kFALSE;
   for(Int_t i=0;i<numdet;i++)
     for(Int_t j=0;j<size;j++)
       param[i][j]=0;//initializes all array elements to zero
  
   FILE * infile;
-  Int_t k=1;
-  while(!fit&&k<=(size)){
+  Int_t k=1;//array length
+  while(!fit&&k<=(size)) {
     infile = fopen (filename,"r");
-    for(Int_t i=0;i<numdet;i++){
-      for(Int_t j=0;j<k;j++){
+    for(Int_t i=0;i<numdet;i++) {
+      for(Int_t j=0;j<k;j++) {
 	fscanf(infile,"%f",&param[i][j]);
       }
     }
     fclose(infile);
     if(showtest) printf("Testing array length %d:\n",k);
 
-    if (param[0][0]==1)fit=kTRUE;
-    else fit=kFALSE;
-    for(Int_t i=0;i<numdet;i++){
-      fit=(fit&&(param[i][0]==(i+1)));	
-      if(fit){
-	if(showtest) printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  if(showtest) printf("%7.2f ",param[i][j]);
+    if (param[0][0]==start_no) {
+      fit=kTRUE;
+      for(Int_t i=0;i<numdet;i++) {
+	fit=(fit&&(param[i][0]==(i+start_no)));	
+	if(fit){
+	  if(showtest) printf("  %2.0f ",param[i][0]);
+	  for(Int_t j=1;j<k;j++){
+	    if(showtest) printf("  %7.2f ",param[i][j]);
+	  }
+	  if(showtest) printf("\n");
+	  if((i+1)>errorline)errorline=i+1;
 	}
-	if(showtest) printf("\n");
-	if((i+1)>errorline)errorline=i+1;
       }
     }
-           
-    if(fit)printf("File \"%s\" has %d elements per line.\n",filename,k);
-     
+    else {
+      fit=kFALSE;
+      k=size;
+      printf("  Each line of \"%s\" is expected to start with a detector number.\n",filename);
+      printf("  File \"%s\" is expected to start with %d.\n",filename,start_no);
+    }
     k++;
-  }
-  if(fit){   
+  }//end while
+  if(fit) {
+    printf("  File \"%s\" has %d elements per line.\n",filename,k-1);
     FILE * outfile;
     outfile=fopen("output.txt","w");
     printf("The contents of \"%s\" are:\n",filename);
     for(Int_t i=0;i<numdet;i++){
       fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("%2.0f ",param[i][0]);
+      printf("  %2.0f ",param[i][0]);
       for(Int_t j=1;j<k-1;j++){
 	fprintf(outfile,"%g ",param[i][j]);
 	printf("%7.2f ",param[i][j]);
