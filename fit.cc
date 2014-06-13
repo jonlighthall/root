@@ -1351,7 +1351,7 @@ void shiftadd2(Char_t *histin1, Float_t shift1=0, Char_t *histin2, Float_t shift
 /* 4). Fitting Utilities------------------------------
  */
 
-void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1)
+void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1,Float_t minz=0, Float_t maxz=-1)
 {//same first three parameters as pfx(), next three same as pfit() (developed independently)
   Float_t cp=0 ;  
   Float_t a=0,b=0,c=0,d=0;  
@@ -1375,8 +1375,15 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   cFit->Divide(1,2);
   cFit->cd(1);
 
+  if(!((minz==0)&&(maxz==-1))){
+    copy2(histin,minz,maxz,0);
+    hname=histin;
+    hname+="_copy";
+    histin=hname.Data();
+  }
+
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
-  //  printf("Input histogram is %s\n",histin);    
+  printf("Input histogram is %s\n",histin);    
   if(maxpf==minpf){
     minpf=hInput->GetYaxis()->GetXmin();
     maxpf=hInput->GetYaxis()->GetXmax();
@@ -2315,12 +2322,13 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   TSpectrum *spectrum=new TSpectrum();
   ifstream listfile(filename);
   if(!(listfile)) printf("No such file!\n");
+  else printf("Reading file %s\n",filename);
   while(listfile>>ein) {
     energies[nlist]=ein;
     if(nlist==0)min=energies[nlist];//added
     if(energies[nlist]>max)max=energies[nlist];//added
     if(energies[nlist]<min)min=energies[nlist];//added
-    cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+    cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
     nlist++;
   }
   if(nlist<=1){
@@ -2337,7 +2345,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
   npeaks=spectrum->GetNPeaks();
-  cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
+  cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
   if(gROOT->GetVersionInt()<52400)
     printf("Deprecated (online) ROOT version.\n");
   else{
@@ -2359,7 +2367,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
     positions=sorted;  
   }//end version IF 
   for (Int_t i=0; i<npeaks; i++){
-    cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
   }
@@ -2383,14 +2391,19 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   hfit->SetMarkerSize(3);
   cFit->cd(2);
   hfit->Draw("P");
-  delete spectrum;
+  printf("Testing fit:\n");
+for (Int_t i=0; i<npeaks; i++){
+  printf(" Peak %d at %f is %f\n",i,positions[i],(positions[i]-offset)/slope);
+  }  
+
+delete spectrum;
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
   fclose(outfile);
 }
 
-void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   hname=histin;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
@@ -2410,19 +2423,20 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   Float_t a=0,b=0;
   Int_t npeaks,nlist=0;
   TSpectrum *spectrum=new TSpectrum();
-  ifstream listfile(filename);
-
-  while(listfile>>ein) {
-    energies[nlist]=ein;
-    if(nlist==0)min=energies[nlist];
-    if(energies[nlist]>max)max=energies[nlist];
-    if(energies[nlist]<min)min=energies[nlist];
-    cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
-    nlist++;
-  }
-  if(nlist<=1){
-    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
-  }
+  if(!filename==""){
+      ifstream listfile(filename);
+      while(listfile>>ein) {
+	energies[nlist]=ein;
+	if(nlist==0)min=energies[nlist];
+	if(energies[nlist]>max)max=energies[nlist];
+	if(energies[nlist]<min)min=energies[nlist];
+	cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+	nlist++;
+      }
+      if(nlist<=1){
+	printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
+      }
+    }
   
   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   hfit=new TH1F("hPeakFit","hPeakFit",1024,min-(max-min)/4,max+(max-min)/4);//added
@@ -2432,8 +2446,11 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
 
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
-  cFit->Divide(1,3);
-
+  if(!filename=="")
+    cFit->Divide(1,3);
+  else
+    cFit->Divide(1,2);
+  
   cFit->cd(1);
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
   hInput->Draw("COL");
@@ -2476,22 +2493,25 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   for (Int_t i=0; i<npeaks; i++){
     cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
   }
-  for (Int_t i=0; i<npeaks; i++) {
-    hfit->Fill(energies[i],positions[i]);
+ 
+  if(!filename==""){
+    for (Int_t i=0; i<npeaks; i++) {
+      hfit->Fill(energies[i],positions[i]);
+    }
+    hfit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);
+    hfit->Fit("pol1","Q");
+    slope=hfit->GetFunction("pol1")->GetParameter(1);
+    offset=hfit->GetFunction("pol1")->GetParameter(0);
+    hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
+    width=hProj->GetFunction("gaus")->GetParameter(2);
+    cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+    hfit->SetMarkerStyle(2);
+    hfit->SetMarkerColor(2);
+    hfit->SetMarkerSize(3);
+    cFit->cd(3);
+    hfit->Draw("P");
   }
-  hfit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);
-  hfit->Fit("pol1","Q");
-  slope=hfit->GetFunction("pol1")->GetParameter(1);
-  offset=hfit->GetFunction("pol1")->GetParameter(0);
-  hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
-  width=hProj->GetFunction("gaus")->GetParameter(2);
-  cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-  printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-  hfit->SetMarkerStyle(2);
-  hfit->SetMarkerColor(2);
-  hfit->SetMarkerSize(3);
-  cFit->cd(3);
-  hfit->Draw("P");
   delete spectrum;
   FILE * outfile;
   outfile=fopen("temp.lst","w");
@@ -2499,7 +2519,7 @@ void peakfitx(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   fclose(outfile);
 }
 
-void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   hname=histin;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
@@ -2511,30 +2531,29 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
 	break;
       }
   }
-
   Float_t * positions;
   Float_t energies[100];
   Float_t min_space=25;
   Float_t slope,offset,width;
-  Float_t ein;
+  Float_t ein; 
   Float_t max=0,min=0;
   Float_t a=0,b=0;
   Int_t npeaks,nlist=0;
   TSpectrum *spectrum=new TSpectrum();
-
-  ifstream listfile(filename);
-
-  while(listfile>>ein) {
-    energies[nlist]=ein;
-    if(nlist==0)min=energies[nlist];
-    if(energies[nlist]>max)max=energies[nlist];
-    if(energies[nlist]<min)min=energies[nlist];
-    cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
-    nlist++;
-  }
-  if(nlist<=1){
-    printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
-  }
+  if(!filename==""){
+      ifstream listfile(filename);
+      while(listfile>>ein) {
+	energies[nlist]=ein;
+	if(nlist==0)min=energies[nlist];
+	if(energies[nlist]>max)max=energies[nlist];
+	if(energies[nlist]<min)min=energies[nlist];
+	cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+	nlist++;
+      }
+      if(nlist<=1){
+	printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
+      }
+    }
   
   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   hfit=new TH1F("hPeakFit","hPeakFit",1024,min-(max-min)/4,max+(max-min)/4);//added
@@ -2544,21 +2563,24 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   hfit->Reset();
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
-  cFit->Divide(1,3);
+  if(!filename=="")
+    cFit->Divide(1,3);
+  else
+    cFit->Divide(1,2);
   
   cFit->cd(1);
-  TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+  TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
   hInput->Draw("COL");
-
+ 
   cFit->cd(2);
   hname=histin;
   hname+="_py"; 
   hInput->ProjectionY(hname);
   hProj=(TH1F *) gROOT->FindObject(hname.Data());
-  hProj->Draw();
+  hProj->Draw(); 
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
- 
+
   spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();
@@ -2583,13 +2605,15 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
       }
     }
     positions=sorted;  
-  }//end version IF  
+  }//end version IF 
   for (Int_t i=0; i<npeaks; i++){
     cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
   }
-  for (Int_t i=0; i<npeaks; i++) {
+ 
+if(!filename==""){
+ for (Int_t i=0; i<npeaks; i++) {
     hfit->Fill(energies[i],positions[i]);
   }
   hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);  
@@ -2606,11 +2630,12 @@ void peakfity(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t s
   cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
   printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
   printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
+ }
+delete spectrum;
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
   fclose(outfile);
-
 }
 
 void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t threshold=.05, Int_t niter=20, Char_t *option="")
