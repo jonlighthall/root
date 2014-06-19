@@ -213,7 +213,7 @@ void pjxy(Char_t *histin)
   hProj->Draw();
 }
 
-void opjy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2)
+void opjy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2,Int_t linesty=1)
 {//
   hInput=(TH2F *) gROOT->FindObject(histin);
   hname=histin;
@@ -228,6 +228,7 @@ void opjy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2)
 
   hProj=(TH1F *) gROOT->FindObject(hname.Data());
   hProj->SetLineColor(col);
+  hProj->SetLineStyle(linesty);
   hProj->Draw("same");
 }
 
@@ -2456,7 +2457,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   hfit->Draw("P");
   printf("Testing fit:\n");
   for (Int_t i=0; i<npeaks; i++){
-    printf(" Peak %d at %f is %f\n",i,positions[i],(positions[i]-offset)/slope);
+    printf(" Peak %d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
   }  
 
   delete spectrum;
