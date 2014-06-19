@@ -3269,3 +3269,92 @@ void timeplot3()
 
   cET_big->SaveAs("cET_big.eps");
 }
+
+//macros for checking and setting calibration for EMMA PGAC test data
+void showY()
+{
+  setvlines(-300,100);
+  plotvlines(0.0001,6);
+  plotvlines(22);
+  plotvlines(44);
+  plotvlines(66,60);
+}
+
+void showX()
+{
+  setvlines(-300,100);
+  plotvlines(0.0001,6);
+  plotvlines(166,160);
+}
+
+void showX1()
+{
+  setvlines(-300,100);
+  plotvlines(0,0,67.1+6);
+  plotvlines(0,0,88.3+6);
+  plotvlines(0,0,94+6);
+  plotvlines(0,0,145.1+6);
+  plotvlines(0,0,150.8+6);
+}
+
+void showY1x()
+{
+  setvlines(-300,100);
+  plotvlines(0,0,10.1+6);
+  plotvlines(0,0,15.8+6);
+  plotvlines(0,0,38.2+6);
+  plotvlines(0,0,43.9+6);
+}
+
+void showY1y()
+{
+  showY();
+  showX1;
+  setvlines(-300,100);
+  plothlines(0,0,10.1+6);
+  plothlines(0,0,15.8+6);
+  plothlines(0,0,38.2+6);
+  plothlines(0,0,43.9+6);
+}
+
+void showX2()
+{
+  setvlines(-300,100);
+  plotvlines(0,0,67.6+6);
+  plotvlines(0,0,87.8+6);
+  plotvlines(0,0,93.2+6);
+  plotvlines(0,0,141.6+6);
+  plotvlines(0,0,147+6);
+}
+
+void showY2x()
+{
+  setvlines(-300,100);
+  plotvlines(0,0,11+6);
+  plotvlines(0,0,16.3+6);
+  plotvlines(0,0,37.7+6);
+  plotvlines(0,0,43+6);
+}
+
+void showY2y()
+{
+  //showXY();
+  //showX2();
+  setvlines(-300,100);
+  plothlines(0,0,11+6);
+  plothlines(0,0,16.3+6);
+  plothlines(0,0,37.7+6);
+  plothlines(0,0,43+6);
+}
+
+void showXY()
+{
+  showX();
+  plothlines(0.0001,6);
+  plothlines(22);
+  plothlines(44);
+  plothlines(66,60);
+  TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
+  ellipse->SetFillStyle(0);
+  ellipse->Draw();
+}
