@@ -33,8 +33,6 @@ TFile *_filename9=0;
 TFile *_filename10=0;
 TFile *_filename11=0;
 Int_t reaction=0;
-//
-//
 
 TF1 *f2,*f3;//for plotlabangle()
 TF1 *f9,*f10;//for func()
@@ -97,7 +95,7 @@ void merge(Char_t *histin="hEZg",Bool_t DoRebin=1)
  // if(!(gROOT->FindObject("home")))
  //    gROOT->ProcessLine("TDirectory *home=gDirectory"); 
 
-    loadfiles();
+  loadfiles();
   _filename0->cd();
   hname=histin;
   TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
@@ -242,9 +240,9 @@ void plotlabangle(Float_t angle=20, Float_t origin=0, Int_t reset=0, Float_t amu
   }
 
   // f3 =new TF1("f3","([0]/2.)*pow((Zoff(x)/1000.)*(1./[1])*(1./cos([2])),2.)*(1/[3])",-1200,1200);
- f3 =new TF1("f3","([0]/2.)*pow(((x-[4])/1000.)*(1./[1])*(1./cos([2])),2.)*(1/[3])",-1200,1200);
+  f3 =new TF1("f3","([0]/2.)*pow(((x-[4])/1000.)*(1./[1])*(1./cos([2])),2.)*(1/[3])",-1200,1200);
   f3->SetParameter(4,origin);
- f3->SetParameter(0,m);
+  f3->SetParameter(0,m);
   f3->SetParameter(1,Tcyc);//Here "Tcyc" is actually the flight time
   f3->SetParameter(2,(angle/180.0)*pi);
   f3->SetParameter(3,MeV);
@@ -268,11 +266,11 @@ void func(Float_t r0=0.895*2.54/100./2.)
   f4->SetParameter(2,Vcm);
   f4->SetParameter(3,V0);
   for(int i=-1200;i<1200;i++){
-      if(f4(i)==f4(i)){//tests if function is valid
-	  if(i<min)min=i;
-	  if(i>max)max=i;
-	}
+    if(f4(i)==f4(i)){//tests if function is valid
+      if(i<min)min=i;
+      if(i>max)max=i;
     }
+  }
   printf("minimum is %d, maximum is %d\n",min,max);
   if ((TH2F *) gROOT->FindObject("h2")) {
     gROOT->FindObject("h2")->Delete();  
@@ -281,7 +279,7 @@ void func(Float_t r0=0.895*2.54/100./2.)
 
   h2 = new TH2F("h2","Histogram",1000,min,max,100,0.,12);//sets valid range
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
-   h2->Draw();
+  h2->Draw();
   //should just re-define f4 with new range!
   f5 = new TF1("f5","f4",min,max);//output is center-of-mass angle in radians; works!
   f5->SetLineColor(3);
@@ -294,7 +292,7 @@ void func(Float_t r0=0.895*2.54/100./2.)
   f6->SetLineStyle(2);
   f6->Draw("same");
   // TF1 *f7 = new TF1("f7","([3]*cos(f5)+[2])*([1]-[0]/([3]*sin(f5)))",min,max);
-     TF1 *f7 = new TF1("f7","[3]*cos(f5)+[2]",min,max);//works! correctly produces v_para
+  TF1 *f7 = new TF1("f7","[3]*cos(f5)+[2]",min,max);//works! correctly produces v_para
   // TF1 *f7 = new TF1("f7","([1]-[0]/([3]*sin(f5)))",min,max);//works! correctly produces time
   printf("ro is %6.4f m\n",r0);
  
@@ -320,7 +318,7 @@ void func(Float_t r0=0.895*2.54/100./2.)
 
   f10->SetParameter(0,r0);
   f10->SetLineColor(3);
-   f10->Draw("same");
+  f10->Draw("same");
 
   Float_t Zoff(Int_t x)
   {
@@ -336,12 +334,12 @@ void func(Float_t r0=0.895*2.54/100./2.)
 
   TF1 *f11 = new TF1("f11","Zpara(x)",min,max);//-834
   
-   for(int i=min;i<max;i++){
-      if(f11(i)==f11(i)){//tests if function is valid
-	  if(i<min2)min2=i;
-	  if(i>max2)max2=i;
-	}
+  for(int i=min;i<max;i++){
+    if(f11(i)==f11(i)){//tests if function is valid
+      if(i<min2)min2=i;
+      if(i>max2)max2=i;
     }
+  }
   printf("new min is %d, new max is %d\n",min2,max2);
   f11 = new TF1("f11","Zpara(x)",min2,max2);
   f11->SetLineColor(9);
@@ -353,12 +351,12 @@ void func(Float_t r0=0.895*2.54/100./2.)
   f12->SetLineColor(2);
   f12->SetLineStyle(1);
   f12->Draw("same");
- }
+}
 
 Float_t func4(Float_t x=0)
-  {//required for calling f4() at specific X. - moved to outside plotbore()
-    return(f4(x));
-  } 
+{//required for calling f4() at specific X. - moved to outside plotbore()
+  return(f4(x));
+} 
 
 void plotbore(Float_t radius=36.4*2.54/100/2,Int_t amu=1.007, Int_t q=1, Float_t B=1.91585)
 {//plots energy cut-off for a given bore radius
@@ -446,17 +444,17 @@ void plotbore(Float_t radius=36.4*2.54/100/2,Int_t amu=1.007, Int_t q=1, Float_t
 //General plotting utilities
 void plotlines(Char_t *names="_line.txt", Int_t lines=6, Int_t linestyle=1)
 {//Plots a set of lines from text files.  File names sequencally numbererd, starting with 0.
-TString fname;
-TString lname;
- for(Int_t i=0;i<lines;i++){
-   fname="";
-   fname+=i;
-   fname+=names;
-   lname="g";
-   lname+=i;
-   printf("File is %s.  Line name is %s: ",fname.Data(),lname.Data());
-   drawline(fname.Data(),lname.Data(),0,linestyle);
- }
+  TString fname;
+  TString lname;
+  for(Int_t i=0;i<lines;i++){
+    fname="";
+    fname+=i;
+    fname+=names;
+    lname="g";
+    lname+=i;
+    printf("File is %s.  Line name is %s: ",fname.Data(),lname.Data());
+    drawline(fname.Data(),lname.Data(),0,linestyle);
+  }
 }
 
 void tilt(Char_t * histin, Float_t tilt=0.000413, Int_t plot=1)
@@ -507,7 +505,7 @@ void tilt(Char_t * histin, Float_t tilt=0.000413, Int_t plot=1)
   if ((TH1F *) gROOT->FindObject(hname)) {
     gROOT->FindObject(hname)->Delete();  
     //printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
- }
+  }
   else
     printf("Output histogram is \"%s\"\n",hname.Data());
   TH1F * hProj=new  TH1F(hname,htitle,ybin,ymin,ymax);
@@ -637,7 +635,7 @@ void paperplots()
   merge("hEZg");
   cFit->Close();
   home->cd();
-/*
+  /*
   //2.) Energy vs. Position (all)--------
   TH2F * hOutput2=(TH2F *) gROOT->FindObject("hEZg_all");
   hOutput2->SetAxisRange(plot_minZ,plot_maxZ,"X");
@@ -666,7 +664,7 @@ void paperplots()
   plotvlines(vlines[0],vlines[1],vlines[2]);
   cComp->SaveAs("cEZg_all.eps");
   */
-//4.)Alternate e vs. z-------------------
+  //4.)Alternate e vs. z-------------------
   home->cd();
   if(bOrig){
     shiftx2("hEZg_100",8);
@@ -707,7 +705,7 @@ void paperplots()
     plotbore();
     plotvlines(vlines[0]+8,vlines[1],vlines[2],!bOrig);  
     if(bslope)
-     plotlines("_line.txt",7,7);
+      plotlines("_line.txt",7,7);
   }
   else{
     plotlabangle(ang,0,0,1.007,1,B0);
@@ -733,31 +731,31 @@ void paperplots()
     cShift->SaveAs("cShift.eps");
 
   if(bEx){
-  //3.) Excitation energy(at one position)--------------------
-  _filename0->cd();
-  TH2F * hInput3=(TH2F *) gROOT->FindObject("hQTheta");
-  hInput3->ProjectionY();
-  bkgfit2("hQTheta_py");
-  slopex("hQTheta_py_out",1,-0.141015);
-  dump("hQTheta_py_out_slope","hEx_one_position.dat");
-  cFit->Close();
-  TH1F * hOutput3=(TH1F *) gROOT->FindObject("hQTheta_py_out_slope"); 
-  hOutput3->SetDirectory(home);
-  hOutput3->SetAxisRange(-1,10,"X");
-  hOutput3->SetXTitle("Excitation Energy (MeV)");
-  hOutput3->GetXaxis()->CenterTitle(1);
-  hOutput3->SetYTitle("Counts");
-  hOutput3->GetYaxis()->CenterTitle(1);
-  hOutput3->GetYaxis()->SetTitleOffset(1.25);
-  hOutput3->SetStats(kFALSE);
-  hOutput3->SetTitle();
-  mkCanvas2("cQy","cQy");
-  cQy->SetTopMargin(.02);
-  cQy->SetRightMargin(.02);
-  cQy->SetCanvasSize(width,(UInt_t)(width*ratio2));
-  hOutput3->Draw();
+    //3.) Excitation energy(at one position)--------------------
+    _filename0->cd();
+    TH2F * hInput3=(TH2F *) gROOT->FindObject("hQTheta");
+    hInput3->ProjectionY();
+    bkgfit2("hQTheta_py");
+    slopex("hQTheta_py_out",1,-0.141015);
+    dump("hQTheta_py_out_slope","hEx_one_position.dat");
+    cFit->Close();
+    TH1F * hOutput3=(TH1F *) gROOT->FindObject("hQTheta_py_out_slope"); 
+    hOutput3->SetDirectory(home);
+    hOutput3->SetAxisRange(-1,10,"X");
+    hOutput3->SetXTitle("Excitation Energy (MeV)");
+    hOutput3->GetXaxis()->CenterTitle(1);
+    hOutput3->SetYTitle("Counts");
+    hOutput3->GetYaxis()->CenterTitle(1);
+    hOutput3->GetYaxis()->SetTitleOffset(1.25);
+    hOutput3->SetStats(kFALSE);
+    hOutput3->SetTitle();
+    mkCanvas2("cQy","cQy");
+    cQy->SetTopMargin(.02);
+    cQy->SetRightMargin(.02);
+    cQy->SetCanvasSize(width,(UInt_t)(width*ratio2));
+    hOutput3->Draw();
 
-  cQy->SaveAs("cExcite_100.eps");
+    cQy->SaveAs("cExcite_100.eps");
   
   }
   //5.) Individual position E vs. Z-------
@@ -787,7 +785,7 @@ void paperplots()
     cIndiv->SetRightMargin(.03);  
   cIndiv->SetCanvasSize(width,(UInt_t)(width*ratio1));
   cIndiv->SetLogz();  
- if(bw){gStyle->SetPalette(pal);hOutput5->SetMaximum(-1111);}
+  if(bw){gStyle->SetPalette(pal);hOutput5->SetMaximum(-1111);}
   hOutput5->Draw("col");
   if(bOrig){
     plotvlines(0,vlines[1]);
@@ -872,7 +870,7 @@ void paperplots()
     pt->SetTextSize(pttext); 
     pt->Draw();
 
-     pt = new TPaveText(-625,1.5,-625,1.5,"br");
+    pt = new TPaveText(-625,1.5,-625,1.5,"br");
     text = pt->AddText("A");
     pt->SetTextAlign(22);//Middle, Middle
     pt->SetFillColor(0); 
@@ -883,69 +881,69 @@ void paperplots()
 
   }
   else{
-  pt = new TPaveText(-345,7.8,-314,8.6,"br");
-  text = pt->AddText("g.s.");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-345,7.8,-314,8.6,"br");
+    text = pt->AddText("g.s.");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-350.8,6.6,-253,7.4,"br");
-  text = pt->AddText("1.27 MeV");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-350.8,6.6,-253,7.4,"br");
+    text = pt->AddText("1.27 MeV");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-350.8,5.9,-253,6.7,"br");
-  text = pt->AddText("2.03 MeV");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-350.8,5.9,-253,6.7,"br");
+    text = pt->AddText("2.03 MeV");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-350.8,4.9,-253,5.7,"br");
-  text = pt->AddText("3.07 MeV");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-350.8,4.9,-253,5.7,"br");
+    text = pt->AddText("3.07 MeV");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-350.8,4.3,-253,5.0,"br");
-  text = pt->AddText("3.62 MeV");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-350.8,4.3,-253,5.0,"br");
+    text = pt->AddText("3.62 MeV");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-350.8,3.0,-253,3.8,"br");
-  text = pt->AddText("4.90 MeV");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-350.8,3.0,-253,3.8,"br");
+    text = pt->AddText("4.90 MeV");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
   
-  pt = new TPaveText(-565.9,8.8,-517.2,9.8,"br");
-  text = pt->AddText("#theta_{lab}=66^{#circ}");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-565.9,8.8,-517.2,9.8,"br");
+    text = pt->AddText("#theta_{lab}=66^{#circ}");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
 
-  pt = new TPaveText(-700.7022,0.8087121,-614.6112,1.667969,"br");
-  text = pt->AddText("#theta_{lab}=18^{#circ}");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  pt->Draw();
+    pt = new TPaveText(-700.7022,0.8087121,-614.6112,1.667969,"br");
+    text = pt->AddText("#theta_{lab}=18^{#circ}");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    pt->Draw();
   }
   if(bw)
     cIndiv->SaveAs("cEZg_350_bw.eps");
@@ -1096,102 +1094,102 @@ void paperplots()
     _filename0->cd();
     plotallpjy("hEcX");
 
-  //7.) 1 detector per position excitation energy spectrum
-  add2("hEcX19_py","hEcX2_py","hEc_100");
-  add2("hEcX21_py","hEc_100","hEc_100");
-  add2("hEcX22_py","hEc_100","hEc_100");
-  add2("hEcX11_py","hEc_100","hEc_100");
-  add2("hEcX24_py","hEc_100","hEc_100");
-  hEc_100->SetDirectory(home);
-  hEcX19_py->SetDirectory(home);
-  home->cd();
-  slopex("hEc_100",-0.969865,11.8159);
-  bkgfit2("hEc_100_slope");
-  //  cFit->Close();
-  TH1F * hOutput7=(TH1F *) gROOT->FindObject("hEc_100_slope_out"); 
-  dump("hEc_100_slope_out","hEx_six_detectors.dat");
-  //  hOutput7->SetDirectory(home);
-  hOutput7->SetAxisRange(-1,10,"X");
-  hOutput7->SetXTitle("Excitation Energy (MeV)");
-  hOutput7->GetXaxis()->CenterTitle(1);
-  hOutput7->SetYTitle("Counts");
-  hOutput7->GetYaxis()->CenterTitle(1);
-  hOutput7->GetYaxis()->SetTitleOffset(1.25);
-  hOutput7->SetStats(kFALSE);
-  hOutput7->SetTitle();
-  mkCanvas2("cEx_100","cEx_100");
-  cEx_100->SetTopMargin(.02);
-  cEx_100->SetRightMargin(.02);
-  cEx_100->SetCanvasSize(width,(UInt_t)(width*ratio2));
-  hOutput7->Draw();
-  cEx_100->SaveAs("cExcite_100_6det.eps");
+    //7.) 1 detector per position excitation energy spectrum
+    add2("hEcX19_py","hEcX2_py","hEc_100");
+    add2("hEcX21_py","hEc_100","hEc_100");
+    add2("hEcX22_py","hEc_100","hEc_100");
+    add2("hEcX11_py","hEc_100","hEc_100");
+    add2("hEcX24_py","hEc_100","hEc_100");
+    hEc_100->SetDirectory(home);
+    hEcX19_py->SetDirectory(home);
+    home->cd();
+    slopex("hEc_100",-0.969865,11.8159);
+    bkgfit2("hEc_100_slope");
+    //  cFit->Close();
+    TH1F * hOutput7=(TH1F *) gROOT->FindObject("hEc_100_slope_out"); 
+    dump("hEc_100_slope_out","hEx_six_detectors.dat");
+    //  hOutput7->SetDirectory(home);
+    hOutput7->SetAxisRange(-1,10,"X");
+    hOutput7->SetXTitle("Excitation Energy (MeV)");
+    hOutput7->GetXaxis()->CenterTitle(1);
+    hOutput7->SetYTitle("Counts");
+    hOutput7->GetYaxis()->CenterTitle(1);
+    hOutput7->GetYaxis()->SetTitleOffset(1.25);
+    hOutput7->SetStats(kFALSE);
+    hOutput7->SetTitle();
+    mkCanvas2("cEx_100","cEx_100");
+    cEx_100->SetTopMargin(.02);
+    cEx_100->SetRightMargin(.02);
+    cEx_100->SetCanvasSize(width,(UInt_t)(width*ratio2));
+    hOutput7->Draw();
+    cEx_100->SaveAs("cExcite_100_6det.eps");
 
 
-  //9). Single-detector excitation spectrum
-  slopex("hEcX19_py",-0.978476,11.7848);
-  bkgfit2("hEcX19_py_slope");
-  TH1F * hOutput9=(TH1F *) gROOT->FindObject("hEcX19_py_slope_out"); 
-  hOutput9->SetAxisRange(-1,10,"X");
-  hOutput9->SetXTitle("Excitation Energy (MeV)");
-  hOutput9->GetXaxis()->CenterTitle(1);
-  hOutput9->SetYTitle("Counts");
-  hOutput9->GetYaxis()->CenterTitle(1);
-  hOutput9->GetYaxis()->SetTitleOffset(1.25);
-  hOutput9->SetStats(kFALSE);
-  hOutput9->SetTitle();
-  hOutput9->Clone("hEx_19");
-  dump("hEx_19","hEx_one_detector.dat");
-  hEx_19->SetDirectory(home);
-  mkCanvas2("cEcX19","cEcX19");
-  cEcX19->SetTopMargin(.02);
-  cEcX19->SetRightMargin(.02);
-  cEcX19->SetCanvasSize(width,(UInt_t)(width*ratio2));
-  hOutput9->Draw();
+    //9). Single-detector excitation spectrum
+    slopex("hEcX19_py",-0.978476,11.7848);
+    bkgfit2("hEcX19_py_slope");
+    TH1F * hOutput9=(TH1F *) gROOT->FindObject("hEcX19_py_slope_out"); 
+    hOutput9->SetAxisRange(-1,10,"X");
+    hOutput9->SetXTitle("Excitation Energy (MeV)");
+    hOutput9->GetXaxis()->CenterTitle(1);
+    hOutput9->SetYTitle("Counts");
+    hOutput9->GetYaxis()->CenterTitle(1);
+    hOutput9->GetYaxis()->SetTitleOffset(1.25);
+    hOutput9->SetStats(kFALSE);
+    hOutput9->SetTitle();
+    hOutput9->Clone("hEx_19");
+    dump("hEx_19","hEx_one_detector.dat");
+    hEx_19->SetDirectory(home);
+    mkCanvas2("cEcX19","cEcX19");
+    cEcX19->SetTopMargin(.02);
+    cEcX19->SetRightMargin(.02);
+    cEcX19->SetCanvasSize(width,(UInt_t)(width*ratio2));
+    hOutput9->Draw();
 
-  pt = new TPaveText(.877,.772,.965,.934,"NDC");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  text = pt->AddText("a");
-  pt->Draw();
+    pt = new TPaveText(.877,.772,.965,.934,"NDC");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    text = pt->AddText("a");
+    pt->Draw();
 
-  cEcX19->SaveAs("cEcX19.eps");
+    cEcX19->SaveAs("cEcX19.eps");
 
-  //8.)global excitation spectrum--------
-  buildexcite();
-  bkgfit2("hTilt_all_slope",2,4,.005);
-  hTilt_all_slope_out->Smooth(1);
-  dump("hTilt_all_slope_out","hEx_all_positions.dat");
-  cFit->Close();
-  TH1F * hOutput8=(TH1F *) gROOT->FindObject("hTilt_all_slope_out"); 
-  hOutput8->SetAxisRange(-1,10,"X");
-  hOutput8->SetXTitle("Excitation Energy (MeV)");
-  hOutput8->GetXaxis()->CenterTitle(1);
-  hOutput8->SetYTitle("Counts");
-  hOutput8->GetYaxis()->CenterTitle(1);
-  hOutput8->GetYaxis()->SetTitleOffset(1.25);
-  hOutput8->SetStats(kFALSE);
-  hOutput8->SetTitle();
-  mkCanvas2("cEx_all","cEx_all");
-  cEx_all->SetTopMargin(.02);
-  cEx_all->SetRightMargin(.02);
-  cEx_all->SetCanvasSize(width,(UInt_t)(width*ratio2));
-  hOutput8->Draw();
+    //8.)global excitation spectrum--------
+    buildexcite();
+    bkgfit2("hTilt_all_slope",2,4,.005);
+    hTilt_all_slope_out->Smooth(1);
+    dump("hTilt_all_slope_out","hEx_all_positions.dat");
+    cFit->Close();
+    TH1F * hOutput8=(TH1F *) gROOT->FindObject("hTilt_all_slope_out"); 
+    hOutput8->SetAxisRange(-1,10,"X");
+    hOutput8->SetXTitle("Excitation Energy (MeV)");
+    hOutput8->GetXaxis()->CenterTitle(1);
+    hOutput8->SetYTitle("Counts");
+    hOutput8->GetYaxis()->CenterTitle(1);
+    hOutput8->GetYaxis()->SetTitleOffset(1.25);
+    hOutput8->SetStats(kFALSE);
+    hOutput8->SetTitle();
+    mkCanvas2("cEx_all","cEx_all");
+    cEx_all->SetTopMargin(.02);
+    cEx_all->SetRightMargin(.02);
+    cEx_all->SetCanvasSize(width,(UInt_t)(width*ratio2));
+    hOutput8->Draw();
 
-  pt = new TPaveText(.877,.772,.965,.934,"NDC");
-  pt->SetFillColor(0); 
-  if(bModern)pt->SetShadowColor(0);
-  pt->SetLineColor(0);  
-  pt->SetTextSize(pttext); 
-  text = pt->AddText("b");  
-  pt->Draw();
+    pt = new TPaveText(.877,.772,.965,.934,"NDC");
+    pt->SetFillColor(0); 
+    if(bModern)pt->SetShadowColor(0);
+    pt->SetLineColor(0);  
+    pt->SetTextSize(pttext); 
+    text = pt->AddText("b");  
+    pt->Draw();
 
-  cEx_all->SaveAs("cExcite_all.eps");
-  dr("hTilt_all_slope_out");
-  peakfit("hTilt_all_slope_out","excite11.lst",2,1.2,.006);
-  hTilt_all_slope_out->SetAxisRange(-0.35,8.7,"X");
-  peakfit("hTilt_all_slope_out","excite11.lst",2,1.2,.006);
+    cEx_all->SaveAs("cExcite_all.eps");
+    dr("hTilt_all_slope_out");
+    peakfit("hTilt_all_slope_out","excite11.lst",2,1.2,.006);
+    hTilt_all_slope_out->SetAxisRange(-0.35,8.7,"X");
+    peakfit("hTilt_all_slope_out","excite11.lst",2,1.2,.006);
   }//end if(bEx)
 }//end paperplots()
 
@@ -1206,11 +1204,11 @@ void buildexcite(Bool_t bin1=1,Bool_t limit1=0,Bool_t bin2=1,Bool_t limit2=0)
     max1=0;
   }
 
- if(!limit2){
+  if(!limit2){
     min2=0;
     max2=0;
   }
- //loadfiles and perform first calibration
+  //loadfiles and perform first calibration
   loadfiles("_cut");
   _filename0->cd();
   tilt("hEZg",0.000413,0);
@@ -1288,7 +1286,7 @@ void test3(Float_t min=-2, Float_t max=10,Int_t bins=1024,Char_t * filename="hTi
 
 void plotsim()
 {
- if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   if(!((TH1F *) gROOT->FindObject("hError1"))){
     if(gROOT->GetVersionInt()<52400){
       printf("Deprecated (online) ROOT version %s.\n",gROOT->GetVersion());
@@ -1323,59 +1321,59 @@ void loadsim(Char_t *set="")
   hname+=".dat"; 
   fname+="_param.dat"; 
 
-    if(bsimQ){
-      printf("bsimQ is true!\n");
-      filltree(hname,"tree1",fname);
-      printf("Offset is set to %4.0f mm.\n",hp[14]);
-      TH2F * hOutput1=(TH2F *) gROOT->FindObject("hEZg");
-    }
-    else{
+  if(bsimQ){
+    printf("bsimQ is true!\n");
+    filltree(hname,"tree1",fname);
+    printf("Offset is set to %4.0f mm.\n",hp[14]);
+    TH2F * hOutput1=(TH2F *) gROOT->FindObject("hEZg");
+  }
+  else{
     printf("bsimQ is false!\n");
-      filltree(hname,"tree1");
-      shiftx2("hEZg",-hp[14]+vlines[0]+bshift[0]);
-      TH2F * hOutput1=(TH2F *) gROOT->FindObject("hEZg_shift");
-    }
+    filltree(hname,"tree1");
+    shiftx2("hEZg",-hp[14]+vlines[0]+bshift[0]);
+    TH2F * hOutput1=(TH2F *) gROOT->FindObject("hEZg_shift");
+  }
 
-    hOutput1->Clone("hEZg_100");
-    hInput->Reset();
+  hOutput1->Clone("hEZg_100");
+  hInput->Reset();
   
-    //(if!((TTree *)gROOT->FindObject("tree2")))
-    hname="simulations/342";
-    hname+=set;
-    fname=hname;
-    hname+=".dat"; 
-    fname+="_param.dat"; 
+  //(if!((TTree *)gROOT->FindObject("tree2")))
+  hname="simulations/342";
+  hname+=set;
+  fname=hname;
+  hname+=".dat"; 
+  fname+="_param.dat"; 
     
-    if(bsimQ){
-      filltree(hname,"tree2",fname);
-      printf("Offset is set to %4.0f mm.\n",hp[14]);
-      TH2F * hOutput2=(TH2F *) gROOT->FindObject("hEZg");
-    }
-    else{
-      filltree(hname,"tree2");
-      shiftx2("hEZg",-hp[14]+vlines[1]+bshift[1]);
-      TH2F * hOutput2=(TH2F *) gROOT->FindObject("hEZg_shift");
-    }
+  if(bsimQ){
+    filltree(hname,"tree2",fname);
+    printf("Offset is set to %4.0f mm.\n",hp[14]);
+    TH2F * hOutput2=(TH2F *) gROOT->FindObject("hEZg");
+  }
+  else{
+    filltree(hname,"tree2");
+    shiftx2("hEZg",-hp[14]+vlines[1]+bshift[1]);
+    TH2F * hOutput2=(TH2F *) gROOT->FindObject("hEZg_shift");
+  }
 
   hOutput2->Clone("hEZg_350");
   hInput->Reset();
   
   //  (if!((TTree *)gROOT->FindObject("tree3")))
- hname="simulations/492";
-    hname+=set;
-    fname=hname;
-    hname+=".dat"; 
-    fname+="_param.dat"; 
-    if(bsimQ){
-       filltree(hname,"tree3",fname);
-      printf("Offset is set to %4.0f mm.\n",hp[14]);
-      TH2F * hOutput3=(TH2F *) gROOT->FindObject("hEZg");
-    }
-    else{
-      filltree(hname,"tree3");
-      shiftx2("hEZg",-hp[14]+vlines[2]+bshift[2]);
-      TH2F * hOutput3=(TH2F *) gROOT->FindObject("hEZg_shift");
-    }
+  hname="simulations/492";
+  hname+=set;
+  fname=hname;
+  hname+=".dat"; 
+  fname+="_param.dat"; 
+  if(bsimQ){
+    filltree(hname,"tree3",fname);
+    printf("Offset is set to %4.0f mm.\n",hp[14]);
+    TH2F * hOutput3=(TH2F *) gROOT->FindObject("hEZg");
+  }
+  else{
+    filltree(hname,"tree3");
+    shiftx2("hEZg",-hp[14]+vlines[2]+bshift[2]);
+    TH2F * hOutput3=(TH2F *) gROOT->FindObject("hEZg_shift");
+  }
   
   hOutput3->Clone("hEZg_500");
   hInput->Reset();
@@ -1393,8 +1391,8 @@ void plotsimdata(Char_t* hname="test.dat")
 
 void simpaperplots()
 {//To be run from the /simulations directory (on Mac, parent of).
- gStyle->SetOptDate(0);
-if(bOrig){
+  gStyle->SetOptDate(0);
+  if(bOrig){
     B0=1.91585;   
     printf("Detector positions are: %.2f, %.2f, %.2f\n",vlines[0],vlines[1],vlines[2]);
   }
@@ -1402,10 +1400,10 @@ if(bOrig){
     B0=2.0020;   
     printf("Detector positions are: %.2f, %.2f, %.2f\n",vlines[0]+bshift[0],vlines[1]+bshift[1],vlines[2]+bshift[2]);
   }
- if(gROOT->GetVersionInt()<52400){
-   printf("Deprecated (online) ROOT version.\n");
-   bModern=0;
- }
+  if(gROOT->GetVersionInt()<52400){
+    printf("Deprecated (online) ROOT version.\n");
+    bModern=0;
+  }
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   if(!((TTree *)gROOT->FindObject("tree1")))
     loadsim();
@@ -1441,11 +1439,11 @@ if(bOrig){
   }  
   
   /*
-  drawline("gs_line.txt","gline",0);
-  gline->SetLineWidth(1);
-  gline->SetLineStyle(1);
-  gline->SetLineColor(1);
-  gline->Draw();
+    drawline("gs_line.txt","gline",0);
+    gline->SetLineWidth(1);
+    gline->SetLineStyle(1);
+    gline->SetLineColor(1);
+    gline->Draw();
   */ 
   if(bw)
     cSim->SaveAs("cSim_bw.eps");
@@ -1522,7 +1520,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
 	pt->SetTextSize(pttext); 
       }
       pt->SetFillColor(0); 
-        if(bModern)pt->SetShadowColor(0);
+      if(bModern)pt->SetShadowColor(0);
       pt->SetLineColor(0);  
 
       pt->SetTextAlign(21);//Bottom, Middle
@@ -1558,7 +1556,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
 	pt->SetTextSize(pttext); 
       }
       pt->SetFillColor(0); 
-        if(bModern)pt->SetShadowColor(0);
+      if(bModern)pt->SetShadowColor(0);
       pt->SetLineColor(0);  
       pt->SetTextAlign(21);//Bottom, Middle
       pt->SetFillStyle(0); 
@@ -1609,7 +1607,7 @@ void loadPSDsource()
   //add2("hXFXN_10","hXFXN_12","hXFXN_src");
   //add2("hESum_10","hESum_12","hESum_src");
   dr("hEX_src");
-  }
+}
 
 void loadPSD()
 {//works with psd_analyze.cc - To be run from parent directory (above /PSD)
@@ -1639,7 +1637,7 @@ void loadPSD()
   hESum_10->SetDirectory(home); 
   _filename1->cd();
   //makehists();
-   analyze();
+  analyze();
   hEX->Clone("hEX_11");
   hEX_11->SetDirectory(home);
   hXFXN->Clone("hXFXN_11");
@@ -1777,7 +1775,7 @@ void PSDpaperplots()
     gStyle->SetPalette(pal);
     cOut1->SetLogz();  
     hOutput1->SetMaximum(-1111);
-}
+  }
 
   hOutput1->Draw("col");
   if(bw)
@@ -1884,7 +1882,7 @@ void PSDpaperplots()
   pt->SetTextSize(pttext); 
   pt->Draw();
   cOut4->SaveAs("out4.eps");
-//Log-scale histogram----------------------
+  //Log-scale histogram----------------------
   mkCanvas2("cOut5","cOut5");
   cOut5->SetTopMargin(.02);
   cOut5->SetRightMargin(.02);
@@ -1906,7 +1904,7 @@ void PSDpaperplots()
   pt->SetTextSize(pttext); 
   text = pt->AddText("^{12}C(p,p)");
   pt->Draw();
-   pt = new TPaveText(5.181818,129.5942,5.943182,278.0051,"br");
+  pt = new TPaveText(5.181818,129.5942,5.943182,278.0051,"br");
   pt->SetFillColor(0); 
   if(bModern)pt->SetShadowColor(0);
   pt->SetLineColor(0);  
@@ -1944,7 +1942,7 @@ void PSDpaperplots()
     cOut5->SaveAs("out5.eps");
 
   cFit->Close();
- }
+}
 
 void loadbigPSD()
 {//works with psd_analyze.cc
@@ -2081,7 +2079,7 @@ void loadbigPSD()
   add2("hETheta_22","hETheta_23","hETheta_BE45");
   add2("hETheta_BE1","hETheta_BE45","hETheta_all");
   add2("hEX_BE1","hEX_BE45","hEX_all");
-  }
+}
 
 void loadbigPSDsource()
 {//works with psd_analyze.cc
@@ -2126,7 +2124,7 @@ void loadbigPSDsource()
   add2("hEX_05","hEX_06","hEX_unmasked");
   add2("hXFXN_05","hXFXN_06","hXFXN_unmasked");
   add2("hESum_05","hESum_06","hESum_unmasked");
- } 
+} 
 
 void bigPSDpaperplots()
 {
@@ -2154,7 +2152,7 @@ void bigPSDpaperplots()
     gStyle->SetPalette(pal);
     cOut1->SetLogz();  
     hOutput1->SetMaximum(-1111);
-}
+  }
 
   hOutput1->Draw("col");
   if(bw)
@@ -2203,7 +2201,7 @@ void bigPSDpaperplots()
     cOut1->SaveAs("bigout1.eps");
  
   cFit->Close();
- }
+}
 
 
 void loadtimePSD()
@@ -2383,7 +2381,7 @@ void timePSDpaperplots()
     cOut1->SaveAs("timetest.eps");
  
   cFit->Close();
- }
+}
 
 void lable(Char_t *histin="hEZ", TString ytitle2="Energy (MeV)",  TString xtitle2="Time (ns)")
 {
@@ -2417,7 +2415,7 @@ void algor1()
   if(!((TH2F *) gROOT->FindObject(hname.Data())))
     printf("Histogram \"%s\" not recognized.\n",hname);
 
- TH2F * hOutput1=(TH2F *) gROOT->FindObject(hname.Data());  
+  TH2F * hOutput1=(TH2F *) gROOT->FindObject(hname.Data());  
   TString ytitle2="X_{far} (channel no.)";
   TString xtitle2="X_{near} (channel no.)";
   ytitle2="XF (channel no.)";
@@ -2949,7 +2947,7 @@ void linebox(Float_t X1, Float_t Y1, Float_t X2, Float_t Y2, Int_t color=1, Int_
   line->SetLineColor(color);
   line->SetLineStyle(style);
   line->SetLineWidth(width);
-   line->Draw();
+  line->Draw();
   line = new TLine(X1,Y2,X1,Y1);
   line->SetLineColor(color);
   line->SetLineStyle(style);
@@ -3057,7 +3055,7 @@ void B12plots()
 
   plotvlines(-368.7);
 
- Float_t pttext=0.06;
+  Float_t pttext=0.06;
   TPaveText *pt;
   TText *text;  
 
