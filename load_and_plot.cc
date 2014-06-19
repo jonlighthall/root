@@ -3300,6 +3300,13 @@ void timeplot3()
 }
 
 //macros for checking and setting calibration for EMMA PGAC test data
+void showX()
+{//test extent of x-positions (calibrated)
+  setvlines(-300,100);
+  plotvlines(0.0001,6);
+  plotvlines(166,160);
+}
+
 void showY()
 {//test extent of y-positions (calibrated) and show anode segments
   setvlines(-300,100);
@@ -3309,16 +3316,21 @@ void showY()
   plotvlines(66,60);
 }
 
-void showX()
-{//test extent of x-positions (calibrated)
-  setvlines(-300,100);
-  plotvlines(0.0001,6);
-  plotvlines(166,160);
+void showXY()
+{
+  showX();
+  plothlines(0.0001,6);
+  plothlines(22);
+  plothlines(44);
+  plothlines(66,60);
+  TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
+  ellipse->SetFillStyle(0);
+  ellipse->Draw();
 }
 
 void showX1()
 {
-  setvlines(-300,100);
+  showX();
   plotvlines(0,0,67.1+6);
   plotvlines(0,0,88.3+6);
   plotvlines(0,0,94+6);
@@ -3337,7 +3349,7 @@ void showY1x()
 
 void showY1y()
 {
-  showY();
+  showXY();
   showX1();
   setvlines(-300,100);
   plothlines(0,0,10.1+6);
@@ -3348,7 +3360,7 @@ void showY1y()
 
 void showX2()
 {
-  setvlines(-300,100);
+  showX();
   plotvlines(0,0,67.6+6);
   plotvlines(0,0,87.8+6);
   plotvlines(0,0,93.2+6);
@@ -3367,8 +3379,8 @@ void showY2x()
 
 void showY2y()
 {
-  //showXY();
-  //showX2();
+  showXY();
+  showX2();
   setvlines(-300,100);
   plothlines(0,0,11+6);
   plothlines(0,0,16.3+6);
@@ -3376,14 +3388,4 @@ void showY2y()
   plothlines(0,0,43+6);
 }
 
-void showXY()
-{
-  showX();
-  plothlines(0.0001,6);
-  plothlines(22);
-  plothlines(44);
-  plothlines(66,60);
-  TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
-  ellipse->SetFillStyle(0);
-  ellipse->Draw();
-}
+
