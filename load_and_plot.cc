@@ -1574,6 +1574,35 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
   }
 }
 
+void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
+		Float_t xmin=-1e5,Float_t xmax=1e5)
+{
+  Float_t z;
+  if(edge1!=0){
+    z=edge1;
+    TLine *line = new TLine(xmin,z,xmax,z);
+    line->SetLineStyle(2);
+    line->SetLineWidth(2);
+    line->Draw();
+  }
+
+  if(edge2!=0){
+    z=edge2;
+    line = new TLine(xmin,z,xmax,z);
+    line->SetLineStyle(1);
+    line->SetLineWidth(2);
+    line->Draw();
+  }
+
+  if(edge3!=0){
+    z=edge3;
+    line = new TLine(xmin,z,xmax,z);
+    line->SetLineStyle(4);
+    line->SetLineWidth(2);
+    line->Draw();
+  }
+}
+
 void loadPSDsource()
 {//works with psd_analyze.cc
   _filename0=new TFile("PSD/run10.root");
@@ -3272,7 +3301,7 @@ void timeplot3()
 
 //macros for checking and setting calibration for EMMA PGAC test data
 void showY()
-{
+{//test extent of y-positions (calibrated) and show anode segments
   setvlines(-300,100);
   plotvlines(0.0001,6);
   plotvlines(22);
@@ -3281,7 +3310,7 @@ void showY()
 }
 
 void showX()
-{
+{//test extent of x-positions (calibrated)
   setvlines(-300,100);
   plotvlines(0.0001,6);
   plotvlines(166,160);
@@ -3309,7 +3338,7 @@ void showY1x()
 void showY1y()
 {
   showY();
-  showX1;
+  showX1();
   setvlines(-300,100);
   plothlines(0,0,10.1+6);
   plothlines(0,0,15.8+6);
