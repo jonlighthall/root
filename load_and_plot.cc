@@ -3494,10 +3494,14 @@ void ruthset()
 {//Rutherford scattering cross section function
   ruth =new TF1("ruth","[0]+[1]*TMath::Power(sin([2]*x-[3]),-4)");
   ruth->SetParLimits(1,0,1e+05);
-  ruth->SetParLimits(2,0,1e+05);
+  ruth->SetParLimits(2,-1e-01,1e-01);
+  ruth->SetParName(0,"y offset");  
+  ruth->SetParName(1,"y scale");  
+  ruth->SetParName(2,"x scale");  
+  ruth->SetParName(3,"x offset");  
+
 
   float sets[4]={-1.87e+02,6.41e-03,6.60e-05,-5.92e-02};
-  printf("hello world\n");
   for(int i=0;i<4;i++){
     ruth->SetParameter(i,sets[i]);
     printf("%g\n",ruth->GetParameter(i));
