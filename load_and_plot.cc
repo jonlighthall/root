@@ -3525,6 +3525,7 @@ void ruthset()
 
 void ruthfitsimp(Char_t *histin="hposc0")
 {
+  ruthset();
   hname=histin;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
