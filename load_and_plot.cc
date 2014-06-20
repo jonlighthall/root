@@ -3388,22 +3388,22 @@ void showY2y()
   plothlines(0,0,43+6);
 }
 
-TF1 *ls1,*ls2,*ls3,*lstotal;
+static const int npeaks=6;  
+Float_t positions[npeaks]={};
+Float_t sorted[npeaks]={};
 
-void funcload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
-{//loads functions for funcfit() base on ranges in cal file
-  TF1 *fnew = new TF1("fnew","(x>0.46)*(x<0.463)*pol1+(x>0.467)*(x<0.492)*pol1+(x>0.497)*(x<0.505)*pol1");
-  static const int npeaks=6;  
-  Float_t positions[npeaks]={};
-  Float_t sorted[npeaks]={};
+void loadcal(Char_t *filename="cal/X1.lst")
+{
+  printf("Loading file %s...\n",filename);
   Float_t max=0;
   ifstream infile(filename);
   int i =0;  
   while (infile >> positions[i]) {
-    printf("%13.6f\n",positions[i]);
+    printf(" %13.6f\n",positions[i]);
     i++;
   }
   
+  printf("Sorting points...\n");
   sorted[0]=positions[0];//initializes sorted array with a valid position
   for(Int_t i=0;i<npeaks;i++){
     if((positions[i])<(sorted[0])){
@@ -3421,8 +3421,19 @@ void funcload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
       }
     }
   }
-  for(i=0;i<npeaks;i++)
-    positions[i]=sorted[i];  
+  for(i=0;i<npeaks;i++){
+    positions[i]=sorted[i];
+    printf(" %13.6f\n",positions[i]);
+  }
+}
+
+TF1 *ls1,*ls2,*ls3,*lstotal;
+
+void funcload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{//loads functions for funcfit() base on ranges in cal file
+  TF1 *fnew = new TF1("fnew","(x>0.46)*(x<0.463)*pol1+(x>0.467)*(x<0.492)*pol1+(x>0.497)*(x<0.505)*pol1");
+  
+  loadcal(filename);
 
   ls1 = new TF1("ls1","pol3",(positions[0]-offset)/slope,(positions[1]-offset)/slope);
   ls2 = new TF1("ls2","pol3",(positions[2]-offset)/slope,(positions[3]-offset)/slope);
@@ -3478,7 +3489,7 @@ void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
     ndf_sum+=(chi[i]/ndf[i]);
     printf("%s: Chi squared = %f, Ndf = %f, (Chi squared)/Ndf = %f\n",name.Data(),chi[i],ndf[i],chi[i]/ndf[i]);  
     printf("Chi squared sum is %f, (Chi squared)/Ndf sum is %f\n",chi_sum,ndf_sum);
-}
+  }
   // Get the parameters from the fit 
   ls1->GetParameters(&par[0]); 
   ls2->GetParameters(&par[4]); 
@@ -3490,7 +3501,7 @@ void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
 }
 
 TF1 *ruth;
-void ruthset()
+void ruthdef()
 {//Rutherford scattering cross section function
   ruth =new TF1("ruth","[0]+[1]*TMath::Power(sin([2]*x-[3]),-4)");
   ruth->SetParLimits(1,0,1e+05);
@@ -3499,11 +3510,16 @@ void ruthset()
   ruth->SetParName(1,"y scale");  
   ruth->SetParName(2,"x scale");  
   ruth->SetParName(3,"x offset");  
+}
 
+void ruthset()
+{
+  ruthdef();
   float sets[4]={-1.87e+02,6.41e-03,6.60e-05,-5.92e-02};
+  printf("Setting ruth with default parameters...\n");
   for(int i=0;i<4;i++){
     ruth->SetParameter(i,sets[i]);
-    printf("%g\n",ruth->GetParameter(i));
+    printf(" parameter %d = %g\n",i,ruth->GetParameter(i));
   }
 }
 
@@ -3519,37 +3535,7 @@ void ruthfitsimp(Char_t *histin="hposc0")
 
 void ruthload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
 {
-  static const int npeaks=6;  
-  Float_t positions[npeaks]={};
-  Float_t sorted[npeaks]={};
-  Float_t max=0;
-  ifstream infile(filename);
-  int i =0;  
-  while (infile >> positions[i]) {
-    printf("%13.6f\n",positions[i]);
-    i++;
-  }
-  
-  sorted[0]=positions[0];//initializes sorted array with a valid position
-  for(Int_t i=0;i<npeaks;i++){
-    if((positions[i])<(sorted[0])){
-      sorted[0]=positions[i];//locates minimum
-    }
-    if((positions[i])>max){
-      max=positions[i];//locates maximum
-    }
-  }
-  for(Int_t i=1;i<npeaks;i++){
-    sorted[i]=max;    
-    for(Int_t j=0;j<npeaks;j++){
-      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
-	sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-  }
-  for(i=0;i<npeaks;i++)
-    positions[i]=sorted[i];  
-
+  loadcal(filename);
   ruthset();
   
   ls1 = new TF1("ls1","ruth",(positions[0]-offset)/slope,(positions[1]-offset)/slope);
@@ -3610,7 +3596,7 @@ void ruthfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
     ndf_sum+=(chi[i]/ndf[i]);
     printf("%s: Chi squared = %f, Ndf = %f, (Chi squared)/Ndf = %f\n",name.Data(),chi[i],ndf[i],chi[i]/ndf[i]);  
     printf("Chi squared sum is %f, (Chi squared)/Ndf sum is %f\n",chi_sum,ndf_sum);
-}
+  }
   // Get the parameters from the fit 
  
   ls2->GetParameters(&par[4]); 
@@ -3623,102 +3609,87 @@ void ruthfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
 
 void ruthload2(int pos=0, Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
 {//testing variable range
-  static const int npeaks=6;  
-  Float_t positions[npeaks]={};
-  Float_t sorted[npeaks]={};
-  Float_t max=0;
-  ifstream infile(filename);
-  int i =0;  
-  while (infile >> positions[i]) {
-    printf("%13.6f\n",positions[i]);
-    i++;
-  }
-  
-  sorted[0]=positions[0];//initializes sorted array with a valid position
-  for(Int_t i=0;i<npeaks;i++){
-    if((positions[i])<(sorted[0])){
-      sorted[0]=positions[i];//locates minimum
-    }
-    if((positions[i])>max){
-      max=positions[i];//locates maximum
-    }
-  }
-  for(Int_t i=1;i<npeaks;i++){
-    sorted[i]=max;    
-    for(Int_t j=0;j<npeaks;j++){
-      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
-	sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-  }
-  for(i=0;i<npeaks;i++)
-    positions[i]=sorted[i];  
-
+  loadcal(filename);
   ruthset();
   
   ls1 = new TF1("ls1","ruth * (x>(([0]-[3])/[2]))*(x<(([1]-[3])/[2]))");
   ls1->SetParameters(101,148,1,10,-1.87e+02,6.41e-03,6.60e-05,-5.92e-02);//,101,148); 
- int off=4;//number of parameters before ruth is called
- ls1->SetParLimits(2,0.95,1.05);
- ls1->SetParLimits(off+1,1e-05,1e+05);
- ls1->SetParLimits(off+2,0,1e+05);
+  int off=4;//number of parameters before ruth is called
+  ls1->SetParLimits(2,0.95,1.05);
+  ls1->SetParLimits(off+1,1e-05,1e+05);
+  ls1->SetParLimits(off+2,0,1e+05);
 
- for(i=0;i<2;i++){
-   ls1->FixParameter(i,positions[i+pos*2]);
-   printf("i=%d positions[%d]=%f parameter[%d]=%f\n",i,i,positions[i],i,ls1->GetParameter(i));
- }
+  for(int i=0;i<2;i++){
+    ls1->FixParameter(i,positions[i+pos*2]);
+    printf("i=%d positions[%d]=%f parameter[%d]=%f\n",i,i,positions[i],i,ls1->GetParameter(i));
+  }
 }
 
+void lsload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{
+  loadcal(filename);
+     
+  ls1 = new TF1("ls1","([8]+[9]*x+[10]*x*x)*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([8]+[9]*x+[10]*x*x)*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([8]+[9]*x+[10]*x*x)*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
+  ls1->SetParName(6,"p6 range slope");
+  ls1->SetParName(7,"p7 range offset");
+  ls1->SetParName(8,"p8 offset");
+  ls1->SetParName(9,"p9 slope");
+
+  for(int i=0;i<6;i++){
+    ls1->FixParameter(i,positions[i]);
+    printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
+  }
+}
+
+void lssetc()
+{
+  lsload();
+  ls1->SetParameter(6,1);
+  ls1->SetParameter(7,0);
+  ls1->SetParameter(8,0);
+  ls1->SetParameter(9,100);
+}
+
+void lsset()
+{
+  lsload();
+  ls1->SetParameter(6,617);
+  ls1->SetParameter(7,-170);
+  ls1->SetParameter(8,0);
+  ls1->SetParameter(9,100);
+}
+
+void lsfix()
+{
+  TString name = "ls";
+  int temp[3]={};
+  for(int i=0;i<3;i++){
+    name = "ls";
+    name+=i+1;
+    TF1 * finput=gROOT->FindObject(name.Data());
+    temp[i]=ls1->GetParameter(i+8);
+    ls1->FixParameter(i+8,temp[i]);
+  }
+}
 void ruthload3(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
 {
-  static const int npeaks=6;  
-  Float_t positions[npeaks]={};
-  Float_t sorted[npeaks]={};
-  Float_t max=0;
-  ifstream infile(filename);
-  int i =0;  
-  while (infile >> positions[i]) {
-    printf("%13.6f\n",positions[i]);
-    i++;
-  }
-  
-  sorted[0]=positions[0];//initializes sorted array with a valid position
-  for(Int_t i=0;i<npeaks;i++){
-    if((positions[i])<(sorted[0])){
-      sorted[0]=positions[i];//locates minimum
-    }
-    if((positions[i])>max){
-      max=positions[i];//locates maximum
-    }
-  }
-  for(Int_t i=1;i<npeaks;i++){
-    sorted[i]=max;    
-    for(Int_t j=0;j<npeaks;j++){
-      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
-	sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-  }
-  for(i=0;i<npeaks;i++)
-    positions[i]=sorted[i];  
-
+  loadcal(filename);
   ruthset();
     
-  //  ls1 = new TF1("ls1","([8]*x+[9])*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([10]*x+[11])*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([12]*x+[13])*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
- ls1 = new TF1("ls1","([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
- ls1->SetParameters(67,88,94,145,150,154,slope,offset,-1.87e+02,6.41e-03,6.60e-05);//,-5.92e-02);
- ls1->SetParLimits(9,0,1e+05);
- ls1->SetParLimits(10,0,1e+05);
- ls1->SetParName(6,"p6 range slope");
+  ls1 = new TF1("ls1","([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([8]+[9]*TMath::Power(sin([10]*x-[11]),-4))*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
+  ls1->SetParameters(67,88,94,145,150,154,slope,offset,-1.87e+02,6.41e-03,6.60e-05);//,-5.92e-02);
+  ls1->SetParLimits(9,0,1e+05);
+  ls1->SetParLimits(10,0,1e+05);
+  ls1->SetParName(6,"p6 range slope");
   ls1->SetParName(7,"p7 range offset");
   ls1->SetParName(8,"fit y-offset");
   ls1->SetParName(9,"fit y-scale");
   ls1->SetParName(10,"fit x-scale");
   ls1->SetParName(11,"fit x-offset");
 
- for(i=0;i<6;i++){
-   ls1->FixParameter(i,positions[i]);
-   printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
+  for(int i=0;i<6;i++){
+    ls1->FixParameter(i,positions[i]);
+    printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
   }
 }
 
