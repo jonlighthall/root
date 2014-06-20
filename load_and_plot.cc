@@ -3390,8 +3390,8 @@ void showY2y()
 
 TF1 *ls1,*ls2,*ls3,*lstotal;
 
-void loadfunc(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
-{
+void funcload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{//loads functions for funcfit() base on ranges in cal file
   TF1 *fnew = new TF1("fnew","(x>0.46)*(x<0.463)*pol1+(x>0.467)*(x<0.492)*pol1+(x>0.497)*(x<0.505)*pol1");
   static const int npeaks=6;  
   Float_t positions[npeaks]={};
@@ -3442,9 +3442,9 @@ void loadfunc(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
 }
 
 void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
-{
+{//based on multifit(); fits histogram over ranges defined in loadfunc
   hname=histin;
-  loadfunc(filename,slope,offset);
+  funcload(filename,slope,offset);
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
   hProj=(TH1F *) gROOT->FindObject(histin); 
