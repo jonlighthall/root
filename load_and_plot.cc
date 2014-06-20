@@ -3500,7 +3500,6 @@ void ruthset()
   ruth->SetParName(2,"x scale");  
   ruth->SetParName(3,"x offset");  
 
-
   float sets[4]={-1.87e+02,6.41e-03,6.60e-05,-5.92e-02};
   for(int i=0;i<4;i++){
     ruth->SetParameter(i,sets[i]);
@@ -3516,4 +3515,156 @@ void ruthfitsimp(Char_t *histin="hposc0")
   hProj=(TH1F *) gROOT->FindObject(histin); 
   hProj->Draw("COL");
   hProj->Fit("ruth","M","",101,148);
+}
+
+void ruthload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{
+  static const int npeaks=6;  
+  Float_t positions[npeaks]={};
+  Float_t sorted[npeaks]={};
+  Float_t max=0;
+  ifstream infile(filename);
+  int i =0;  
+  while (infile >> positions[i]) {
+    printf("%13.6f\n",positions[i]);
+    i++;
+  }
+  
+  sorted[0]=positions[0];//initializes sorted array with a valid position
+  for(Int_t i=0;i<npeaks;i++){
+    if((positions[i])<(sorted[0])){
+      sorted[0]=positions[i];//locates minimum
+    }
+    if((positions[i])>max){
+      max=positions[i];//locates maximum
+    }
+  }
+  for(Int_t i=1;i<npeaks;i++){
+    sorted[i]=max;    
+    for(Int_t j=0;j<npeaks;j++){
+      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
+	sorted[i]=positions[j];//locates next-smallest position
+      }
+    }
+  }
+  for(i=0;i<npeaks;i++)
+    positions[i]=sorted[i];  
+
+  ruthset();
+  
+  ls1 = new TF1("ls1","ruth",(positions[0]-offset)/slope,(positions[1]-offset)/slope);
+  ls2 = new TF1("ls2","ruth",(positions[2]-offset)/slope,(positions[3]-offset)/slope);
+  ls3 = new TF1("ls3","ruth",(positions[4]-offset)/slope,(positions[5]-offset)/slope);
+  lstotal = new TF1("lstotal","ruth",(positions[0]-offset)/slope,(positions[5]-offset)/slope);
+
+  lstotal->SetLineColor(2);
+
+  TString name = "ls";
+  for(int i=0;i<3;i++){
+    name = "ls";
+    name+=i+1;
+    TF1 * finput=gROOT->FindObject(name.Data());
+
+    printf("%s range is %f %f\n",name.Data(),finput->GetXaxis()->GetXmin(),finput->GetXaxis()->GetXmax());
+  }
+}
+
+void ruthfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{//calls ruthload() and follows multifit
+  hname=histin;
+  ruthload(filename,slope,offset);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  cFit->Clear();
+  hProj=(TH1F *) gROOT->FindObject(histin); 
+  hProj->Draw("COL");
+  
+  Double_t par[12];
+  Double_t chi[4];
+  Double_t ndf[4];
+  
+  // Fit each function and add it to the list of functions 
+  hProj->Fit(ls1,"BR");
+  chi[1]=ls1->GetChisquare();
+  ndf[1]=ls1->GetNDF();
+  ls1->GetParameters(&par[0]); 
+  ls2->SetParameters(par); 
+  //  ls3->SetParameters(par); 
+  hProj->Fit(ls2,"BR+");
+  chi[1]=ls2->GetChisquare();
+  ndf[1]=ls2->GetNDF();
+ 
+  hProj->Fit(ls3,"BR+");
+  chi[1]=ls3->GetChisquare();
+  ndf[1]=ls3->GetNDF();
+
+  float chi_sum=0;
+  float ndf_sum=0;
+  TString name = "ls";
+  for(int i=0;i<3;i++){
+    name = "ls";
+    name+=i+1;
+    TF1 * finput=gROOT->FindObject(name.Data());
+    chi[i]=finput->GetChisquare();
+    ndf[i]=finput->GetNDF();
+    chi_sum+=chi[i];
+    ndf_sum+=(chi[i]/ndf[i]);
+    printf("%s: Chi squared = %f, Ndf = %f, (Chi squared)/Ndf = %f\n",name.Data(),chi[i],ndf[i],chi[i]/ndf[i]);  
+    printf("Chi squared sum is %f, (Chi squared)/Ndf sum is %f\n",chi_sum,ndf_sum);
+}
+  // Get the parameters from the fit 
+ 
+  ls2->GetParameters(&par[4]); 
+  ls3->GetParameters(&par[7]); 
+ 
+  // Use the parameters on the sum 
+  lstotal->SetParameters(par);
+  hProj->Fit(lstotal,"BR+");
+}
+
+void loadruth2(int pos=0, Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{//testing variable range
+  static const int npeaks=6;  
+  Float_t positions[npeaks]={};
+  Float_t sorted[npeaks]={};
+  Float_t max=0;
+  ifstream infile(filename);
+  int i =0;  
+  while (infile >> positions[i]) {
+    printf("%13.6f\n",positions[i]);
+    i++;
+  }
+  
+  sorted[0]=positions[0];//initializes sorted array with a valid position
+  for(Int_t i=0;i<npeaks;i++){
+    if((positions[i])<(sorted[0])){
+      sorted[0]=positions[i];//locates minimum
+    }
+    if((positions[i])>max){
+      max=positions[i];//locates maximum
+    }
+  }
+  for(Int_t i=1;i<npeaks;i++){
+    sorted[i]=max;    
+    for(Int_t j=0;j<npeaks;j++){
+      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
+	sorted[i]=positions[j];//locates next-smallest position
+      }
+    }
+  }
+  for(i=0;i<npeaks;i++)
+    positions[i]=sorted[i];  
+
+  ruthset();
+  
+  ls1 = new TF1("ls1","ruth * (x>(([0]-[3])/[2]))*(x<(([1]-[3])/[2]))");
+  ls1->SetParameters(101,148,1,10,-1.87e+02,6.41e-03,6.60e-05,-5.92e-02);//,101,148); 
+ int off=4;//number of parameters before ruth is called
+ ls1->SetParLimits(2,0.95,1.05);
+ ls1->SetParLimits(off+1,1e-05,1e+05);
+ ls1->SetParLimits(off+2,0,1e+05);
+
+ for(i=0;i<2;i++){
+   ls1->FixParameter(i,positions[i+pos*2]);
+   printf("i=%d positions[%d]=%f parameter[%d]=%f\n",i,i,positions[i],i,ls1->GetParameter(i));
+ }
 }
