@@ -3488,3 +3488,28 @@ void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
   lstotal->SetParameters(par); 
   hProj->Fit(lstotal,"R+");
 }
+
+TF1 *ruth;
+void ruthset()
+{//Rutherford scattering cross section function
+  ruth =new TF1("ruth","[0]+[1]*TMath::Power(sin([2]*x-[3]),-4)");
+  ruth->SetParLimits(1,0,1e+05);
+  ruth->SetParLimits(2,0,1e+05);
+
+  float sets[4]={-1.87e+02,6.41e-03,6.60e-05,-5.92e-02};
+  printf("hello world\n");
+  for(int i=0;i<4;i++){
+    ruth->SetParameter(i,sets[i]);
+    printf("%g\n",ruth->GetParameter(i));
+  }
+}
+
+void ruthfitsimp(Char_t *histin="hposc0")
+{
+  hname=histin;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  cFit->Clear();
+  hProj=(TH1F *) gROOT->FindObject(histin); 
+  hProj->Draw("COL");
+  hProj->Fit("ruth","M","",101,148);
+}
