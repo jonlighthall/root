@@ -3403,7 +3403,7 @@ void loadcal(Char_t *filename="cal/X1.lst")
     i++;
   }
   
-  printf("Sorting points...\n");
+  printf("Sorting points... ");
   sorted[0]=positions[0];//initializes sorted array with a valid position
   for(Int_t i=0;i<npeaks;i++){
     if((positions[i])<(sorted[0])){
@@ -3421,7 +3421,8 @@ void loadcal(Char_t *filename="cal/X1.lst")
       }
     }
   }
-  for(i=0;i<npeaks;i++){
+  printf("sort complete.\n");
+  for(int i=0;i<npeaks;i++){
     positions[i]=sorted[i];
     printf(" %13.6f\n",positions[i]);
   }
@@ -3633,17 +3634,20 @@ void lsload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   ls1 = new TF1("ls1","([8]+[9]*x+[10]*x*x)*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([8]+[9]*x+[10]*x*x)*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([8]+[9]*x+[10]*x*x)*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
   ls1->SetParName(6,"p6 range slope");
   ls1->SetParName(7,"p7 range offset");
-  ls1->SetParName(8,"p8 offset");
-  ls1->SetParName(9,"p9 slope");
+  ls1->SetParName(8,"p8 constant");
+  ls1->SetParName(9,"p9 linear");
+  ls1->SetParName(10,"p10 quadratic");
 
   for(int i=0;i<6;i++){
     ls1->FixParameter(i,positions[i]);
     printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
   }
+  ls1->SetParameter(6,slope);
+  ls1->SetParameter(7,offset);
 }
 
 void lssetc()
-{
+{//set (temporary) parameters to aid fit for calibrated spectrum
   lsload();
   ls1->SetParameter(6,1);
   ls1->SetParameter(7,0);
@@ -3652,26 +3656,60 @@ void lssetc()
 }
 
 void lsset()
-{
+{//set (temporary) parameters to aid fit
   lsload();
   ls1->SetParameter(6,617);
   ls1->SetParameter(7,-170);
   ls1->SetParameter(8,0);
   ls1->SetParameter(9,100);
+  
+  //  ls1->SetParLimits(6,);
+  //ls1->SetParLimits(7,);
 }
 
+void lsreset()
+{//set (temporary) parameters to aid fit
+ // lsload();
+  ls1->SetParameter(6,617);
+  ls1->SetParameter(7,-170);
+ }
+
 void lsfix()
-{
-  TString name = "ls";
-  int temp[3]={};
+{//fix fit parameters (before adjusting the range parameters)
+  double temp[3]={};
   for(int i=0;i<3;i++){
-    name = "ls";
-    name+=i+1;
-    TF1 * finput=gROOT->FindObject(name.Data());
     temp[i]=ls1->GetParameter(i+8);
     ls1->FixParameter(i+8,temp[i]);
   }
+  for(int i=0;i<11;i++){
+    printf("  %2d  %-20s %10.2f\n",i,ls1->GetParName(i),ls1->GetParameter(i));
+  }
 }
+
+void lsfixlin()
+{//fix fit parameters (before adjusting the range parameters)
+  double temp[3]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol1->GetParameter(i);
+    ls1->FixParameter(i+8,temp[i]);
+  }
+  for(int i=0;i<11;i++){
+    printf("  %2d  %-20s %10.2f\n",i,ls1->GetParName(i),ls1->GetParameter(i));
+  }
+}
+
+void lsfixquad()
+{//fix fit parameters (before adjusting the range parameters)
+  double temp[3]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol2->GetParameter(i);
+    ls1->FixParameter(i+8,temp[i]);
+  }
+  for(int i=0;i<11;i++){
+    printf("  %2d  %-20s %10.2f\n",i,ls1->GetParName(i),ls1->GetParameter(i));
+  }
+}
+
 void ruthload3(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
 {
   loadcal(filename);
@@ -3704,4 +3742,144 @@ void ruthfit3(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slo
   hProj->Draw("COL");
 
   hProj->Fit("ls1","MB","");
+}
+
+void qfitc(Char_t *histname,Float_t center=0, Float_t width=10)
+{//fit quadratic function relative to center
+ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+ TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t xmin=center-width;
+  Float_t xmax=center+width;
+  hist1->Fit("pol2","W","",xmin,xmax);
+  Float_t a=0,b=0,c=0;
+   double temp[3]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol2->GetParameter(i);
+  }
+  c=temp[0];
+  b=temp[1];
+  a=temp[2];
+  printf("Fit range is %f to %f\n",xmin,xmax);
+  printf("Fit range center is %f\n",center);
+  printf("     Fit minimum is %f\n",-b/(2*a));
+}
+
+void qfitc2(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021)
+{//fit quadratic function relative to center
+ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+ TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t xmin=center1-width;
+  Float_t xmax=center1+width;
+  hist1->Fit("pol2","W","",xmin,xmax);
+  Float_t a=0,b=0,c=0;
+   double temp[6]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol2->GetParameter(i);
+  }
+  c=temp[0];
+  b=temp[1];
+  a=temp[2];
+  printf("Fit range is %f to %f\n",xmin,xmax);
+  printf("Fit range center is %f\n",center1);
+  printf("     Fit minimum is %f\n",-b/(2*a));
+
+  xmin=center2-width;
+  xmax=center2+width;
+  hist1->Fit("pol2","+W","",xmin,xmax);
+ 
+  for(int i=0;i<3;i++){
+    temp[i+3]=pol2->GetParameter(i);
+  }
+  c=temp[3];
+  b=temp[4];
+  a=temp[5];
+  printf("Fit range is %f to %f\n",xmin,xmax);
+  printf("Fit range center is %f\n",center2);
+  printf("     Fit minimum is %f\n",-b/(2*a));
+}
+
+ double mid[2]={};
+
+void loadcalm(Char_t *filename="cal/X1.lst")
+{//load cal and find mid of masks
+  loadcal(filename);
+ 
+for(int i=0;i<2;i++){
+  mid[i]=(positions[(i+1)*2]-positions[(i+1)*2-1])/2.;
+  printf(" mid of %13.6f and %13.6f is %13.6f",positions[(i+1)*2-1],positions[(i+1)*2],mid[i]);
+  mid[i]+=positions[(i+1)*2-1];
+  printf(" or %13.6f\n",mid[i]);
+  }
+ }
+
+void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021,Char_t *filename="cal/X1.lst")
+{//fit quadratic function relative to center
+ if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+ TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t xmin=center1-width;
+  Float_t xmax=center1+width;
+  hist1->Fit("pol2","W","",xmin,xmax);
+  Float_t a=0,b=0,c=0;
+   double temp[12]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol2->GetParameter(i);
+  }
+  c=temp[0];
+  b=temp[1];
+  a=temp[2];
+  double min[4]={};
+  min[0]=-b/(2*a);
+  printf("Fit range is %f to %f\n",xmin,xmax);
+  printf("Fit range center is %f\n",center1);
+  printf("     Fit minimum is %f\n",min[0]);
+
+  xmin=center2-width;
+  xmax=center2+width;
+  hist1->Fit("pol2","+W","",xmin,xmax);
+ 
+  for(int i=0;i<3;i++){
+    temp[i+3]=pol2->GetParameter(i);
+  }
+  c=temp[3];
+  b=temp[4];
+  a=temp[5];
+  min[1]=-b/(2*a);
+  printf("Fit range is %f to %f\n",xmin,xmax);
+  printf("Fit range center is %f\n",center2);
+  printf("     Fit minimum is %f\n",min[1]);
+
+  loadcalm(filename);
+  double slope=(mid[1]-mid[0])/(min[1]-min[0]);
+  printf("mid diff = %f, min diff = %f\n",mid[1]-mid[0],(min[1]-min[0]));
+  printf("slope is %f\n",slope);
+  double offset=slope*-min[0]+mid[0];
+  printf("offset is %f\n",offset);
+  double edge[2]={};
+  edge[0]=(positions[0]-offset)/slope;
+  edge[1]=(positions[5]-offset)/slope;
+
+  hist1->Fit("pol2","+","",edge[0]-width,edge[0]+width);
+  for(int i=0;i<3;i++){
+    temp[i+6]=pol2->GetParameter(i);
+  }
+  c=temp[6];
+  b=temp[7];
+  a=temp[8];
+  min[2]=-b/(2*a);
+  printf("estimated edge is %f\n",edge[0]);
+  printf("       minimum is %f\n",min[2]);
+
+
+  hist1->Fit("pol2","+","",edge[1]-width,edge[1]+width);
+ for(int i=0;i<3;i++){
+    temp[i+9]=pol2->GetParameter(i);
+  }
+  c=temp[9];
+  b=temp[10];
+  a=temp[11];
+  min[3]=-b/(2*a);
+  printf("estimated edge is %f\n",edge[1]);
+  printf("       minimum is %f\n",min[3]);
+
+  lsload(filename,slope,offset);
 }
