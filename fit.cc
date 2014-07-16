@@ -2449,6 +2449,7 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   width=hProj->GetFunction("gaus")->GetParameter(2);
   cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
   printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+  printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
   printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
   hfit->SetMarkerStyle(2);
   hfit->SetMarkerColor(2);
@@ -2464,6 +2465,9 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
+  fclose(outfile);
+ outfile=fopen("temp_inv.lst","w");
+  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
   fclose(outfile);
 }
 
