@@ -3646,6 +3646,25 @@ void lsload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   ls1->SetParameter(7,offset);
 }
 
+void ls2load(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
+{
+  loadcal(filename);
+     
+  ls2 = new TF1("ls2","([8]+[9]*x+[10]*x*x)*(x>(([0]-[7])/[6]))*(x<(([1]-[7])/[6]))+([11]+[12]*x+[13]*x*x)*(x>(([2]-[7])/[6]))*(x<(([3]-[7])/[6]))+([14]+[15]*x+[16]*x*x)*(x>(([4]-[7])/[6]))*(x<(([5]-[7])/[6]))");
+  ls2->SetParName(6,"p6 range slope");
+  ls2->SetParName(7,"p7 range offset");
+  ls2->SetParName(8,"p8 constant");
+  ls2->SetParName(9,"p9 linear");
+  ls2->SetParName(10,"p10 quadratic");
+
+  for(int i=0;i<6;i++){
+    ls2->FixParameter(i,positions[i]);
+    printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
+  }
+  ls2->SetParameter(6,slope);
+  ls2->SetParameter(7,offset);
+}
+
 void lssetc()
 {//set (temporary) parameters to aid fit for calibrated spectrum
   lsload();
@@ -3658,10 +3677,11 @@ void lssetc()
 void lsset()
 {//set (temporary) parameters to aid fit
   lsload();
-  ls1->SetParameter(6,617);
-  ls1->SetParameter(7,-170);
+  ls1->SetParameter(6,1914);
+  ls1->SetParameter(7,-882);
   ls1->SetParameter(8,0);
   ls1->SetParameter(9,100);
+  ls1->SetParameter(10,0);
   
   //  ls1->SetParLimits(6,);
   //ls1->SetParLimits(7,);
@@ -3704,6 +3724,18 @@ void lsfixquad()
   for(int i=0;i<3;i++){
     temp[i]=pol2->GetParameter(i);
     ls1->FixParameter(i+8,temp[i]);
+  }
+  for(int i=0;i<11;i++){
+    printf("  %2d  %-20s %10.2f\n",i,ls1->GetParName(i),ls1->GetParameter(i));
+  }
+}
+
+void lssetquad()
+{//fix fit parameters (before adjusting the range parameters)
+  double temp[3]={};
+  for(int i=0;i<3;i++){
+    temp[i]=pol2->GetParameter(i);
+    ls1->SetParameter(i+8,temp[i]);
   }
   for(int i=0;i<11;i++){
     printf("  %2d  %-20s %10.2f\n",i,ls1->GetParName(i),ls1->GetParameter(i));
@@ -3814,13 +3846,22 @@ for(int i=0;i<2;i++){
 
 void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021,Char_t *filename="cal/X1.lst")
 {//fit quadratic function relative to center
- if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
- TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+  cFit->Clear();
+  cFit->Divide(1,2);
+  cFit->cd(1);
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   Float_t xmin=center1-width;
   Float_t xmax=center1+width;
-  hist1->Fit("pol2","W","",xmin,xmax);
+  hist1->Fit("pol2","W","",xmin,xmax);  
+  hist1->GetFunction("pol2")->SetLineColor(2);
+  hist1->GetFunction("pol2")->SetLineStyle(1);
+  pol2->SetLineColor(2);
+  pol2->SetLineStyle(1);
+  
+  
   Float_t a=0,b=0,c=0;
-   double temp[12]={};
+  double temp[12]={};
   for(int i=0;i<3;i++){
     temp[i]=pol2->GetParameter(i);
   }
@@ -3858,6 +3899,8 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
   edge[0]=(positions[0]-offset)/slope;
   edge[1]=(positions[5]-offset)/slope;
 
+  pol2->SetLineStyle(2);
+  hist1->Fit("gaus","+","",edge[0]-width,edge[0]+width);
   hist1->Fit("pol2","+","",edge[0]-width,edge[0]+width);
   for(int i=0;i<3;i++){
     temp[i+6]=pol2->GetParameter(i);
@@ -3869,9 +3912,9 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
   printf("estimated edge is %f\n",edge[0]);
   printf("       minimum is %f\n",min[2]);
 
-
+  hist1->Fit("gaus","+","",edge[1]-width,edge[1]+width);
   hist1->Fit("pol2","+","",edge[1]-width,edge[1]+width);
- for(int i=0;i<3;i++){
+  for(int i=0;i<3;i++){
     temp[i+9]=pol2->GetParameter(i);
   }
   c=temp[9];
@@ -3881,5 +3924,32 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
   printf("estimated edge is %f\n",edge[1]);
   printf("       minimum is %f\n",min[3]);
 
+  cFit->cd(2);
+  hname=histname; 
+  hname+="_copy"; 
+  hist1->Clone(hname.Data());
+
+  TH1F *hist2=(TH1F*) gROOT->FindObject(hname.Data());
   lsload(filename,slope,offset);
+  //ls2load(filename,slope,offset);
+  hist2->Fit("ls1","M");
+  lsgetslope();
+}
+
+void lsgetslope()
+{
+  double slope=0,offset=0;
+  slope=ls1->GetParameter(6);
+  offset=ls1->GetParameter(7);
+  printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+  printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope);
+  
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
+  fprintf(outfile,"%g, %g\n",slope,offset);
+  fclose(outfile);
+  outfile=fopen("temp_inv.lst","w");
+  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
+  fclose(outfile);
+
 }
