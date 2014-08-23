@@ -266,7 +266,7 @@ void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=675,Int_t w
   if(!(cFit->GetShowToolBar()))cFit->ToggleToolBar();
 }
 
-void prop(Float_t x_prop=1,Float_t y_prop=1,Float_t x_size=1000,Char_t* cvname="cFit")
+void prop(Float_t x_prop=1.61803398875,Float_t y_prop=1,Float_t x_size=1000,Char_t* cvname="cFit")
 {//set the proportion and size of the canvas for printing
   if(!((TCanvas *) gROOT->FindObject(cvname))) mkCanvas2(cvname,cvname);
   TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cvname);
@@ -756,7 +756,7 @@ void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
 }
 
 void copy2(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
-{//copies a 2D histogram with zero suppression
+{ //copies a 2D histogram with zero suppression
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
   Float_t xmin,xmax; 
   Float_t ymin,ymax; 
@@ -824,6 +824,64 @@ void copy2(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
     hInput->Draw("colz");
     cFit->cd(2);
     hOutput->Draw("colz");
+    break;
+  defualt:
+    break;
+  }
+}
+
+void copy1(Char_t *histin, Float_t miny=0, Float_t maxy=-1, Int_t plot=2)
+{ //copies a 1D histogram with zero suppression
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  Float_t xmin,xmax; 
+  Int_t xbin;
+  Float_t x,y;
+  
+  TH1F * hfit=(TH1F *) gROOT->FindObject(histin);
+
+  xbin=hfit->GetXaxis()->GetNbins();
+  xmax=hfit->GetXaxis()->GetXmax();
+  xmin=hfit->GetXaxis()->GetXmin();
+ 
+  hname=histin;
+  hname+="_copy"; 
+  Char_t *htitle = hfit->GetTitle();
+  printf("Output histogram is \"%s\"",hname.Data());
+  printf(" with min=%f and max=%f\n",miny,maxy);
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+
+  // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+  TH1F * hResult=new  TH1F(hname,htitle,xbin,xmin,xmax);
+
+
+  if(miny==-1) miny=(hfit->GetMaximum())/4;
+  for(int i=0;i<(xbin+2);i++){
+    //Note: The 0 bin contains the underflow, so the loop starts at 0;
+    //      and the max_bin+1 contains overflow, so the loop terminates at max_bin+2
+    y=hfit->GetBinContent(i);
+    if((maxy!=-1)&&(y>maxy))
+      y=maxy;
+    if(y>miny)
+      hResult->SetBinContent(i,y);
+  }
+
+  switch (plot){
+  case 0: 
+    break;
+  case 1:
+    cFit->Clear();
+    hResult->Draw("colz");
+    break;
+  case 2:
+    cFit->Clear();
+    cFit->Divide(1,2);
+    cFit->cd(1);
+    hfit->Draw();
+    cFit->cd(2);
+    hResult->Draw();
     break;
   defualt:
     break;
@@ -2966,16 +3024,17 @@ void truncfile(Char_t *filename="source.cal",Char_t *output="shortsource.cal",In
 File \"%s\" not written.\n",filename,size,errorline,output);
 }
 
-void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0)
+void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
 {
   if(detno==-1)
     detno=det;
-  Float_t param[24][50]; 
+  printf("dets = %d",dets);
+  Float_t param[dets][50]; 
   Int_t errorline=-1;
   Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  if(showtest)  printf("param array size is: [24][%d].\n",size); 
+  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
   Bool_t fit=kFALSE;
-  for(Int_t i=0;i<24;i++)
+  for(Int_t i=0;i<dets;i++)
     for(Int_t j=0;j<size;j++)
       param[i][j]=0;//initializes all array elements to zero
   
@@ -2985,7 +3044,7 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
   while(!fit&&k<=(size)){
     infile = fopen (calfile,"r");
     if(infile!=NULL){
-      for(Int_t i=0;i<24;i++){
+      for(Int_t i=0;i<dets;i++){
 	for(Int_t j=0;j<k;j++){
 	  fscanf(infile,"%f",&param[i][j]);
 	}
@@ -3000,13 +3059,13 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
       
     if(showtest) printf("Testing array length %d:\n",k);
       
-    if(param[0][0]==1)
+    if(param[0][0]==start)
       fit=kTRUE;
     else
       fit=kFALSE;
       
-    for(Int_t i=0;i<24;i++){
-      fit=(fit&&(param[i][0]==(i+1)));	
+    for(Int_t i=0;i<dets;i++){
+      fit=(fit&&(param[i][0]==(i+start)));	
       if(fit){
 	if(showtest) printf("%2.0f ",param[i][0]);
 	for(Int_t j=1;j<k;j++){
@@ -3031,7 +3090,7 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
 	if(fscanf(infile,"%f, ",&Fit[l])==-1)
 	  Fit[l]=0;
 	if(Fit[l])//added
-	  param[detno-1][l+1+index]=Fit[l];//note use of index
+	  param[detno-start][l+1+index]=Fit[l];//note use of index
       }
       fclose(infile);
     }
@@ -3046,7 +3105,7 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
       printf("Output file is \"output.txt\"\n");
     }
     printf("The contents of \"%s\" are approximately:\n",calfile);
-    for(Int_t i=0;i<24;i++){
+    for(Int_t i=0;i<dets;i++){
       fprintf(outfile,"%2.0f ",param[i][0]);
       printf("%2.0f ",param[i][0]);
       for(Int_t j=1;j<k-1;j++){
