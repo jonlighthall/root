@@ -3028,7 +3028,8 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
 {
   if(detno==-1)
     detno=det;
-  printf("dets = %d",dets);
+  printf("Input detector number is %d\n",det);
+  printf("Number of detectors = %d, ",dets);
   Float_t param[dets][50]; 
   Int_t errorline=-1;
   Int_t size=sizeof(param[0])/sizeof(param[0][0]);
@@ -3122,3 +3123,112 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
   
 }
 
+void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
+{//re-writes calibration constants after testing fit.
+  if(detno==-1)
+    detno=det;
+  printf("Input detector number is %d\n",det);
+  printf("Number of detectors = %d, ",dets);
+  Float_t param[dets][50]; 
+  Int_t errorline=-1;
+  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+  Bool_t fit=kFALSE;
+  for(Int_t i=0;i<dets;i++)
+    for(Int_t j=0;j<size;j++)
+      param[i][j]=0;//initializes all array elements to zero
+  
+  FILE * infile;
+  Int_t k=1;
+  
+  while(!fit&&k<=(size)){
+    infile = fopen (calfile,"r");
+    if(infile!=NULL){
+      for(Int_t i=0;i<dets;i++){
+	for(Int_t j=0;j<k;j++){
+	  fscanf(infile,"%f",&param[i][j]);
+	}
+      }
+      fclose(infile);
+    }
+    else{
+      printf("File is NULL!\n");
+      //for(Int_t l=0;l<size;l++){
+      //	Fit[l]=0;
+    }
+      
+    if(showtest) printf("Testing array length %d:\n",k);
+      
+    if(param[0][0]==start)
+      fit=kTRUE;
+    else
+      fit=kFALSE;
+      
+    for(Int_t i=0;i<dets;i++){
+      fit=(fit&&(param[i][0]==(i+start)));	
+      if(fit){
+	if(showtest) printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<k;j++){
+	  if(showtest) printf("%7.2f ",param[i][j]);
+	}
+	if(showtest) printf("\n");
+	if((i+1)>errorline)errorline=i+1;
+      }
+    }
+           
+    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+     
+    k++;
+  }
+  double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
+  printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
+  double change[2]={0,0};
+  
+  if(fit) {//readin successful   
+    Float_t Fit[10];
+    Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
+    infile = fopen (tempfile,"r");
+    if(infile!=NULL){
+      printf("     The contents of %s are ",tempfile);
+      for(Int_t l=0;l<size;l++) {
+	if(fscanf(infile,"%f, ",&Fit[l])==-1)
+	  Fit[l]=0;
+	if(Fit[l]){//added
+	  if(l<2) change[l]=Fit[l];
+	  param[detno-start][l+1+index]=Fit[l];//note use of index
+	  printf("%9.4f ",param[detno-start][l+1+index]);
+	}
+      }
+      printf("\n");
+      fclose(infile);
+    }
+    else
+      printf("File is NULL!\n");
+
+    double new[2]={change[0]*old[0],change[0]*old[1]+change[1]}; 
+    printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
+    param[detno-start][0+1+index]=new[0];
+    param[detno-start][1+1+index]=new[1];
+ 
+    FILE * outfile;
+    if(!overwrite)
+      calfile="output.txt";
+    outfile=fopen(calfile,"w");
+    printf(" Output file is \"%s\"\n",calfile);
+    printf("The contents of \"%s\" are approximately:\n",calfile);
+    for(Int_t i=0;i<dets;i++){
+      fprintf(outfile,"%2.0f ",param[i][0]);
+      printf("%2.0f ",param[i][0]);
+      for(Int_t j=1;j<k-1;j++){
+	fprintf(outfile,"%g ",param[i][j]);
+	printf("%5.0f ",param[i][j]);
+      }
+      fprintf(outfile,"\n");
+      printf("\n");
+    }
+    fclose(outfile);
+  }
+  else
+    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  
+}
