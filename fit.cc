@@ -317,7 +317,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
     hname+=suffix;//updated to be compatible with poorly named histograms
     if(gROOT->FindObject(hname.Data())) {
       no++;
-      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) {
+      if((gROOT->FindObject(hname.Data())->InheritsFrom("TH1F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH1D"))) {
 	no1++;
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
 	if(hInput->GetEntries()==0){
@@ -325,7 +325,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	  printf(" Histogram %s has no entries.\n",hname.Data());
 	}
       }
-      if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) {
+      if((gROOT->FindObject(hname.Data())->InheritsFrom("TH2F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH2D"))) {
 	no2++;
 	hProj=(TH1F*)gROOT->FindObject(hname.Data());
 	if(hProj->GetEntries()==0){
