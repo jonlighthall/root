@@ -1459,7 +1459,7 @@ void setvlines(Float_t ymin=-999, Float_t ymax=999)
   printf("Vertical extent of plotted lines has been set to (%f,%f).\n",minE,maxE);
 }
 
-void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span=0)
+void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span=0, Int_t color=1)
 {//shows detector coverage area(s)
   Float_t z;
   Float_t gap=.625;
@@ -1469,6 +1469,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
     TLine *line = new TLine(z,minE,z,maxE);
     line->SetLineStyle(2);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
     if(span){    
       Float_t pttext=0.06;
@@ -1507,6 +1508,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
     line = new TLine(z,minE,z,maxE);
     line->SetLineStyle(1);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
     if(span){
       pt = new TPaveText(z-aspan/2,9-gap+0.125,z-aspan/2,9-gap+0.125,"br");
@@ -1543,6 +1545,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
     line = new TLine(z,minE,z,maxE);
     line->SetLineStyle(4);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
     if(span){   
       pt = new TPaveText(z-aspan/2,9-2*gap+0.125,z-aspan/2,9-2*gap+0.125,"br");
@@ -1575,7 +1578,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
 }
 
 void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
-		Float_t xmin=-1e5,Float_t xmax=1e5)
+		Float_t xmin=-1e5,Float_t xmax=1e5,Int_t color=1)
 {
   Float_t z;
   if(edge1!=0){
@@ -1583,6 +1586,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
     TLine *line = new TLine(xmin,z,xmax,z);
     line->SetLineStyle(2);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
   }
 
@@ -1591,6 +1595,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
     line = new TLine(xmin,z,xmax,z);
     line->SetLineStyle(1);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
   }
 
@@ -1599,6 +1604,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
     line = new TLine(xmin,z,xmax,z);
     line->SetLineStyle(4);
     line->SetLineWidth(2);
+    line->SetLineColor(color);
     line->Draw();
   }
 }
@@ -3302,79 +3308,94 @@ void timeplot3()
 //macros for checking and setting calibration for EMMA PGAC test data
 void showX()
 {//test extent of x-positions (calibrated)
-  setvlines(-300,100);
-  plotvlines(0.0001,6);
-  plotvlines(166,160);
+  //setvlines(-300,100);
+  plotvlines(0.001-6,6.001-6);
+  plotvlines(166-6,160-6);
 }
 
 void showY()
 {//test extent of y-positions (calibrated) and show anode segments
-  setvlines(-300,100);
-  plotvlines(0.0001,6);
-  plotvlines(22);
-  plotvlines(44);
-  plotvlines(66,60);
+  //setvlines(-300,100);
+  plotvlines(0.001-6,6.001-6);
+  plotvlines(22-6,0,0,0,2);
+  plotvlines(44-6,0,0,0,2);
+  plotvlines(66-6);
+  plotvlines(0,60-6);
 }
 
 void showXY()
 {
   showX();
-  plothlines(0.0001,6);
-  plothlines(22);
-  plothlines(44);
-  plothlines(66,60);
+  plothlines(0.001-6,6.001-6);
+  plothlines(22-6,0,0,-100,100,2);
+  plothlines(44-6,0,0,-100,100,2);
+  plothlines(66-6);
+  plothlines(0,60-6);
   TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
   ellipse->SetFillStyle(0);
   ellipse->Draw();
 }
 
-void showX1()
+void showX1(float ymin=-100,float ymax=100)
 {
+  setvlines(ymin,ymax);
   showX();
-  plotvlines(0,0,61.1+6);
-  plotvlines(0,0,88.3+6);
-  plotvlines(0,0,94+6);
-  plotvlines(0,0,145.1+6);
-  plotvlines(0,0,150.8+6);
+  loadcal("cal/X1.lst");
+  plotvlines(0,0,sorted[0]);
+  plotvlines(0,0,sorted[1]);
+  plotvlines(0,0,sorted[2]);
+  plotvlines(0,0,sorted[3]);
+  plotvlines(0,0,sorted[4]);
 }
 
-void showY1x()
+void showY1x(float ymin=-100,float ymax=100)
 {
-  setvlines(-300,100);
-  plotvlines(0,0,10.1+6);
-  plotvlines(0,0,15.8+6);
-  plotvlines(0,0,38.2+6);
-  plotvlines(0,0,43.9+6);
+  setvlines(ymin,ymax);  
+  showY();
+  loadcal("cal/Y1.lst");  
+  //setvlines(-300,100);
+  // plotvlines(0,0,sorted[0]);
+  plotvlines(0,0,sorted[1]);
+  plotvlines(0,0,sorted[2]);
+  plotvlines(0,0,sorted[3]);
+  plotvlines(0,0,sorted[4]);
 }
 
 void showY1y()
 {
   showXY();
   showX1();
+  loadcal("cal/Y1.lst");
   setvlines(-300,100);
-  plothlines(0,0,10.1+6);
-  plothlines(0,0,15.8+6);
-  plothlines(0,0,38.2+6);
-  plothlines(0,0,43.9+6);
+  plothlines(0,0,10.1);
+  plothlines(0,0,15.8);
+  plothlines(0,0,38.2);
+  plothlines(0,0,43.9);
 }
 
-void showX2()
+void showX2(float ymin=-100,float ymax=100)
 {
+  setvlines(ymin,ymax);  
   showX();
-  plotvlines(0,0,67.6+6);
-  plotvlines(0,0,87.8+6);
-  plotvlines(0,0,93.2+6);
-  plotvlines(0,0,141.6+6);
-  plotvlines(0,0,147+6);
+  loadcal("cal/X2.lst");
+  plotvlines(0,0,sorted[0]);
+  plotvlines(0,0,sorted[1]);
+  plotvlines(0,0,sorted[2]);
+  plotvlines(0,0,sorted[3]);
+  plotvlines(0,0,sorted[4]);
 }
 
-void showY2x()
+void showY2x(float ymin=-100,float ymax=100)
 {
+  setvlines(ymin,ymax);  
+  showY();
+  loadcal("cal/Y2.lst");  
   setvlines(-300,100);
-  plotvlines(0,0,11+6);
-  plotvlines(0,0,16.3+6);
-  plotvlines(0,0,37.7+6);
-  plotvlines(0,0,43+6);
+  // plotvlines(0,0,sorted[0]);
+  plotvlines(0,0,sorted[1]);
+  plotvlines(0,0,sorted[2]);
+  plotvlines(0,0,sorted[3]);
+  plotvlines(0,0,sorted[4]);
 }
 
 void showY2y()
@@ -3854,7 +3875,7 @@ for(int i=0;i<2;i++){
   mid[i]+=positions[(i+1)*2-1];
   printf(" at %13.6f\n",mid[i]);
   }
- printf(" The difference in the midpoints is %f\n",mid[1]-mid[0]);
+ printf(" The difference in the midpoints is       %f\n",mid[1]-mid[0]);
  }
 
 void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021,Char_t *filename="cal/X1.lst")
@@ -3900,21 +3921,39 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
   printf("Fit range center is %f\n",center2);
   printf("     Fit minimum is %f\n",min[1]);
 
-  printf("Hisogram is %s with title %s.\n",histname,hist1->GetTitle());
+  printf("Histogram is %s with title %s.\n",histname,hist1->GetTitle());
   loadcalm(filename);
+ hname=histname;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString tempst="";
+    tempst=hname(i,hname.Length()-i);
+    if(tempst.IsFloat())
+      {
+	det=tempst.Atoi();
+	break;
+      }
+  }
+  printf("Detector number is %d\n",det);
   double slope=(mid[1]-mid[0])/(min[1]-min[0]);
   printf(" The difference in the measured minima is %f\n",min[1]-min[0]);
   printf(" slope is %f\n",slope);
   double offset=slope*-min[0]+mid[0];
   printf(" offset is %f\n",offset);
   
-  printf("[y=m*x+b  ] Fit parameters are:         Slope = %8.3f, Offset = %8.3f\n",slope,offset);
-  printf("[x=(y-b)/m] Inverse fit parameters are: Slope = %8.3f, Offset = %8.3f\n",1/slope,-offset/slope);
+  printf(" [y=m*x+b  ] Fit parameters are:         Slope = %8.3f, Offset = %8.3f\n",slope,offset);
+  printf(" [x=(y-b)/m] Inverse fit parameters are: Slope = %8.3f, Offset = %8.3f\n",1/slope,-offset/slope);
   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
   fclose(outfile);
+
+  double edge[6]={};
+  for(int i=0;i<6;i++){
+    edge[i]=(positions[i]-offset)/slope;
+    //printf("Edge %d estimated location is %f\n",i,edge[i]);
+  }
+  // printf("estimated edges are located at %f, %f\n",(edge[1]+edge[2])/2,(edge[3]+edge[4])/2);
 }
 
 void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021,Char_t *filename="cal/X1.lst")
@@ -3962,14 +4001,25 @@ void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t widt
 
   printf("Hisogram is %s with title %s.\n",histname,hist1->GetTitle());
   loadcalm(filename);
+hname=histname;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString tempst="";
+    tempst=hname(i,hname.Length()-i);
+    if(tempst.IsFloat())
+      {
+	det=tempst.Atoi();
+	break;
+      }
+  }
+  printf("Detector number is %d\n",det);
   double slope=(mid[1]-mid[0])/(min[1]-min[0]);
   printf(" The difference in the measured minima is %f\n",min[1]-min[0]);
   printf(" slope is %f\n",slope);
   double offset=slope*-min[0]+mid[0];
   printf(" offset is %f\n",offset);
   
-  printf("[y=m*x+b  ] Fit parameters are:         Slope = %8.3f, Offset = %8.3f\n",slope,offset);
-  printf("[x=(y-b)/m] Inverse fit parameters are: Slope = %8.3f, Offset = %8.3f\n",1/slope,-offset/slope);
+  printf(" [y=m*x+b  ] Fit parameters are:         Slope = %8.3f, Offset = %8.3f\n",slope,offset);
+  printf(" [x=(y-b)/m] Inverse fit parameters are: Slope = %8.3f, Offset = %8.3f\n",1/slope,-offset/slope);
   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
@@ -3981,6 +4031,7 @@ void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t widt
     edge[i]=(positions[i]-offset)/slope;
     // printf("Edge %d estimated location is %f\n",i,edge[i]);
   }
+  
   /*
   pol2->SetLineStyle(2);
   hist1->Fit("gaus","+q","",edge[0]-width,edge[0]+width);
@@ -4007,16 +4058,34 @@ void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t widt
   printf("estimated edge is %f\n",edge[5]);
   printf("       minimum is %f\n",min[3]);
   */
-  for(i=0;i<6;i++){
-    printf("Edge %d estimated location is %f\n",i,edge[i]);
-    if(i%2)//right-hand sides
-      hist1->Fit("gaus","+","",edge[i]-width/3,edge[i]+width/2);
-    else//left-hand sides
-      hist1->Fit("gaus","+","",edge[i]-width/2,edge[i]+width/3);
-    temp[i+6]=gaus->GetParameter(2);
-    printf("width is %f\n",temp[i+6]);
+  if(det%2){//y-positions
+    for(i=0;i<6;i++){
+      printf("Edge %d estimated location is %7.3f",i,edge[i]);
+      if(i%2)//right-hand sides
+	hist1->Fit("gaus","q+","",edge[i],edge[i]+0.85*width);
+      else//left-hand sides
+	hist1->Fit("gaus","q+","",edge[i]-width*0.85,edge[i]);
+      temp[i+6]=gaus->GetParameter(2);
+      printf(", width is %5.3f\n",temp[i+6]);
+    }
   }
-
+  else{//x-positions
+ for(i=0;i<6;i++){
+      printf("Edge %d estimated location is %7.3f",i,edge[i]);
+      if(i%2)//right-hand sides
+	hist1->Fit("gaus","q+","",edge[i]-width/3,edge[i]+width/2);
+      else//left-hand sides
+	hist1->Fit("gaus","q+","",edge[i]-width/2,edge[i]+width/3);
+      temp[i+6]=gaus->GetParameter(2);
+      printf(", width is %5.3f\n",temp[i+6]);
+    }
+  }
+  double temp_sum=0;
+  for(i=1;i<5;i++){
+    temp_sum+=temp[i+6];
+    //printf("width is %5.3f, temp sum is %f\n",temp[i+6],temp_sum);
+  }
+  printf("Average width of central edges is %f mm (%f mm FWHM)\n",temp_sum/4,temp_sum/4*2.35482);
 }
 
 void lsgetslope()
@@ -4133,4 +4202,61 @@ void qfitc2mls(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t wid
   hist2->Fit("ls1","Q");
   hist2->Fit("ls1","");
   lsgetslope();
+}
+
+void getressum(Char_t *hsum, Char_t *hcorrelation, Float_t coef_x=1., Float_t coef_y=1.)
+{
+  Char_t *histin1=hsum;
+  Char_t *histin2=hcorrelation;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
+  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
+  if(!gROOT->FindObject(histin1)) printf("Histogram \"%s\" not found.\n",histin1);
+  if(!gROOT->FindObject(histin2)) printf("Histogram \"%s\" not found.\n",histin2);
+  cFit->Clear();
+  cFit->Divide(1,2);
+  
+  double var_sum = 0;
+  cFit->cd(1);
+  hist1->GetXaxis()->UnZoom();
+  hist1->Draw("");
+  printf("Statistics of %s\n",histin1);
+  hist1->Fit("gaus");
+  double sigma_sum = 0;
+  sigma_sum = gaus->GetParameter(2);
+  double mean_sum = 0;
+  mean_sum = gaus->GetParameter(1);
+  var_sum=TMath::Power(sigma_sum,2);
+  printf(" Gassian: The width of %s is %f (FWHM = %f); variance = %f\n",histin1,sigma_sum,sigma_sum*2.35482,var_sum);
+  printf(" Scaled:  The width of %s is %f (FWHM = %f); variance = %f\n",histin1,sigma_sum*0.70711,sigma_sum*2.35482*0.70711,var_sum*0.70711);
+  printf(" Full:  The std dev of %s is %f (FWHM = %f); variance = %f\n",histin1,hist1->GetStdDev(),(hist1->GetStdDev())*2.35482,TMath::Power(hist1->GetStdDev(),2));
+  //  printf(" The variance of the sum is %f (%f full)\n\n",var_sum,TMath::Power(hist1->GetStdDev(),2));
+ hist1->GetXaxis()->SetRangeUser(mean_sum-4*sigma_sum,mean_sum+4*sigma_sum);
+  hist1->Draw();
+
+  double covar = 0;
+  cFit->cd(2);
+  hist2->Draw("COL"); 
+  covar=hist2->GetCovariance();
+  double corr=hist2->GetCorrelationFactor();
+  double sig_x=hist2->GetStdDev(1);
+  double sig_y=hist2->GetStdDev(2);
+  double var_x=sig_x*sig_x;
+  double var_y=sig_y*sig_y;
+  printf("\nStatistics of %s\n",histin2);
+  printf(" The standard deviations of X and Y are %f and %f (%f average)\n",sig_x,sig_y,(sig_x+sig_y)/2.); 
+  printf(" The covariance of the variables is %f\n",covar);
+  printf(" The correlation of the variables is  %f\n",corr);
+  printf(" The calculated correlation factor is %f\n",covar/(sig_x*sig_y));
+  printf(" The covariance term is %f\n",2*coef_x*coef_y*covar);
+  printf(" The variances of X and Y are %f and %f (%f average)\n",var_x,var_y,(var_x+var_y)/2.);  
+  printf(" The sum of the variances of X and Y is %f (direct) \n",var_x+var_y);  
+  printf(" The calculated variance of the sum is  %f \n",var_x+var_y+2*coef_x*coef_y*covar);
+  printf(" The calculatded standard deviation of the sum is  %f (%f FWHM)\n",TMath::Power(var_x+var_y+2*coef_x*coef_y*covar,0.5),2.35482*TMath::Power(var_x+var_y+2*coef_x*coef_y*covar,0.5));
+
+  printf("\n The square of the sum of the variances of X and Y is %f (direct) \n",TMath::Power((var_x+var_y),0.5));  
+  printf(" The square of one half the sum of the variances of X and Y is %f (direct) \n",TMath::Power((var_x+var_y)/2.,0.5));  
+
+  printf("The square of one half the calculated sum of the variances is %f (from Gaussian)\n",TMath::Power((var_sum-2*coef_x*coef_y*covar)/2.,0.5));
+  printf("The square of one half the calculated sum of the variances is %f (full)\n",TMath::Power((TMath::Power(hist1->GetStdDev(),2)-2*coef_x*coef_y*covar)/2.,0.5));
 }
