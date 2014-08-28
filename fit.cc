@@ -260,7 +260,7 @@ void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", Char_t *
  * Utilities for viewing, copying, shifting, and scaling histograms.
  */
 void mkCanvas2(Char_t* cvname="cFit",Char_t *cvtitle="cFit",Int_t ww=675,Int_t wh=615)
-{//make a TCanvas 
+{//make a TCanvas, adapted from plot_tools.cc
   TCanvas * cFit=new TCanvas(cvname,cvtitle,0,0,ww,wh);
   if(!(cFit->GetShowEventStatus()))cFit->ToggleEventStatus();
   if(!(cFit->GetShowToolBar()))cFit->ToggleToolBar();
@@ -277,7 +277,7 @@ void prop(Float_t x_prop=1.61803398875,Float_t y_prop=1,Float_t x_size=1000,Char
 }
 
 void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr="f1-phaser")
-{//prints to F-150
+{//prints to F-150, adapted from plot_tools.cc
   const char cmd[255];
   char * fl = reinterpret_cast<char *>(filename);
   TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
@@ -589,7 +589,7 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 }
 
 void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, Int_t color=1)
-{//script to replace all of the macros in helios_plottools.cc
+{//extention to plotall for low-statistics histograms
   Int_t col=0,row=0;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
@@ -1472,7 +1472,8 @@ void shiftadd2(Char_t *histin1, Float_t shift1=0, Char_t *histin2, Float_t shift
  */
 
 void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1,Float_t minz=0, Float_t maxz=-1)
-{//same first three parameters as pfx(), next three same as pfit() (developed independently)
+{//adapted from linefit.cc
+ //same first three parameters as pfx(), next three same as pfit() (developed independently)
   Float_t cp=0 ;  
   Float_t a=0,b=0,c=0,d=0;  
   Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
@@ -1556,7 +1557,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   hProf->Fit(hname,"V","",minfit,maxfit);
   hProf->SetStats(kFALSE);
   switch(ord){
-  case 1://original fitpfx()
+  case 1://adapted from fitpfx() in linefit.cc
     p0=hProf->GetFunction("pol1")->GetParameter(0);
     p1=hProf->GetFunction("pol1")->GetParameter(1);
     Float_t slope=p1;
@@ -1572,11 +1573,13 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     else
       printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
     break;
-  case 2://copied from minfit() - used to find minimum (center) of hEX plots - then generalize to fit2pfx()
+  case 2:// adpated from linefit.cc
+    //      copied from minfit(), used to find minimum (center) of hEX plots
+    //      then generalize to fit2pfx()
     p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
     p1=hProf->GetFunction("pol2")->GetParameter(1);//"b"
     p2=hProf->GetFunction("pol2")->GetParameter(2);//"a"
-    cp=(-p1/(2*p2));
+    cp=(-p1/(2*p2)); //critical point
     Float_t zero1=(-p1-sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     Float_t zero2=(-p1+sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     printf("p1 = %7.3f p2=%7.3f\n",p1,p2);
@@ -1669,7 +1672,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     line->Draw();
 
     break;
-  case 4:
+  case 4://copied from fit4pfx() in linefit.cc
     p0=hProf->GetFunction("pol4")->GetParameter(0);
     p1=hProf->GetFunction("pol4")->GetParameter(1);
     p2=hProf->GetFunction("pol4")->GetParameter(2);
@@ -1694,7 +1697,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
 }
 
 void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
-{
+{//adapted from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   Float_t p0=0,p1=0,p2=0;
   
@@ -1748,7 +1751,7 @@ void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   hInput->ProfileY(hname,minpf,maxpf);
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
-  hProf->GetXaxis()->UnZoom();
+  hProf->GetXaxis()->UnZoom(); //added
   hProf->GetYaxis()->UnZoom();
   hProf->SetAxisRange(a,b,"Y");
   hProf->SetLineColor(2);
@@ -1893,7 +1896,7 @@ void pfitallpjx(Char_t *histin,Float_t minpj=0,Float_t maxpj=0,Float_t minfit=0,
 }
 
 void timefit(Char_t *histin,Float_t minE=1,Float_t maxE=12,Int_t minpf=0,Int_t maxpf=1200)
-{//prototype of fitpqpfy
+{//prototype of fitpqpfy, from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   Float_t cp=0 ;
   Int_t i=0;
@@ -1963,7 +1966,7 @@ void timefit(Char_t *histin,Float_t minE=1,Float_t maxE=12,Int_t minpf=0,Int_t m
   }
 }
 void timefit2(Char_t *histin,Float_t minE=1,Float_t maxE=24)
-{
+{//from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   Float_t cp=0 ;
   Int_t i=0;
@@ -2025,7 +2028,7 @@ void timefit2(Char_t *histin,Float_t minE=1,Float_t maxE=24)
   }
 }
 void timefitg(Char_t *histin,Float_t minT=100,Float_t maxT=1200)
-{//redundant
+{//fit the x-projection of a histogram with a gaussian; redundant, from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   cFit->Clear();
   cFit->Divide(1,2);
@@ -2046,7 +2049,7 @@ void timefitg(Char_t *histin,Float_t minT=100,Float_t maxT=1200)
 }
 
 void fitpqpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
-{//"Fit piece-wise quadratic, ProfileY" - generalized from timefit()
+{//"Fit piece-wise quadratic, ProfileY" - generalized from timefit(), from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   Float_t cp=0 ;
   Int_t i=0;
@@ -2094,7 +2097,7 @@ void fitpqpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
   hInput->ProfileY(hname,minpf,maxpf);
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
-  hProf->GetXaxis()->UnZoom();
+  hProf->GetXaxis()->UnZoom();//added
   hProf->GetYaxis()->UnZoom();
   hProf->SetAxisRange(a,b,"Y");
   hProf->Draw();
@@ -2148,11 +2151,11 @@ void fitpqpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
     }
   }
   printf("Loop Exited at Iteration %3d.\nEndpoint tolerance is %2.0f%%\nFit range is %6.3f to %6.3f\nCritical Point is %5.3f\np0 = %7.3f, p1 = %7.3f, p2 = %7.3f\n",i,tol*100,minfit,maxfit,cp,p0,p1,p2);
-  printf("Emax = %5.2f, p1 = %4.0f, p2 = %7.2f\n",cp,p1,p2);
+  printf("Emax = %5.2f, p1 = %4.0f, p2 = %7.2f\n",cp,p1,p2);//added
 
 }
 void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
-{//"Fit piece-wise quadratic, ProfileX"
+{//"Fit piece-wise quadratic, ProfileX", from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2(); 
   Float_t cp=0 ;
   Int_t i=0;
@@ -2199,7 +2202,7 @@ void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
   hInput->ProfileX(hname,minpf,maxpf);
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
-  hProf->GetXaxis()->UnZoom();
+  hProf->GetXaxis()->UnZoom();\\added
   hProf->GetYaxis()->UnZoom();
   hProf->SetAxisRange(a,b,"Y");
   hProf->SetLineColor(2);
@@ -2242,7 +2245,7 @@ void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
     //    printf("Iter. %3d: ",i);
     if(i==200){
       printf("Loop terminated.  Could not converge.\n");
-      tol*=1.01;
+      tol*=1.01;\\modified from add 0.01
       maxfit=c;
       hProf->Fit("pol2","Q","",minfit,maxfit);
       p1=hProf->GetFunction("pol2")->GetParameter(1);
@@ -2259,7 +2262,7 @@ Loop Exited at Iteration %3d.\nEndpoint tolerance is %2.0f%%\nFit range is %6.3f
 }
 
 void fitpqRpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
-{//"Fit piece-wise quadratic, ProfileX, from right"
+{//"Fit piece-wise quadratic, ProfileX, from right", from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   Float_t cp=0 ;
   Int_t i=0;
@@ -2306,7 +2309,7 @@ void fitpqRpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,F
   hInput->ProfileX(hname,minpf,maxpf);
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
-  hProf->GetXaxis()->UnZoom();
+  hProf->GetXaxis()->UnZoom();//added
   hProf->GetYaxis()->UnZoom();
   hProf->SetAxisRange(a,b,"Y");
   hProf->SetLineColor(2);  
@@ -2350,7 +2353,7 @@ void fitpqRpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,F
     //    printf("Iter. %3d: ",i);
     if(i==200){
       printf("\nLoop terminated.  Could not converge.\n");
-      tol*=1.01;
+      tol*=1.01;//modified from add 0.01
       minfit=c;
       hProf->Fit("pol2","Q","",minfit,maxfit);
       p1=hProf->GetFunction("pol2")->GetParameter(1);
@@ -2365,7 +2368,7 @@ void fitpqRpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,F
 }
 
 void getline(void)
-{//shows information about a TLine
+{//shows information about a TLine, adapted from linefit.cc
   Float_t x1,x2,y1,y2;
   Float_t slope=0,b,theta;
   x1=TLine->GetX1();
@@ -2877,7 +2880,7 @@ void printcaldata(void)
 }
 
 void createfile(Int_t numbered=0)
-{//writes array[i][j] to file or creates blank file
+{//writes array[i][j] to file or creates blank file, adapted from linefit.cc
   ofstream outfile("calibration.cal");
   for(int i=0;i<24;i++){
     outfile<<i+1<<" ";
