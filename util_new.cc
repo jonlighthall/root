@@ -22,7 +22,13 @@ void add2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0,
   hist3->Draw();
 }
 
-void  browse()
+void newcanvas(Char_t *name)
+{
+  TCanvas *canvasname=new TCanvas(name,name,1);
+  canvasname->cd();
+}
+
+void browse()
 {
   TBrowser *b=new TBrowser();
 }
