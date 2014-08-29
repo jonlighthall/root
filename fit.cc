@@ -121,9 +121,9 @@ void lowstat(Char_t *histname, Int_t style=7, Int_t size=1, Int_t color=1)
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//Extension to fillhist0(), includes reset option.  
+{//extension to fillhist0() from util.cc, includes weight and reset option.  
  //Fills a 1-dimensional histogram from a text file.
- //File is to be formatted as x-value, y-value, weight.
+ //File is to be formatted as x-value, weight.
   Float_t x,y,w;
   TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
   if (reset){
@@ -260,34 +260,6 @@ void prop(Float_t x_prop=1.61803398875,Float_t y_prop=1,Float_t x_size=1000,Char
   ref=x_size;
   thecanvas->SetWindowSize(ref,(ref/x_prop)*y_prop);
 
-}
-
-void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr="f1-phaser")
-{//prints to F-150, adapted from plot_tools.cc
-  const char cmd[255];
-  char * fl = reinterpret_cast<char *>(filename);
-  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
-  thecanvas->SaveAs(filename);
-  sprintf(cmd,"lpr -P %s %s",pr,fl);
-  gSystem->Exec(cmd);
-  cout<<fl<<" was sent to printer "<<pr<<endl;
-}
-
-void doprint3(Int_t printer_no=0)
-{
-  switch(printer_no){
-  case 0://same as dorprint2()
-    printf("Sending canvas \"cFit\" to Room F154 Phaser...\n");
-    doprint2("cFit","print.ps","f1-phaser");
-    break;
-  case 1:
-    printf("Sending canvas \"cFit\" to ATLAS Data Room HP LaserJet...\n");
-    doprint2("cFit","print.ps","m0-clj3700");
-    break;
-  defualt:
-    printf("No printer assigned to printer_n0=%d\n",printer_no);
-    // break;
-  }
 }
 
 void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)

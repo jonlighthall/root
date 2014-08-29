@@ -82,3 +82,42 @@ void zapall()
     if (htemp->InheritsFrom("TH1")) htemp->Reset();
   }
 }
+
+void doprint(Char_t * cnvname="cc", Char_t * filename="print.ps", Char_t * pr="m0-epson")
+{
+  const char cmd[255];
+  char * fl = reinterpret_cast<char *>(filename);
+  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
+  thecanvas->SaveAs(filename);
+  sprintf(cmd,"lpr -P%s %s",pr,fl);
+  gSystem->Exec(cmd);
+  cout<<fl<<" was sent to printer "<<pr<<endl;
+}
+
+void doprint2(Char_t * cnvname="cFit", Char_t * filename="print.ps", Char_t * pr="f1-phaser")
+{//prints to F-150, adapted from plot_tools.cc
+  const char cmd[255];
+  char * fl = reinterpret_cast<char *>(filename);
+  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
+  thecanvas->SaveAs(filename);
+  sprintf(cmd,"lpr -P %s %s",pr,fl);
+  gSystem->Exec(cmd);
+  cout<<fl<<" was sent to printer "<<pr<<endl;
+}
+
+void doprint3(Int_t printer_no=0)
+{
+  switch(printer_no){
+  case 0://same as dorprint2()
+    printf("Sending canvas \"cFit\" to Room F154 Phaser...\n");
+    doprint2("cFit","print.ps","f1-phaser");
+    break;
+  case 1:
+    printf("Sending canvas \"cFit\" to ATLAS Data Room HP LaserJet...\n");
+    doprint2("cFit","print.ps","m0-clj3700");
+    break;
+  defualt:
+    printf("No printer assigned to printer_n0=%d\n",printer_no);
+    // break;
+  }
+}
