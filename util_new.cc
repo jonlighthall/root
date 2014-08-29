@@ -13,15 +13,6 @@ void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, 
   hist3->Draw();
 }
 
-void add2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
-{//added?
-  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
-  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
-  TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
-  hist3->Add(hist1,hist2,scale1,scale2);
-  hist3->Draw();
-}
-
 void newcanvas(Char_t *name)
 {
   TCanvas *canvasname=new TCanvas(name,name,1);
