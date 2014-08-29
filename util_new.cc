@@ -6,7 +6,6 @@
 
 void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
 {
-
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
   TH1F *hist3=(TH1F *) gROOT->FindObject(histout);
@@ -15,8 +14,7 @@ void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, 
 }
 
 void add2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
-{
-
+{//added?
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
   TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
@@ -232,6 +230,44 @@ void draw2(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,
    }
    hist2->Draw("col2");
 }
+
+void drawline(Char_t *filename, Char_t *linename="gline",Bool_t showpoints=1,Int_t linestyle=1,Int_t linewidth=1)
+{//new
+  //Int_t maxpoints=100;//not used
+  Int_t point=0;
+  Float_t x,y;
+  //Int_t npts=0;//not used
+
+  TGraph *graph = new TGraph(2);
+  graph->SetName(linename);
+  graph->SetTitle(linename);
+  graph->SetFillColor(1);
+  graph->SetLineStyle(linestyle);
+  graph->SetLineWidth(linewidth);
+
+  ifstream infile(filename);
+  while (infile >> x) {
+    infile>>y;
+    graph->SetPoint(point,x,y);
+    if(showpoints)
+      cout<<"reading point "<<point<<endl;
+    point++;
+  }
+  //   point=point/2;
+  cout<<"points = "<<point<<endl;
+  
+  /*   for (Int_t i=point; i<100; i++) {
+       graph->RemovePoint(i);
+       npts=graph->GetN();
+       cout<<"removed point "<<i<<" npoints = "<<npts<<endl;
+       }
+  */
+  if(showpoints)  
+    graph->Print();
+  //  cout<<"number of points= "<<npts<<endl;
+  graph->Draw("l");
+}
+
 
 void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
 {
@@ -919,7 +955,7 @@ void show(Char_t *histname)
 }
 
 void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
-{
+{//updated to use scale, omitts ierr
 
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
@@ -929,7 +965,7 @@ void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=
 }
 
 void subtract2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
-{
+{//added
 
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
@@ -1082,7 +1118,7 @@ void where(void)
 }
 
 void zap(Char_t *histname)
-{
+{//commented out online
    switch(whatis(histname)) {
     case 0:
       cout << "object " << histname << " was not found."<<endl;
