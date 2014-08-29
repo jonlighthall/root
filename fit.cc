@@ -102,13 +102,6 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
     printf("Histogram \"%s\" not recognized.\n",histname);
 }
 
-void hdr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin=-999999.,
-	 Float_t ymax=999999., Bool_t clear=1)
-{//Extension to dr() for online use.
-  hup();
-  dr(histname,xmin,xmax,ymin,ymax,1);
-}
-
 void lowstat(Char_t *histname, Int_t style=7, Int_t size=1, Int_t color=1)
 {//Drawing options for low statistics
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit");  
@@ -125,12 +118,6 @@ void lowstat(Char_t *histname, Int_t style=7, Int_t size=1, Int_t color=1)
     hInput->SetMarkerColor(color);
     hInput->Draw();
   }
-}
-
-void hlowstat(Char_t *histname, Int_t style=20, Int_t size=1, Int_t color=1)
-{//Extension to lowstat() for online use.
-  hup();
-  lowstat(histname,style,size,color);
 }
 
 void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
@@ -235,8 +222,7 @@ void opjy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2,Int_t lines
 void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", Char_t *cutname="cEDE0_B13_big")
 {
   //TCutG *tempcut;  
-  //hup();
-  
+   
   gROOT->ProcessLine("TDirectory *_home=gDirectory"); 
   if(gROOT->FindObject("_file0"))
     _filename0=_file0;
@@ -436,13 +422,6 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
     //hInput=(TH2F*)gROOT->FindObject(hname.Data());
     //hInput->Draw("COL2");
   }
-}
-
-void hplotall(Char_t *histin,Char_t *suffix="", Bool_t log=0,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
-{//online version of plotall()
-  hup();
-  plotall(histin,suffix,log,minX,maxX,minY,maxY,scale);
-
 }
 
 void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
@@ -666,12 +645,6 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
       }
     }
   }
-}
-
-void hplotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, Int_t color=1)
-{//online version of plotalllow()
-  hup();
-  plotalllow(histin,suffix,style,size,color);
 }
 
 void setrange(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
@@ -2856,7 +2829,7 @@ void smooth(Char_t *histin,Int_t averWindow=3)
  */
 
 void printcaldata(void)
-{
+{//adapted from linefit.cc
   Float_t p0av=0;
   Int_t entries=0;
   printf("Contents of array are: \n");

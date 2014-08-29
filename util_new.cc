@@ -73,22 +73,6 @@ void cutg(Char_t *histname,Char_t * newcutname, Int_t graphit=1, Int_t npts=0, C
   }
 }   
 
-void d1(Char_t *histname)
-{
-  hup();
-  if( c1==0 ) mkCanvas();
-  else c1->cd();
-  draw(histname);
-}
-
-void d2(Char_t *histname)
-{
-  hup();
-  if( c1==0 ) mkCanvas();
-  else c1->cd();
-  draw2(histname);
-}
-
 void dir(void)
 {
   gROOT->GetListOfFiles()->Print();
@@ -1201,44 +1185,6 @@ Int_t whatis(Char_t *hname,Int_t verbose=1)
 void where(void)
 {
   cout << "Current directory is "<<gDirectory->pwd()<<endl;
-}
-
-void zap(Char_t *histname)
-{//commented out online
-  switch(whatis(histname)) {
-  case 0:
-    cout << "object " << histname << " was not found."<<endl;
-    break;
-  case 1:
-    TH1F *hist=(TH1F*) gROOT->FindObject(histname);
-    break;
-  case 2:
-    TH1D *hist=(TH1D*) gROOT->FindObject(histname);
-    break;
-  case 3:
-    TH2F *hist=(TH2F*) gROOT->FindObject(histname);
-    break;
-  case 4:
-    TH2D *hist=(TH2D*) gROOT->FindObject(histname);
-    break;
-  case 5:
-    TH3F *hist=(TH3F *) gROOT->FindObject(histname);
-    break;
-  case 6:
-    TProfile *hist=(TProfile *) gROOT->FindObject(histname);
-    break;
-  }
-  hist->Reset();
-}
-
-void zapall()
-{
-  TList *hlist=gDirectory->GetList();
-  TIterator *hiterator=hlist->MakeIterator();
-  TH1 *htemp;
-  while (htemp= (TH1 *) hiterator->Next()) {
-    if (htemp->InheritsFrom("TH1")) htemp->Reset();
-  }
 }
 
 void help_util(void)
