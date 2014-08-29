@@ -63,19 +63,19 @@ void testRandom2(Int_t nrEvents=10e+08, double mean = 0, double sigma = 100)
 
 void source(Int_t nevents=1000)
 {
-  TRandom *r1=new TRandom();//for angle 
-  
-  TH1D *htheta=new TH1D("htheta","TRandom, Uniform",500,mean-sigma*4,mean+sigma*4);
-  
-  for (Int_t i=0; i<nrEvents; i++) {
-    h1->Fill(r1->Uniform(mean-sigma*4,mean+sigma*4));
-    h2->Fill(r2->Gaus(mean,sigma));
-    h3->Fill(r3->Rndm());
+  TRandom *rtheta=new TRandom();//for scattering angle 
+  TH1D *htheta=new TH1D("htheta","Emission Angle",500,0,180);
+  Double_t theta=0;
+  Double_t theta_min=7;
+  Double_t theta_max=-theta_min;
+  Double_t theta_center=30;
+  theta_min+=theta_center;
+  theta_max+=theta_center;
+  for (Int_t i=0; i<nevents; i++) {
+    theta=rtheta->Uniform(theta_min,theta_max);
+    htheta->Fill(theta);
     if(i%500000==0)
-      printf("%5.1f\%: %d events generated\n",(double)i/nrEvents*100,i);
+      printf("%5.1f\%: %d events generated\n",(double)i/nevents*100,i);
   }
-  
-  plotall("h");
-  cFit->cd(2);
-  gfit("h2");
+  dr("htheta");  
 }
