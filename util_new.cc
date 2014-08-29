@@ -61,16 +61,16 @@ void cutg(Char_t *histname,Char_t * newcutname, Int_t graphit=1, Int_t npts=0, C
    }
 }   
 
-void draw(Char_t *histname)
+void d1(Char_t *histname)
 {
   hup();
-  d1(histname);
+  draw(histname);
 }
 
-void draw2(Char_t *histname)
+void d2(Char_t *histname)
 {
   hup();
-  d2(histname);
+  draw2(histname);
 }
 
 void dir(void)
@@ -162,7 +162,7 @@ void divide(Char_t *histin1, Char_t *histin2, Char_t *histout, Int_t ierr=0)
   }
 }
 
-void d1(Char_t *histname,Char_t *dopt="",Float_t xmin=-999999.,Float_t xmax=999999.)
+void draw(Char_t *histname,Char_t *dopt="",Float_t xmin=-999999.,Float_t xmax=999999.)
 {
    Int_t minbin,maxbin;
    Int_t lowbin,highbin;
@@ -184,7 +184,7 @@ void d1(Char_t *histname,Char_t *dopt="",Float_t xmin=-999999.,Float_t xmax=9999
    hist1->Draw(dopt);
 }
 
-void d2(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,
+void draw2(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,
 	   Float_t ymin=-999999.,Float_t ymax=999999.)
 {
    Int_t minxbin,maxxbin;
