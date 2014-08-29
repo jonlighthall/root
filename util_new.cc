@@ -76,12 +76,16 @@ void cutg(Char_t *histname,Char_t * newcutname, Int_t graphit=1, Int_t npts=0, C
 void d1(Char_t *histname)
 {
   hup();
+  if( c1==0 ) mkCanvas();
+  else c1->cd();
   draw(histname);
 }
 
 void d2(Char_t *histname)
 {
   hup();
+  if( c1==0 ) mkCanvas();
+  else c1->cd();
   draw2(histname);
 }
 
@@ -308,7 +312,7 @@ void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
    
   if (whatsit==1 || whatsit==2 || whatsit==6) {//1D object
       
-    for (Int_t ibin=0; ibin < hist1->GetNbinsX()+1;ibin++) {
+    for (Int_t ibin=0; ibin < hist1->GetNbinsX()+1;ibin++) {//includes underflow bin
       if (ierr==0) {
 	if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
 	    zsupp==0) {
@@ -750,6 +754,10 @@ void pjx(Char_t *histname, Float_t ymin=-999999., Float_t ymax=999999.)
   hist2->ProjectionX("xproj",ybin1,ybin2)->Draw();
 }
 
+void pjy1(Char_t *histname, Float_t x=-999999.) {
+  pjy(histname, x, x);
+}
+
 void pjy(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999.)
 {
   Int_t xbin1,xbin2;
@@ -888,12 +896,56 @@ void pfy(Char_t *histname,Float_t xmin=0, Float_t xmax=0)
 
 }
 
+void drawcut(Char_t *cutname) 
+{ if( c1 == 0 ) {
+    cout<<"please display the histogram first.\n";
+    return;
+  }
+  char path[124]=gROOT->GetPath();
+  readcuts("cut_file.root");
+  TCutG *cut1 = (TCutG*) gROOT->FindObject(cutname);
+  if( cut1 == 0 ) { 
+    cout<<"Sorry, "<<cutname<<" does not exist.\n";
+  } else {
+    c1->cd();
+    cut1->SetLineColor(2);
+    cut1->SetLineWidth(2);
+    cut1->Draw();
+  }
+  gROOT->cd(path);
+}
+
 void readcuts(Char_t *filename)
 {
+  char path[124]=gROOT->GetPath();//added
+  cout<<path<<endl;
   TFile *fin=new TFile(filename);
   TList *speclist=(TList*) fin->GetListOfSpecials();
   speclist->Read();
+  //the following 3 lines are copied from a similar block of code...
+  fin->ReadAll();
+  fin->Purge();
+  fin->ls("-d");
   fin->Close();
+  gROOT->cd(path);
+}
+
+void deletecuts(Char_t *filename, Char_t *cut_name) 
+{
+  char path[124]=gROOT->GetPath();
+  cout<<path<<endl;
+  TFile *fin=new TFile(filename,"update");
+  fin->ReadAll();
+  TString cutname=TString(cut_name)+";*";
+  cout<<"Do you want to delete "<<cutname<<" ? (y/n)"<<endl;
+  char opt;
+  cin>>opt;
+  if( opt == 'y' ) {
+    fin->Delete( cutname.Data() );
+    cout<<cutname<<" is deleted."<<endl;
+  }
+  fin->Close();
+  gROOT->cd(path);
 }
 
 void setname(Char_t *oldname, Char_t *newname)
@@ -922,8 +974,16 @@ void savecuts(Char_t *filename)
   TFile *fout=new TFile(filename,"recreate");
   fout->cd();
   speclist->Write();
+  fout->Purge();//added
+  fout->ls();
   fout->Close();
   cout << "Special objects written to file "<<filename<<endl;
+}
+
+void listcuts()
+{    
+  TList *speclist=gROOT->GetListOfSpecials();
+  cout<<"To be implemented."<<endl;
 }
 
 void setcutg(Char_t *cutname="CUTG", Char_t *xvar="",Char_t *yvar="")
