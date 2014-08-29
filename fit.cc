@@ -3110,5 +3110,4 @@ void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *temp
   }
   else
     printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
-  
 }
