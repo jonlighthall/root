@@ -4,14 +4,23 @@
 //#include <stdio.h>
 //#include <Type.h>
 
-//Loads of standard utils
-void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Int_t ierr=0)
+void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
 {
 
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
   TH1F *hist3=(TH1F *) gROOT->FindObject(histout);
-  hist3->Add(hist1,hist2);
+  hist3->Add(hist1,hist2,scale1,scale2);
+  hist3->Draw();
+}
+
+void add2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
+{
+
+  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
+  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
+  TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
+  hist3->Add(hist1,hist2,scale1,scale2);
   hist3->Draw();
 }
 
@@ -296,7 +305,6 @@ void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
    }
    outfile.close();
 }
-
 
 void fillhist0(Char_t *filename, Char_t *histname)
 {
@@ -864,7 +872,6 @@ void setcutg(Char_t *cutname="CUTG", Char_t *xvar="",Char_t *yvar="")
    gcut->SetVarY(yvar);
 }
 
-
 void setplain(void)
 {
    gROOT->SetStyle("Plain");
@@ -911,13 +918,23 @@ void show(Char_t *histname)
    }
 }
 
-void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Int_t ierr=0)
+void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
 {
 
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
   TH1F *hist3=(TH1F *) gROOT->FindObject(histout);
-  hist3->Add(hist1,hist2,1,-1);
+  hist3->Add(hist1,hist2,scale1,scale2);
+  hist3->Draw();
+}
+
+void subtract2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
+{
+
+  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
+  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
+  TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
+  hist3->Add(hist1,hist2,scale1,scale2);
   hist3->Draw();
 }
 
@@ -1064,8 +1081,6 @@ void where(void)
   cout << "Current directory is "<<gDirectory->pwd()<<endl;
 }
 
-
-/*
 void zap(Char_t *histname)
 {
    switch(whatis(histname)) {
@@ -1093,7 +1108,6 @@ void zap(Char_t *histname)
    }
    hist->Reset();
 }
-*/
 
 void zapall()
 {
