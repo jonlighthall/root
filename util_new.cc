@@ -429,7 +429,7 @@ void h1(Char_t *histname, Char_t *title, Int_t nchan=100,Float_t low=0,Float_t h
 }
 
 void h2(Char_t *histname, Char_t *title, Int_t nxchan=100,Float_t lowx=0,Float_t highx=100,
-	Int_t nychan,Float_t lowy=0,Float_t highy=100)
+	Int_t nychan=100,Float_t lowy=0,Float_t highy=100)
 {
   TH2F *newhist=new TH2F(histname,title,nxchan,lowx,highx,nychan,lowy,highy);
   newhist->SetName(histname);
