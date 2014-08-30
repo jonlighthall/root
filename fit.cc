@@ -37,7 +37,8 @@ TCutG *cWindow;
  */
 void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0, 
 	  Float_t scale1=1.0, Float_t scale2=1.0)
-{//Adds two 2D histograms.  If no output is given, a new histogram is made with copy2().
+{//* Extension to add() from util.cc.  Adds two 2D histograms.  If no output is given, a new 
+  // histogram is made with copy2().
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
   if(!gROOT->FindObject(histin1)) {

@@ -4,15 +4,6 @@
 //#include <stdio.h>
 //#include <Type.h>
 
-void add(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=1.0)
-{
-  TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
-  TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
-  TH1F *hist3=(TH1F *) gROOT->FindObject(histout);
-  hist3->Add(hist1,hist2,scale1,scale2);
-  hist3->Draw();
-}
-
 void newcanvas(Char_t *name)
 {
   TCanvas *canvasname=new TCanvas(name,name,1);
