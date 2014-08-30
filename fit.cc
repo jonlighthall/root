@@ -708,7 +708,6 @@ void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
   h->Fill(-5,5,1);//underfill
   h->Fill(12,8,1);//overfill
   h->Fill(8,8,1);//second entry in same bin
-  //  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   h->Draw("colz");
 }
 
