@@ -42,19 +42,19 @@ void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0,
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
   if(!gROOT->FindObject(histin1)) {
-    printf("Histogram \"%s\" not found.\n",histin1);
+    printf(" Histogram \"%s\" not found.\n",histin1);
     return;
   }
   if(!gROOT->FindObject(histin2)) {
-    printf("Histogram \"%s\" not found.\n",histin2);
+    printf(" Histogram \"%s\" not found.\n",histin2);
     return;
   }
   if(!histout){
-    printf("No output histogram given.\n");
+    printf(" No output histogram given.\n");
     hname=histin1; 
     hname+="_copy";     
     if ((TH2F *) gROOT->FindObject(hname)) {
-      printf("Default output, %s, already exists",hname.Data());
+      printf(" Default output, %s, already exists",hname.Data());
       if(hname==histin2){
 	printf(".  Creating new histogram...\n",hname.Data(),histin2);
 	copy2(histin2,0);
@@ -733,7 +733,7 @@ void copy2(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
   hname=histin;
   hname+="_copy"; 
   Char_t *htitle = hInput->GetTitle();
-  printf("Output histogram is \"%s\"\n",hname.Data());
+  printf(" Output histogram is \"%s\"\n",hname.Data());
 
   if ((TH2F *) gROOT->FindObject(hname)) {
     gROOT->FindObject(hname)->Delete();  
