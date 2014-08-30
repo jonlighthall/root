@@ -38,11 +38,16 @@ TCutG *cWindow;
 void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0, 
 	  Float_t scale1=1.0, Float_t scale2=1.0)
 {//Adds two 2D histograms.  If no output is given, a new histogram is made with copy2().
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
-  if(!gROOT->FindObject(histin1)) printf("Histogram \"%s\" not found.\n",histin1);
-  if(!gROOT->FindObject(histin2)) printf("Histogram \"%s\" not found.\n",histin2);
+  if(!gROOT->FindObject(histin1)) {
+    printf("Histogram \"%s\" not found.\n",histin1);
+    return;
+  }
+  if(!gROOT->FindObject(histin2)) {
+    printf("Histogram \"%s\" not found.\n",histin2);
+    return;
+  }
   if(!histout){
     printf("No output histogram given.\n");
     hname=histin1; 
@@ -72,6 +77,7 @@ void add2(Char_t *histin1, Char_t *histin2, Char_t *histout=0,
       printf(" already exists; it will be overwritten.\n");
     TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
   }  
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2(); 
   cFit->Clear();
   cFit->Divide(1,3);
   cFit->cd(1);
