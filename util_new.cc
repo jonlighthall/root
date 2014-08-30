@@ -749,17 +749,6 @@ void savecanvas(Char_t *cnvname, Char_t * filename)
   thecanvas->SaveAs(filename);
 }
 
-void doprint(Char_t * cnvname="cc", Char_t * filename="print.ps", Char_t * pr="m0-epson")
-{
-  const char cmd[255];
-  char * fl = reinterpret_cast<char *>(filename);
-  TCanvas *thecanvas=(TCanvas *)gROOT->FindObject(cnvname);
-  thecanvas->SaveAs(filename);
-  sprintf(cmd,"lpr -P%s %s",pr,fl);
-  gSystem->Exec(cmd);
-  cout<<fl<<" was sent to printer "<<pr<<endl;
-}
-
 void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999)
 {
   Float_t sigma=0, width=0; 
