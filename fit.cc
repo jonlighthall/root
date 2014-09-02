@@ -705,11 +705,11 @@ void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
   h = new TH2F(hname.Data(),"Small Histogram",bins,0.,size,bins,0.,size);
   h->Fill(3,3,1);
   h->Fill(8,8,2);
-  h->Fill(-5,5,1);//underfill
-  h->Fill(12,8,1);//overfill
+  h->Fill(-bins,0.5*size,1);//underfill
+  h->Fill(1.2*size,0.8*size,1);//overfill
   h->Fill(8,8,1);//second entry in same bin
-  h->Fill(8.33,1.67,10);
-  h->Fill(1.67,8.33,5);  
+  h->Fill((size/bins)/2+(size/bins)*(bins-1),(size/bins)/2,10);
+  h->Fill((size/bins)/2,(size/bins)/2+(size/bins)*(bins-1),5);  
   h->Draw("colz");
 }
 
