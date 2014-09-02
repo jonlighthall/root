@@ -1,7 +1,7 @@
 /*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
 /* Program: fit.cc
  *       Created  by Jon Lighthall
- *       Adapted from "linefit.cc" by Jack Winkelbauer
+ *       Adapted from "linefit.cc" by Jack Winkelbauer (c 12.2.2008)
  *       Adapted from "peakfit.cc" by Alan Wuosmaa
  *       Adapted from "util.cc" by Alan Wuosmaa
  *       Adapted from "bkffit.cc" by Alan Wuosmaa
@@ -704,10 +704,12 @@ void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
 
   h = new TH2F(hname.Data(),"Small Histogram",bins,0.,size,bins,0.,size);
   h->Fill(3,3,1);
-  h->Fill(8,8,1);
+  h->Fill(8,8,2);
   h->Fill(-5,5,1);//underfill
   h->Fill(12,8,1);//overfill
   h->Fill(8,8,1);//second entry in same bin
+  h->Fill(8.33,1.67,10);
+  h->Fill(1.67,8.33,5);  
   h->Draw("colz");
 }
 
