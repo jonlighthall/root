@@ -63,7 +63,23 @@ void testRandom2(Int_t nrEvents=10e+08, double mean = 0, double sigma = 100)
 
 void source(Int_t nevents=1000)
 {
+  //TString histnames[20]={"hbeamspot","htheta"}
+  //beam spot
+  TRandom *rx=new TRandom();//for x-position of beam spot
+  TRandom *ry=new TRandom();//for y-position of beam spot
+  Double_t x=0,y=0;
+  Double_t sigma_x=0.607956845;//for 90% in a 1mm radius
+  Double_t sigma_y=sigma_x;
+  Double_t offset_x=0, offset_y=0;
+  if (gROOT->FindObject("hbeamspot"))
+    gROOT->FindObject("hbeamspot")->Delete();   
+  TH2D *hbeamspot=new TH2D("hbeamspot","Beam Spot",500,-10,10,500,-10,10);
+  hbeamspot->SetXTitle("x-position (mm)");
+  hbeamspot->SetYTitle("y-position (mm)");
+
   TRandom *rtheta=new TRandom();//for scattering angle 
+  if (gROOT->FindObject("htheta"))
+    gROOT->FindObject("htheta")->Delete();    
   TH1D *htheta=new TH1D("htheta","Emission Angle",500,0,180);
   Double_t theta=0;
   Double_t theta_min=7;
@@ -71,7 +87,12 @@ void source(Int_t nevents=1000)
   Double_t theta_center=30;
   theta_min+=theta_center;
   theta_max+=theta_center;
+ 
+  
   for (Int_t i=0; i<nevents; i++) {
+    x=rx->Gaus(offset_x,sigma_x);
+    y=rx->Gaus(offset_y,sigma_y);
+    hbeamspot->Fill(x,y);
     theta=rtheta->Uniform(theta_min,theta_max);
     htheta->Fill(theta);
     if(i%500000==0)
