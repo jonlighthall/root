@@ -70,7 +70,8 @@ TString fname;
  * 
  */
 
-//Macros specific to the 28Si(d,p) experiment:------------------------
+//-----------------------------------------------------------------------------------------------
+//Macros specific to the 28Si(d,p) experiment:---------------------------------------------------
 void loadfiles(Char_t *histin="_cut")
 {//the scope of these files is limited to this script, so it isn't useful.
   hname="100";
@@ -3305,7 +3306,8 @@ void timeplot3()
   cET_big->SaveAs("cET_big.eps");
 }
 
-//macros for checking and setting calibration for EMMA PGAC test data
+//-----------------------------------------------------------------------------------------------
+//macros for checking and setting calibration for EMMA PGAC test data----------------------------
 void showX()
 {//test extent of x-positions (calibrated)
   //setvlines(-300,100);
@@ -3705,8 +3707,7 @@ void lsset()
   ls1->SetParameter(8,0);
   ls1->SetParameter(9,100);
   ls1->SetParameter(10,0);
-  
-  //  ls1->SetParLimits(6,);
+  //ls1->SetParLimits(6,);
   //ls1->SetParLimits(7,);
 }
 
