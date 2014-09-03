@@ -948,7 +948,7 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
 	if(hInput->GetEntries()==0){
 	  no0++;
-	  printf("Histogram %s has no entries.\n",hname.Data());
+	  printf(" Histogram %s has no entries.\n",hname.Data());
 	}
       }
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) {
@@ -956,13 +956,13 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
 	hProj=(TH1F*)gROOT->FindObject(hname.Data());
 	if(hProj->GetEntries()==0){
 	  no0++;
-	  printf("Histogram %s has no entries.\n",hname.Data());
+	  printf(" Histogram %s has no entries.\n",hname.Data());
 	}
       }
     }
   }
-  printf("Histograms with name %s%s: %d.  1D: %d.  2D: %d.\n",histin,suffix,no,no1,no2);
-  printf("Histograms with zero entries: %d.\n",no0);
+  printf(" Histograms with name %s%s: %d.  1D: %d.  2D: %d.\n",histin,suffix,no,no1,no2);
+  printf(" Histograms with zero entries: %d.\n",no0);
 
   no-=no0;
   if(no!=0){
@@ -1087,7 +1087,7 @@ void copy1(Char_t *histin, Float_t miny=0, Float_t maxy=-1, Int_t plot=2)
   printf(" with min=%f and max=%f\n",miny,maxy);
   if ((TH1F *) gROOT->FindObject(hname)) {
     gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    printf(" Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
 
   // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
@@ -1697,16 +1697,6 @@ void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
   TH1F *hist3=(TH1F *) gROOT->FindObject(histout);
-  hist3->Add(hist1,hist2,scale1,scale2);
-  hist3->Draw();
-}
-
-void subtract2(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
-{//added
-  //copied from util.cc
-  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
-  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
-  TH2F *hist3=(TH2F *) gROOT->FindObject(histout);
   hist3->Add(hist1,hist2,scale1,scale2);
   hist3->Draw();
 }
