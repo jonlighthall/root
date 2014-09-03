@@ -70,7 +70,7 @@ void printVer()
 }
 
 void settime(Bool_t bdisplay=kTRUE)
-{//turns timestamp on/off.  copied from /net/helios/H008/oneline/rootlogon.C
+{//turns time stamp on/off.  copied from /net/helios/H008/oneline/rootlogon.C
   if(bdisplay)
     {
       gStyle->SetOptDate(4);
@@ -298,7 +298,7 @@ void show(Char_t *histname)
 //-------------------------------------------------------------------------------------
 // 1e). Drawing Histograms-------------------------------------------------------------
 void draw(Char_t *histname,Char_t *dopt="",Float_t xmin=-999999.,Float_t xmax=999999.)
-{// Draws a 1D histogram with a given option and over a specificed (user) range
+{// Draws a 1D histogram with a given option and over a specified (user) range
   //copied form util.cc
   Int_t minbin,maxbin;
   Int_t lowbin,highbin;
@@ -323,7 +323,7 @@ void draw(Char_t *histname,Char_t *dopt="",Float_t xmin=-999999.,Float_t xmax=99
 
 void draw2(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,
 	   Float_t ymin=-999999.,Float_t ymax=999999.)
-{// Draws a 2D histogram with a given option and over a specificed (user) range
+{// Draws a 2D histogram with a given option and over a specified (user) range
   //copied from util.cc
   Int_t minxbin,maxxbin;
   Int_t lowxbin,highxbin;
@@ -1120,7 +1120,7 @@ void copy1(Char_t *histin, Float_t miny=0, Float_t maxy=-1, Int_t plot=2)
     cFit->cd(2);
     hResult->Draw();
     break;
-  defualt:
+  default:
     break;
   }
 }
@@ -1195,7 +1195,7 @@ void copy2(Char_t *histin, Float_t minz=0, Float_t maxz=-1, Int_t plot=2)
     cFit->cd(2);
     hOutput->Draw("colz");
     break;
-  defualt:
+  default:
     break;
   }
 }
@@ -1269,7 +1269,7 @@ void trimbin(Char_t *histin, Int_t left=0, Int_t right=0, Int_t top=0, Int_t bot
     cFit->cd(2);
     hOutput->Draw("colz");
     break;
-  defualt:
+  default:
     break;
   }
 }
@@ -1692,7 +1692,7 @@ void shiftadd2(Char_t *histin1, Float_t shift1=0, Char_t *histin2, Float_t shift
 }
 
 void subtract(Char_t *histin1, Char_t *histin2, Char_t *histout, Float_t scale1=1.0, Float_t scale2=-1.0)
-{//updated to use scale, omitts ierr
+{//updated to use scale, omits ierr
   //copied from util.cc
   TH1F *hist1=(TH1F *) gROOT->FindObject(histin1);
   TH1F *hist2=(TH1F *) gROOT->FindObject(histin2);
@@ -2141,7 +2141,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     else
       printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
     break;
-  case 2:// adpated from linefit.cc
+  case 2:// adapted from linefit.cc
     //      copied from minfit(), used to find minimum (center) of hEX plots
     //      then generalize to fit2pfx()
     p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
@@ -2466,7 +2466,7 @@ void timefit2(Char_t *histin,Float_t minE=1,Float_t maxE=24)
   }
 }
 void timefitg(Char_t *histin,Float_t minT=100,Float_t maxT=1200)
-{//fit the x-projection of a histogram with a gaussian; redundant, from linefit.cc
+{//fit the x-projection of a histogram with a Gaussian; redundant, from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
   cFit->Clear();
   cFit->Divide(1,2);
@@ -2933,7 +2933,7 @@ void fitpqRpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,F
       p2=hProf->GetFunction("pol2")->GetParameter(2);
       cp=(-p1/(2*p2));
 
-      printf("Reinitiating loop with tolerance set to %2.0f%%\n",tol*100);
+      printf("Re-initiating loop with tolerance set to %2.0f%%\n",tol*100);
       i=0;
     }
   }
