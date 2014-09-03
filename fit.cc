@@ -55,7 +55,6 @@ TCutG *cWindow;
 /* 1). Display Utilities-------------------------------------------------------------------------
  *
  */
-
 //-------------------------------------------------------------------------------------
 // 1a). Style Utilities----------------------------------------------------------------
 void setplain(void)
@@ -293,6 +292,7 @@ void show(Char_t *histname)
       hist2->GetYaxis()->GetXmin()<<" to "<<hist2->GetYaxis()->GetXmax()
 	 <<endl;
   }
+  dr(histname);
 }
 
 //-------------------------------------------------------------------------------------
@@ -424,10 +424,6 @@ void pjx(Char_t *histname, Float_t ymin=-999999., Float_t ymax=999999.)
    
   TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
   hist2->ProjectionX("xproj",ybin1,ybin2)->Draw();
-}
-
-void pjy1(Char_t *histname, Float_t x=-999999.) {
-  pjy(histname, x, x);
 }
 
 void pjy(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999.)
