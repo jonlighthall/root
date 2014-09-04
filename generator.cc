@@ -146,7 +146,7 @@ printf("  Y-position is %7.2f (absolute)\n",Y);
  }
 }
 
-void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Double_t phi_min=0, Double_t phi_max=360;)
+void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Double_t phi_min=0, Double_t phi_max=360)
 {
   //beam spot-------------------------------------
   TRandom3 *rx=new TRandom3();//for x-position of beam spot
@@ -204,7 +204,7 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
    TH2D *hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,-80,-80,500,0,360);
    hyphi->SetYTitle("phi - azimuth angle (deg)");
 
-   for (Int_t i=0; i<nevents; i++) {//generate randoms
+   for (Int_t i=0; i<nevents; i++){
     hit=kFALSE;
     //Origin position (beam spot)-----------------
     // x=rx->Gaus(offset_x,sigma_x);
@@ -216,14 +216,14 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     //Emmission angle-----------------------------
     // Polar angle----------------------
     //theta=rtheta->Uniform(theta_min,theta_max);
-    theta=(TMath::ACos(rtheta->Uniform(-1,1))*(TMath::RadToDeg());
+    theta=(TMath::ACos(rtheta->Uniform(-1,1))*(TMath::RadToDeg()));
     htheta->Fill(theta);
     // Azimuthal angle------------------
     phi=rphi->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
     hangles->Fill(theta,phi);
     
-    if(i%5000==0){
+    if(i%5000==0) {
       printf("%5.1f\%: %d events generated\n",(double)i/nevents*100,i);
       doprint=kTRUE;
     }
@@ -243,7 +243,7 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
       hit=kTRUE;
       if(doprint)
 	printf("  Hit!\n");
-	}
+    }
     //if(((X>-31)&&(X<-26))||((X>19)&&(X<24)))
     //hit=kTRUE;
     // if(X>0)
