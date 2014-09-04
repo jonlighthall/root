@@ -468,6 +468,32 @@ void pjxy(Char_t *histin)
   hProj->Draw();
 }
 
+void drpjxy(Char_t *histin)
+{//plots the x- and y-projections of a 2D histogram
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+  cFit->Clear();
+  cFit->Divide(2,2);
+  cFit->cd(2);
+  TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+  hInput->Draw("COL2");
+  
+  cFit->cd(4);
+  hname=histin;
+  hname+="_px"; 
+  hInput->ProjectionX(hname);
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  hProj->Draw();
+  int color=hProj->GetLineColor();
+
+  cFit->cd(1);
+  hname=histin;
+  hname+="_py"; 
+  hInput->ProjectionY(hname);
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  hProj->SetLineColor(color);
+  hProj->Draw();//hbar2
+}
+
 void opjx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Int_t col=2)
 {//"overlay ProjectionX" - extension to pjx()
   hInput=(TH2F *) gROOT->FindObject(histin);
