@@ -148,14 +148,13 @@ printf("  Y-position is %7.2f (absolute)\n",Y);
 
 void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Double_t phi_min=0, Double_t phi_max=360;)
 {
-  //TObjString histnames[20]={"hbeam","htheta"}
-  //beam spot
+  //beam spot-------------------------------------
   TRandom3 *rx=new TRandom3();//for x-position of beam spot
   TRandom3 *ry=new TRandom3();//for y-position of beam spot
   rx->SetSeed(0);
   ry->SetSeed(0);
  
-  //scattering angle
+  //polar angle (scattering angle)----------------
   TRandom3 *rtheta=new TRandom3();//for scattering angle 
   rtheta->SetSeed(0);
   if (gROOT->FindObject("htheta"))
@@ -166,7 +165,7 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
   //theta_min+=theta_center;
   //theta_max+=theta_center;
  
-  //azimuthal angle
+  //azimuthal angle-------------------------------
   TRandom3 *rphi=new TRandom3();
   rphi->SetSeed(0);
  
@@ -180,7 +179,7 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
   hangles->SetXTitle("theta - polar angle (deg)");
   hangles->SetYTitle("phi - azimuth angle (deg)");
 
-  //Ray
+  //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
    if (gROOT->FindObject("hmask"))
     gROOT->FindObject("hmask")->Delete();
@@ -195,22 +194,32 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
      gROOT->FindObject("hmaskg")->Delete();
    TH2D *hmaskg=new TH2D("hmaskg","Mask Plane (gated)",500,-80,-80,500,-80,80);
 
-   TH2D *hxtheta=new TH2D("hxtheta","Mask Plane (gated)",100,-80,-80,100,0,180);
-   TH2D *hytheta=new TH2D("hytheta","Mask Plane (gated)",100,-80,-80,100,0,180);
-   TH2D *hxphi=new TH2D("hxphi","Mask Plane (gated)",100,-80,-80,500,0,360);
-   TH2D *hyphi=new TH2D("hyphi","Mask Plane (gated)",100,-80,-80,500,0,360);
+   //Other correlation plots----------------------
+   TH2D *hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,-80,-80,100,0,180);
+   hxtheta->SetYTitle("theta - polar angle (deg)");
+   TH2D *hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,-80,-80,100,0,180);
+   hytheta->SetYTitle("theta - polar angle (deg)");
+   TH2D *hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,-80,-80,500,0,360);
+   hxphi->SetYTitle("phi - azimuth angle (deg)");
+   TH2D *hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,-80,-80,500,0,360);
+   hyphi->SetYTitle("phi - azimuth angle (deg)");
 
-  for (Int_t i=0; i<nevents; i++) {
+   for (Int_t i=0; i<nevents; i++) {//generate randoms
     hit=kFALSE;
+    //Origin position (beam spot)-----------------
     // x=rx->Gaus(offset_x,sigma_x);
     //y=rx->Gaus(offset_y,sigma_y);
     x=rx->Uniform(-sigma_x,sigma_x);
     y=ry->Uniform(-sigma_y,sigma_y);
-    
     hbeam->Fill(x,y);
-    theta=rtheta->Uniform(theta_min,theta_max);
+    
+    //Emmission angle-----------------------------
+    // Polar angle----------------------
+    //theta=rtheta->Uniform(theta_min,theta_max);
+    theta=(TMath::ACos(rtheta->Uniform(-1,1))*(TMath::RadToDeg());
     htheta->Fill(theta);
-    phi=TMath::ACos(rphi->Uniform(-1,1));
+    // Azimuthal angle------------------
+    phi=rphi->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
     hangles->Fill(theta,phi);
     
