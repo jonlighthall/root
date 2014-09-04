@@ -168,8 +168,6 @@ Bool_t is_hit(void)
   if((Y<-27)||(Y>27))
     return kTRUE;
   return kFALSE;
-  // if(X>0)
-  //return kTRUE;
 }
 
 Double_t theta_min=0;
@@ -196,14 +194,16 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
   //x_min=0-118-6;
   //x_max=154-118+6;
-  x_min=-80;
-  x_max=-x_min;
+  Double_t x_Max=124;
+  if(x_max>x_Max)
+    x_max=x_Max;
+  x_min=-x_max;
+  
   if(doprint)
     printf(" Mask histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
- //   TH2D *hmask=new TH2D("hmask","Mask Plane",500,x_max,x_max,500,x_min,x_max);
   TH2D *hmask =new TH2D("hmask" ,"Mask Plane"        ,500,x_min,x_max,500,x_min,x_max);
   //TH2D *hmaskg=new TH2D("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);  
-
+  
   //Other correlation plots----------------------
   TH2D *hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,x_min,x_max,100,0,180);
   hxtheta->SetYTitle("theta - polar angle (deg)");
@@ -220,8 +220,8 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
 
 void clearhists()
 {
-  const int Nhists = 9;
-  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi"};
+  const int Nhists = 10;
+  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -264,6 +264,10 @@ void source(Int_t nevents=1000)
     step=step_max;  
   Bool_t iprint=doprint;  
 
+  // if (!gROOT->FindObject("hmaskg"))
+  //TH2D *hmaskg=new TH2D("hmaskg","Mask Plane (gated)",500,-80,80,500,-80,80);
+  TH1F *hhit=new TH1F("hhit","hhit",2,-1,2);
+  TH2F *hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,-80,80,500,-80,80);
   for (Int_t i=0; i<nevents; i++) {
     if(i%step==0) {
       printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
@@ -311,12 +315,19 @@ void source(Int_t nevents=1000)
 
     hmask->Fill(X,Y);
     hit=is_hit();
-    hmask2->Fill(X,Y);
-    /* if(!hit)
-      hmaskg->Fill(X,Y);
+    // hmask2->Fill(X,Y);
+    /*  if(!hit) {
+      //   hmaskg->Fill(X,Y);
+    }    
     else
       if(iprint)
-	printf("  Hit!\n");
-    */
+      printf("  Hit!\n");*/
+    if(hit){
+      hhit->Fill(1);
+    }
+    else{
+      hhit->Fill(0);
+      hmaskg->Fill(X,Y);
+  }
   }
 }
