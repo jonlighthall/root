@@ -384,6 +384,27 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
     printf("Histogram \"%s\" not recognized.\n",histname);
 }
 
+void odr(Char_t *histname)
+{//Extension to draw() and draw2().  
+ //Accepts either 1-, 2- or 3-D histograms as input, then via the whatis() command, draws the
+ //histogram.  Makes the cFit canvas, if it is not present, and clears it if it is.
+  if(gROOT->FindObject(histname)) {//take no action if histogram not found.
+    hname=histname;
+    if(whatis(histname,0)==1||whatis(histname,0)==2){
+      hProj=(TH1F*)gROOT->FindObject(hname.Data());
+      hPrjo->Draw("same");
+    }
+    if(whatis(histname,0)==3||whatis(histname,0)==4){
+      hInput=(TH2F*)gROOT->FindObject(hname.Data());
+      hInput->Draw("same");
+    }
+    if(whatis(histname,0)==5)
+      gROOT->FindObject(histname)->Draw("same");
+  }
+  else
+    printf("Histogram \"%s\" not recognized.\n",histname);
+}
+
 void lowstat(Char_t *histname, Int_t style=7, Int_t size=1, Int_t color=1)
 {//Drawing options for low statistics
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit");  
