@@ -82,8 +82,8 @@ void createbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_s
   TH2D *hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
   hbeam->SetXTitle("x-position (mm)");
   hbeam->SetYTitle("y-position (mm)");
-  source(1e6);
-  drpjxy("hbeam");
+  //source(1e6);
+  // drpjxy("hbeam");
 }
 
 Float_t z_mask=637.0;
@@ -153,59 +153,89 @@ void source(Int_t nevents=1000)
 {
   //TObjString histnames[20]={"hbeam","htheta"}
   //beam spot
-  TRandom *rx=new TRandom();//for x-position of beam spot
-  TRandom *ry=new TRandom();//for y-position of beam spot
+  TRandom3 *rx=new TRandom3();//for x-position of beam spot
+  TRandom3 *ry=new TRandom3();//for y-position of beam spot
  
  
   //scattering angle
-  TRandom *rtheta=new TRandom();//for scattering angle 
+  TRandom3 *rtheta=new TRandom3();//for scattering angle 
   if (gROOT->FindObject("htheta"))
     gROOT->FindObject("htheta")->Delete();    
-  TH1D *htheta=new TH1D("htheta","Emission Angle",500,0,180);
-  
-  Double_t theta_min=7;
+  TH1D *htheta=new TH1D("htheta","Polar Angle",500,0,180);
+  Double_t theta_min=-7;
   Double_t theta_max=-theta_min;
   Double_t theta_center=30;
   theta_min+=theta_center;
   theta_max+=theta_center;
  
   //azimuthal angle
-  TRandom *rphi=new TRandom();
-  
+  //TRandom3 *rphi=new TRandom3();
   Double_t phi_min=0;
-  Double_t phi_max=360;
+  Double_t phi_max=0;
   if (gROOT->FindObject("hphi"))
     gROOT->FindObject("hphi")->Delete();    
-  TH1D *hphi=new TH1D("hphi","Emission Angle",500,0,180);
+  TH1D *hphi=new TH1D("hphi","Azimuth Angle",500,0,360);
+
+  if (gROOT->FindObject("hangles"))
+    gROOT->FindObject("hangles")->Delete();
+  TH2D *hangles=new TH2D("hangles","Maks Plane",500,0,180,500,0,360);
+  hangles->SetXTitle("theta - polar angle (deg)");
+  hangles->SetYTitle("phi - azimuth angle (deg)");
 
   //Ray
-  
   Bool_t hit=kFALSE;
+   if (gROOT->FindObject("hmask"))
+    gROOT->FindObject("hmask")->Delete();
+   Double_t x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
+   Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
+   //x_min=0-118-6;
+   //x_max=154-118+6;
+   printf("xmin=%f, xmax=%f\n",x_min,x_max);
+   TH2D *hmask=new TH2D("hmask","Mask Plane",500,x_max,x_max,500,x_min,x_max);
+   if (gROOT->FindObject("hmaskg"))
+     gROOT->FindObject("hmaskg")->Delete();
+   TH2D *hmaskg=new TH2D("hmaskg","Mask Plane (gated)",500,-80,80,500,-80,80);
 
   for (Int_t i=0; i<nevents; i++) {
+    hit=kFALSE;
     x=rx->Gaus(offset_x,sigma_x);
     y=rx->Gaus(offset_y,sigma_y);
+    //x=rx->Uniform(-1,1);
+    //y=ry->Uniform(-1,1);
+    
     hbeam->Fill(x,y);
     theta=rtheta->Uniform(theta_min,theta_max);
     htheta->Fill(theta);
-    phi=rphi->Uniform(phi_min,phi_max);
+    phi=rtheta->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
+    hangles->Fill(theta,phi);
     
-    if(i%500000==0){
+    if(i%5000==0){
       printf("%5.1f\%: %d events generated\n",(double)i/nevents*100,i);
       doprint=kTRUE;
     }
     else
       doprint=kFALSE;
     
+    //calculate positions at mask
+    theta-=theta_center;
     Z=z_mask;
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
-    rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(X,2)));
+    rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
     if(doprint)
       printf("  rho=%f\n",rho);
-    
-   
+    if(rho>(99.5/2)) {
+      hit=kTRUE;
+      if(doprint)
+	printf("  Hit!\n");
+    }
+    //if(((X>-31)&&(X<-26))||((X>19)&&(X<24)))
+    //hit=kTRUE;
+
+    hmask->Fill(X,Y);
+    if(!hit)
+      hmask->Fill(X,Y);
 }
 }
