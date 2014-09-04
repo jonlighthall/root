@@ -204,11 +204,15 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
   hxphi->SetYTitle("phi - azimuth angle (deg)");
   TH2D *hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,-80,-80,500,0,360);
   hyphi->SetYTitle("phi - azimuth angle (deg)");
-
-  for (Int_t i=0; i<nevents; i++){
+  
+  for (Int_t i=0; i<nevents; i++) {
     Bool_t iprint=doprint;
-    if(i%50000==0) {
-      printf("%5.1f\%: %d events generated\n",(double)i/nevents*100,i);
+    int step=(int) (nevents/10);//5e4;
+    int step_max=5e4;
+    if(step>step_max)
+      step=step_max;
+    if(i%step==0) {
+      printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
       iprint=doprint*kTRUE;
     }
     else
@@ -224,15 +228,13 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     //Emmission angle-----------------------------
     // Polar angle----------------------
     //theta=rtheta->Uniform(theta_min,theta_max);
-    theta=(TMath::ACos(rtheta->Uniform(-1,1))*(TMath::RadToDeg()));
+    theta=(TMath::ACos(rtheta->Uniform(1,-1))*(TMath::RadToDeg()));
     htheta->Fill(theta);
     // Azimuthal angle------------------
     phi=rphi->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
     hangles->Fill(theta,phi);
-    
-    
-    
+     
     //calculate positions at mask
     //theta-=theta_center;
     Z=z_mask;
@@ -255,8 +257,6 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     hytheta->Fill(Y,theta);
     hxphi->Fill(X,phi);
     hyphi->Fill(Y,phi);
-
-
 
     hmask->Fill(X,Y);
     if(!hit)
