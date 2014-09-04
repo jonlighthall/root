@@ -72,7 +72,7 @@ Double_t offset_x=0, offset_y=0;
 //TH2D *hbeam=0;
 //TH2D *htheta=0;
 
-void createbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigma_x=0.607956845, Double_t set_sigma_y=0.607956845)
+void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigma_x=0.607956845, Double_t set_sigma_y=0.607956845)
 {
   sigma_x=set_sigma_x;
   sigma_y=set_sigma_y;
@@ -84,8 +84,6 @@ void createbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_s
   TH2D *hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
   hbeam->SetXTitle("x-position (mm)");
   hbeam->SetYTitle("y-position (mm)");
-  //source(1e6);
-  // drpjxy("hbeam");
 }
 
 Float_t z_mask=637.0;
@@ -106,7 +104,6 @@ Double_t phi=0;//azimuthal angle
 Double_t X=0, Y=0, Z=0;//position
 Double_t r=0,rho=0;//radius
 Bool_t doprint=kFALSE;
-
 
 void trace_r(Double_t z_start,Double_t theta_start, Double_t phi_start)
 {//given z, theta, phi; calculate r
@@ -146,7 +143,66 @@ void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
   }
 }
 
-void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Double_t phi_min=0, Double_t phi_max=360)
+Bool_t is_hit(void)
+{
+  if(rho>(99.5/2)) 
+    return kTRUE;
+  if((X>-31)&&(X<-26))
+    return kTRUE;
+  if((X>19)&&(X<24))
+    return kTRUE;
+  if((Y>-15)&&(Y<-10))
+    return kTRUE;
+  if((Y>10)&&(Y<15))
+    return kTRUE;
+  if((X<-118)||(X>36))
+    return kTRUE;
+  if((Y<-27)||(Y>27))
+    return kTRUE;
+  return kFALSE;
+  // if(X>0)
+  //return kTRUE;
+}
+
+Double_t theta_min=0;
+Double_t theta_max=180;
+Double_t phi_min=0;
+Double_t phi_max=360;
+
+void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
+{
+  theta_min=set_theta_min;
+  theta_max=set_theta_max;
+  phi_min=set_phi_min;
+  phi_max=set_phi_max;
+
+  clearhists();
+
+  TH1D *htheta=new TH1D("htheta","Polar Angle",500,0,180);
+  TH1D *hphi=new TH1D("hphi","Azimuth Angle",500,0,360);
+  TH2D *hangles=new TH2D("hangles","Maks Plane",500,0,180,500,0,360);
+  hangles->SetXTitle("theta - polar angle (deg)");
+  hangles->SetYTitle("phi - azimuth angle (deg)");
+
+  Double_t x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
+  Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
+  //x_min=0-118-6;
+  //x_max=154-118+6;
+  if(doprint)
+    printf(" Mask histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
+
+  //Other correlation plots----------------------
+  TH2D *hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,-80,-80,100,0,180);
+  hxtheta->SetYTitle("theta - polar angle (deg)");
+  TH2D *hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,-80,-80,100,0,180);
+  hytheta->SetYTitle("theta - polar angle (deg)");
+  TH2D *hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,-80,-80,500,0,360);
+  hxphi->SetYTitle("phi - azimuth angle (deg)");
+  TH2D *hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,-80,-80,500,0,360);
+  hyphi->SetYTitle("phi - azimuth angle (deg)");
+}
+
+void clearhists()
 {
   const int Nhists = 9;
   TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi"};
@@ -158,7 +214,10 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
       gROOT->FindObject(histnames[i])->Delete();    
     }
   }
+}
 
+void source(Int_t nevents=1000)
+{
   //beam spot-------------------------------------
   TRandom3 *rx=new TRandom3();//for x-position of beam spot
   TRandom3 *ry=new TRandom3();//for y-position of beam spot
@@ -168,8 +227,10 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
   //polar angle (scattering angle)----------------
   TRandom3 *rtheta=new TRandom3();//for scattering angle 
   rtheta->SetSeed(0);
-  TH1D *htheta=new TH1D("htheta","Polar Angle",500,0,180);
  
+  Double_t cos_theta_min=(TMath::Cos(theta_min*TMath::DegToRad()));
+  Double_t cos_theta_max=(TMath::Cos(theta_max*TMath::DegToRad()));
+
   Double_t theta_center=30;
   //theta_min+=theta_center;
   //theta_max+=theta_center;
@@ -177,40 +238,22 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
   //azimuthal angle-------------------------------
   TRandom3 *rphi=new TRandom3();
   rphi->SetSeed(0);
-  TH1D *hphi=new TH1D("hphi","Azimuth Angle",500,0,360);
-
-  TH2D *hangles=new TH2D("hangles","Maks Plane",500,0,180,500,0,360);
-  hangles->SetXTitle("theta - polar angle (deg)");
-  hangles->SetYTitle("phi - azimuth angle (deg)");
-
+ 
   //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
-  Double_t x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
-  Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
-  //x_min=0-118-6;
-  //x_max=154-118+6;
-  if(doprint)
-    printf(" Mask histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
+  
   //   TH2D *hmask=new TH2D("hmask","Mask Plane",500,x_max,x_max,500,x_min,x_max);
   TH2D *hmask=new TH2D("hmask","Mask Plane",500,-80,80,500,-80,80);
   TH2D *hmaskg=new TH2D("hmaskg","Mask Plane (gated)",500,-80,-80,500,-80,80);
 
-  //Other correlation plots----------------------
-  TH2D *hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,-80,-80,100,0,180);
-  hxtheta->SetYTitle("theta - polar angle (deg)");
-  TH2D *hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,-80,-80,100,0,180);
-  hytheta->SetYTitle("theta - polar angle (deg)");
-  TH2D *hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,-80,-80,500,0,360);
-  hxphi->SetYTitle("phi - azimuth angle (deg)");
-  TH2D *hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,-80,-80,500,0,360);
-  hyphi->SetYTitle("phi - azimuth angle (deg)");
   
+  int step=(int) (nevents/10);//5e4;
+  int step_max=5e4;
+  if(step>step_max)
+    step=step_max;  
+  Bool_t iprint=doprint;  
+
   for (Int_t i=0; i<nevents; i++) {
-    Bool_t iprint=doprint;
-    int step=(int) (nevents/10);//5e4;
-    int step_max=5e4;
-    if(step>step_max)
-      step=step_max;
     if(i%step==0) {
       printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
       iprint=doprint*kTRUE;
@@ -228,7 +271,8 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     //Emmission angle-----------------------------
     // Polar angle----------------------
     //theta=rtheta->Uniform(theta_min,theta_max);
-    theta=(TMath::ACos(rtheta->Uniform(1,-1))*(TMath::RadToDeg()));
+    //theta=(TMath::ACos(rtheta->Uniform(1,-1))*(TMath::RadToDeg()));
+    theta=(TMath::ACos(rtheta->Uniform(cos_theta_min,cos_theta_max))*(TMath::RadToDeg()));
     htheta->Fill(theta);
     // Azimuthal angle------------------
     phi=rphi->Uniform(phi_min,phi_max);
@@ -244,15 +288,21 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
     if(iprint)
       printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));
-    if(rho>(99.5/2)) {
+    /*
+      if(rho>(99.5/2)) 
       hit=kTRUE;
-      if(iprint)
-	printf("  Hit!\n");
-    }
-    //if(((X>-31)&&(X<-26))||((X>19)&&(X<24)))
-    //hit=kTRUE;
-    // if(X>0)
-    //hit=kTRUE;
+      if(((X>-31)&&(X<-26))||((X>19)&&(X<24)))
+      hit=kTRUE;
+      if(((Y>-15)&&(Y<-10))||((Y>10)&&(Y<15)))
+      hit=kTRUE;
+      if((X<-118)||(X>36))
+      hit=kTRUE;
+      if((Y<-27)||(Y>27))
+      hit=kTRUE;
+      // if(X>0)
+      //hit=kTRUE;
+      */
+    hit=is_hit();
     hxtheta->Fill(X,theta);
     hytheta->Fill(Y,theta);
     hxphi->Fill(X,phi);
@@ -261,5 +311,8 @@ void source(Int_t nevents=1000, Double_t theta_min=0, Double_t theta_max=180, Do
     hmask->Fill(X,Y);
     if(!hit)
       hmaskg->Fill(X,Y);
+    else
+      if(iprint)
+	printf("  Hit!\n");
   }
 }
