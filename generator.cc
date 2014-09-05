@@ -201,6 +201,10 @@ TH2F *hwin;
 TH2F *hwing;
 
 TH1F *hx[4];
+TH1F *hxg[4];
+TH2F *hyx[2];
+TH2F *hyxg[2];
+TH2F *hyxgm[2];
 
 void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
 {//define angles and build histograms
@@ -248,16 +252,26 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   hx[1] = new TH1F("hx1","Y1 Position",500,x_min,x_max);
   hx[2] = new TH1F("hx2","X2 Position",500,x_min,x_max);
   hx[3] = new TH1F("hx3","Y2 Position",500,x_min,x_max);
+  hxg[0] = new TH1F("hxg0","X1 Position (gated)",500,x_min,x_max);
+  hxg[1] = new TH1F("hxg1","Y1 Position (gated)",500,x_min,x_max);
+  hxg[2] = new TH1F("hxg2","X2 Position (gated)",500,x_min,x_max);
+  hxg[3] = new TH1F("hxg3","Y2 Position (gated)",500,x_min,x_max);
   /* for(int i = 0; i < 4; i++) {//1D position plots
      hx[i]->SetXTitle("Relative Position");
      hx[i]->SetYTitle("Number of Entries");
      }*/
+  hyx[0] = new TH2F("hyx0","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
+  hyx[1] = new TH2F("hyx1","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
+  hyxg[0] = new TH2F("hyxg0","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[1] = new TH2F("hyxg1","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
+  hyxgm[0] = new TH2F("hyxgm0","Y vs X Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
+  hyxgm[1] = new TH2F("hyxgm1","Y vs X Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
 }
 
 void clearhists()
 {
-  const int Nhists = 16;
-  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing"};
+  const int Nhists = 30;
+  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hx0","hx1","hx2","hx3","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -390,7 +404,10 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_y(y,theta,phi);
  
     miss*=!(hit_shield());
-    if(!miss){//hit obstruction
+    if(miss){
+      hx[0]->Fill(Y);
+    }
+    else{//hit obstruction
       if(hit_shield()) {
 	if(iprint)
 	  printf("  Hit Y2 shield!\n");
@@ -399,13 +416,39 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     }
    
     //calculate positions at Y2 (step back)
-    Z=z_Y2; /*
+    Z=z_Y2; 
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
     if(miss)
-      hx0->Fill(Y);
-    */
+      hxg[0]->Fill(Y);
+
+    //calculate positions at X2 shield
+    Z=z_A2+delta_z/2;
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+ 
+    miss*=!(hit_shield());
+    if(miss){
+      hx[1]->Fill(X);
+    }
+    else{//hit obstruction
+      if(hit_shield()) {
+	if(iprint)
+	  printf("  Hit X2 shield!\n");
+	hhit->Fill(4);
+      }
+    }
+   
+    //calculate positions at Y2 (step back)
+    Z=z_X2; 
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+    if(miss)
+      hxg[1]->Fill(X);
+    
   }//end of generator loop
 }
 
