@@ -1,4 +1,4 @@
-/*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
+|/*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
 /* Program: generator.cc
  *       Created  by Jon Lighthall
  * Purpose: 
@@ -83,7 +83,7 @@ void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigm
     distrib="Gaussian";
   else
     distrib="Uniform";
-  printf("Beam created at x=%5.2f, y=%5.2f with sigma_x=%5.2f, sigma_y=%5.2f; distribution is %s\n",offset_x,offset_y,sigma_x,sigma_y,distrib.Data());
+  printf("Beam created at x=%5.2f, y=%5.2f\n with sigma_x=%5.2f, sigma_y=%5.2f;\n distribution is %s.\n",offset_x,offset_y,sigma_x,sigma_y,distrib.Data());
 
   if (gROOT->FindObject("hbeam"))
     gROOT->FindObject("hbeam")->Delete();   
@@ -152,34 +152,30 @@ void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
 Bool_t hit_mask(void)
 {
   if(rho>(99.5/2)) 
-    return kTRUE;
+    return kTRUE;//hits radius
   if((X>-31)&&(X<-26))
-    return kTRUE;
+    return kTRUE;//hist left strip
   if((X>19)&&(X<24))
-    return kTRUE;
+    return kTRUE;//hits right strip
   if((Y>-15)&&(Y<-10))
-    return kTRUE;
+    return kTRUE;//hits bottom strip
   if((Y>10)&&(Y<15))
-    return kTRUE;
-  if((X<-118)||(X>36))
-    return kTRUE;
-  if((Y<-27)||(Y>27))
-    return kTRUE;
+    return kTRUE;//hits top strip
   return kFALSE;
 }
 
 Bool_t hit_shield(void)
 {
   if((X<-118)||(X>36))
-    return kTRUE;
+    return kTRUE;//hits shield (x)
   if((Y<-27)||(Y>27))
-    return kTRUE;
+    return kTRUE;//hist shield (y)
   return kFALSE;
 }
 
 Bool_t hit_window(void)
 {
-  if(X<152.01)
+  if(X>34.0)
     return kTRUE;
   return kFALSE;
 }
@@ -193,14 +189,17 @@ TH1D *htheta;
 TH1D *hphi;
 TH2D *hangles;
 
-TH2D *hmask;
 TH2D *hxtheta;
 TH2D *hytheta;
 TH2D *hxphi;
 TH2D *hyphi;
 
-TH1F *hhit;
+TH2D *hmask;
 TH2F *hmaskg;
+TH1F *hhit;
+TH2F *hwin;
+TH2F *hwing;
+
 TH1F *hx[4];
 
 void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
@@ -227,34 +226,38 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   
   if(doprint)
     printf(" Mask histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
-  hmask =new TH2D("hmask" ,"Mask Plane"        ,500,x_min,x_max,500,x_min,x_max);
-  
-  //Other correlation plots----------------------
-  hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,x_min,x_max,100,0,180);
-  hxtheta->SetYTitle("theta - polar angle (deg)");
-  hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,x_min,x_max,100,0,180);
-  hytheta->SetYTitle("theta - polar angle (deg)");
-  hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
-  hxphi->SetYTitle("phi - azimuth angle (deg)");
-  hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
-  hyphi->SetYTitle("phi - azimuth angle (deg)");
-  hhit=new TH1F("hhit","hhit",2,-1,2);
+  hmask=new TH2D("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
   hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
+  hhit=new TH1F("hhit","hhit",7,-1,8);
+  hwin=new TH2F("hwin" ,"Window Plane",500,x_min,x_max,500,x_min,x_max);
+  hwing=new TH2F("hwing","Window Plane (gated)",500,x_min,x_max,500,x_min,x_max);
+
+  if(diag) {
+    //Other correlation plots----------------------
+    hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,x_min,x_max,100,0,180);
+    hxtheta->SetYTitle("theta - polar angle (deg)");
+    hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,x_min,x_max,100,0,180);
+    hytheta->SetYTitle("theta - polar angle (deg)");
+    hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
+    hxphi->SetYTitle("phi - azimuth angle (deg)");
+    hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
+    hyphi->SetYTitle("phi - azimuth angle (deg)");
+  }
 
   hx[0] = new TH1F("hx0","X1 Position",500,x_min,x_max);
   hx[1] = new TH1F("hx1","Y1 Position",500,x_min,x_max);
   hx[2] = new TH1F("hx2","X2 Position",500,x_min,x_max);
   hx[3] = new TH1F("hx3","Y2 Position",500,x_min,x_max);
   /* for(int i = 0; i < 4; i++) {//1D position plots
-    hx[i]->SetXTitle("Relative Position");
-    hx[i]->SetYTitle("Number of Entries");
-    }*/
+     hx[i]->SetXTitle("Relative Position");
+     hx[i]->SetYTitle("Number of Entries");
+     }*/
 }
 
 void clearhists()
 {
-  const int Nhists = 14;
-  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3"};
+  const int Nhists = 16;
+  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -266,8 +269,9 @@ void clearhists()
 }
 
 Bool_t iprint=kFALSE;//doprint;  
-void source(Int_t nevents=1000)
+void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 {
+  doprint=set_doprint;
   //beam spot-------------------------------------
   TRandom3 *rx=new TRandom3();//for x-position of beam spot
   TRandom3 *ry=new TRandom3();//for y-position of beam spot
@@ -291,6 +295,7 @@ void source(Int_t nevents=1000)
  
   //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
+  Bool_t miss=kTRUE;
    
   int step=(int) (nevents/10);
   int step_max=5e4;
@@ -304,7 +309,8 @@ void source(Int_t nevents=1000)
     }
     else
       iprint=kFALSE;  
-    hit=kFALSE;
+    hit=kFALSE;//hit means an obstruction has been hit
+    miss=kTRUE;//miss means the trajectory is unobstructed
     //Position of origin (beam spot)-----------------
     if(is_gaussian) {
       x=rx->Gaus(offset_x,sigma_x);
@@ -330,28 +336,76 @@ void source(Int_t nevents=1000)
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
-    
-    //diagnostics-----------------------
     rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
     if(iprint)
-      printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));
-    hxtheta->Fill(X,theta);
-    hytheta->Fill(Y,theta);
-    hxphi->Fill(X,phi);
-    hyphi->Fill(Y,phi);
-    hmask->Fill(X,Y);
+      printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));    
+
+    //diagnostics-----------------------
+    if(diag){
+      hxtheta->Fill(X,theta);
+      hytheta->Fill(Y,theta);
+      hxphi->Fill(X,phi);
+      hyphi->Fill(Y,phi);
+    }
 
     //mask hit--------------------------
-    hit=hit_mask();
-    if(hit){
-      if(iprint)
-	printf("  Hit!\n");
-      hhit->Fill(1);
-    }
-    else{
+    hmask->Fill(X,Y);   
+    
+    miss*=!(hit_mask());
+    
+    if(miss) {
       hhit->Fill(0);
       hmaskg->Fill(X,Y);
     }
+    else {
+      if(iprint)
+	printf("  Hit mask!\n");
+      hhit->Fill(1);
+    }
+  
+    //calculate positions at window-----
+    Z=z_window;
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+ 
+    if(miss)
+      hwin->Fill(X,Y);
+    miss*=!(hit_window());
+    if(miss){//passed through
+      hwing->Fill(X,Y);   
+    }
+    else{//hit obstruction
+      if(hit_window()) {
+	if(iprint)
+	  printf("  Hit window!\n");
+	hhit->Fill(2);
+      }
+    }
+
+//calculate positions at Y2 shield
+    Z=z_A2-delta_z/2;
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+ 
+    miss*=!(hit_shield());
+    if(!miss){//hit obstruction
+      if(hit_shield()) {
+	if(iprint)
+	  printf("  Hit Y2 shield!\n");
+	hhit->Fill(3);
+      }
+    }
+   
+    //calculate positions at Y2 (step back)
+    Z=z_Y2; /*
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+    if(miss)
+      hx0->Fill(Y);
+    */
   }//end of generator loop
 }
 
@@ -363,5 +417,51 @@ void masks()
   Double_t nnohit=0;
   nhit=hmaskg->GetSum();
   nnohit=hmask->GetSum();
-  printf("Percentage of tragectories hitting mask = %.2f%%\n",nhit/nnohit);
+  printf("Percentage of tragectories passing through mask = %.2f%%\n",nhit/nnohit);
+  TEllipse *ellipse = new TEllipse(0,0,99.5/2.);
+  ellipse->SetLineColor(2);
+  ellipse->SetLineWidth(2);
+  ellipse->SetLineStyle(4);
+  ellipse->SetFillStyle(0);
+  ellipse->Draw();
+  Float_t range=0;
+  range=hmask->GetXaxis()->GetXmax();
+  setvlines(-range,range);
+  plotvlines(-31,0,0,0,2);
+  plotvlines(-26,0,0,0,2);
+  plotvlines(19,0,0,0,2);
+  plotvlines(24,0,0,0,2);
+  plothlines(-15,0,0,-range,range,2);
+  plothlines(-10,0,0,-range,range,2);
+  plothlines(10,0,0,-range,range,2);
+  plothlines(15,0,0,-range,range,2);
+}
+
+void windows()
+{
+  dr("hwin");
+  odr("hwing");
+  Double_t nhit=0;
+  Double_t nnohit=0;
+  nhit=hwing->GetSum();
+  nnohit=hwin->GetSum();
+  printf("Percentage of tragectories passing through window = %.2f%%\n",nhit/nnohit);
+  TEllipse *ellipse = new TEllipse(0,0,99.5/2.);
+  ellipse->SetLineColor(2);
+  ellipse->SetLineWidth(2);
+  ellipse->SetLineStyle(4);
+  ellipse->SetFillStyle(0);
+  ellipse->Draw();
+  Float_t range=0;
+  range=hmask->GetXaxis()->GetXmax();
+  setvlines(-range,range);
+  plotvlines(-31,0,0,0,2);
+  plotvlines(-26,0,0,0,2);
+  plotvlines(19,0,0,0,2);
+  plotvlines(24,0,0,0,2);
+  plotvlines(0,0,34,0,2);
+  plothlines(-15,0,0,-range,range,2);
+  plothlines(-10,0,0,-range,range,2);
+  plothlines(10,0,0,-range,range,2);
+  plothlines(15,0,0,-range,range,2);
 }
