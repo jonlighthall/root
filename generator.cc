@@ -1,4 +1,4 @@
-|/*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
+/*-------------------Emacs PostScript "pretty-print" page width (97 columns)-------------------*/
 /* Program: generator.cc
  *       Created  by Jon Lighthall
  * Purpose: 
@@ -278,7 +278,7 @@ void clearhists()
     if (gROOT->FindObject(histnames[i])) {
       if(doprint)
 	printf(" Histogram %10s already exits.  Deleting...\n",histnames[i].Data());
-      gROOT->FindObject(histnames[i])->Delete();    
+      gROOT->FindObject(histnames[i])->Clear();    
     }
   }
 }
@@ -406,7 +406,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
  
     miss*=!(hit_shield());
     if(miss){
-      hx[0]->Fill(Y);
+      hx[3]->Fill(Y);
     }
     else{//hit obstruction
       if(hit_shield()) {
@@ -422,7 +422,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
     if(miss)
-      hxg[0]->Fill(Y);
+      hxg[3]->Fill(Y);
 
     //calculate positions at X2 shield
     Z=z_A2+delta_z/2;
@@ -432,7 +432,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
  
     miss*=!(hit_shield());
     if(miss){
-      hx[1]->Fill(X);
+      hx[2]->Fill(X);
     }
     else{//hit obstruction
       if(hit_shield()) {
@@ -442,13 +442,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       }
     }
    
-    //calculate positions at Y2 (step back)
+    //calculate positions at X2
     Z=z_X2; 
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
     if(miss)
-      hxg[1]->Fill(X);
+      hxg[2]->Fill(X);
     
   }//end of generator loop
 }
