@@ -1321,6 +1321,61 @@ void trimbin(Char_t *histin, Int_t left=0, Int_t right=0, Int_t top=0, Int_t bot
   }
 }
 
+void shiftx(Char_t *histin, Float_t shift=0, Int_t plot=2)
+{ //copies a 1D histogram with zero suppression
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  Float_t xmin,xmax; 
+  Int_t xbin;
+  Float_t x,y;
+  
+  TH1F * hfit=(TH1F *) gROOT->FindObject(histin);
+
+  xbin=hfit->GetXaxis()->GetNbins();
+  xmax=hfit->GetXaxis()->GetXmax();
+  xmin=hfit->GetXaxis()->GetXmin();
+ 
+  hname=histin;
+  hname+="_shift"; 
+  Char_t *htitle = hfit->GetTitle();
+  printf("Output histogram is \"%s\"\n",hname.Data());
+  
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf(" Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+
+  // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+  TH1F * hResult=new  TH1F(hname,htitle,xbin,xmin+shift,xmax+shift);
+
+  for(int i=0;i<(xbin+2);i++){
+    //Note: The 0 bin contains the underflow, so the loop starts at 0;
+    //      and the max_bin+1 contains overflow, so the loop terminates at max_bin+2
+    x=hfit->GetBinCenter(i);   
+    y=hfit->GetBinContent(i);
+    
+      hResult->Fill(x+shift,y);
+  }
+
+  switch (plot){
+  case 0: 
+    break;
+  case 1:
+    cFit->Clear();
+    hResult->Draw("colz");
+    break;
+  case 2:
+    cFit->Clear();
+    cFit->Divide(1,2);
+    cFit->cd(1);
+    hfit->Draw();
+    cFit->cd(2);
+    hResult->Draw();
+    break;
+  default:
+    break;
+  }
+}
+
 void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
 {//copies a 2D histogram with a given x-offset.
   if(plot>0)if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
