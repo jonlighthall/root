@@ -108,14 +108,14 @@ Double_t theta=0;//scattering angle
 Double_t phi=0;//azimuthal angle
 Double_t X=0, Y=0, Z=0;//position
 Double_t r=0,rho=0;//radius
-Bool_t doprint=kFALSE;
+Bool_t doprint=1;//kFALSE;
 Bool_t diag=kFALSE;
 
 void trace_r(Double_t z_start,Double_t theta_start, Double_t phi_start)
 {//given z, theta, phi; calculate r
   r=z_start/(TMath::Cos(theta_start*TMath::DegToRad()));
     
-  if(doprint) {
+  if(iprint) {
     printf(" Emmission angle (theta,phi)=(%f,%f)\n",theta_start,phi_start);
     printf("  Current position is Z=%7.2f\n",Z);
     printf("  Radius is           r=%7.2f\n",r);
@@ -125,12 +125,12 @@ void trace_r(Double_t z_start,Double_t theta_start, Double_t phi_start)
 void trace_x(Double_t x_start, Double_t theta_start, Double_t phi_start)
 {
   X=r*(TMath::Sin(theta_start*TMath::DegToRad()))*(TMath::Cos(phi_start*TMath::DegToRad()));
-  if(doprint) {
+  if(iprint) {
     printf("  X-position is %7.2f (relative), with offset %7.2f\n",X,x_start);
   }
   X+=x_start;  
 
-  if(doprint) {
+  if(iprint) {
     printf("  X-position is %7.2f (absolute)\n",X);
   }
 }
@@ -139,12 +139,12 @@ void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
 {
   Y=r*(TMath::Sin(theta_start*TMath::DegToRad()))*(TMath::Sin(phi_start*TMath::DegToRad()));
   
-  if(doprint) {
+  if(iprint) {
     printf("  Y-position is %7.2f (relative), with offset %7.2f\n",Y,y_start);
   }
   Y+=y_start;  
 
-  if(doprint) {
+  if(iprint) {
     printf("  Y-position is %7.2f (absolute)\n",Y);
   }
 }
@@ -221,7 +221,7 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   Double_t x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
   Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
   Double_t x_Max=124;
-  if(x_max>x_Max)
+  if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
   
@@ -241,21 +241,20 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   hhit=new TH1F("hhit","hhit",2,-1,2);
   hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
 
-
   hx[0] = new TH1F("hx0","X1 Position",500,x_min,x_max);
   hx[1] = new TH1F("hx1","Y1 Position",500,x_min,x_max);
   hx[2] = new TH1F("hx2","X2 Position",500,x_min,x_max);
   hx[3] = new TH1F("hx3","Y2 Position",500,x_min,x_max);
-  for(int i = 0; i < 4; i++){//1D position plots
+  /* for(int i = 0; i < 4; i++) {//1D position plots
     hx[i]->SetXTitle("Relative Position");
     hx[i]->SetYTitle("Number of Entries");
- }
+    }*/
 }
 
 void clearhists()
 {
-  const int Nhists = 10;
-  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit"};
+  const int Nhists = 14;
+  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -266,6 +265,7 @@ void clearhists()
   }
 }
 
+Bool_t iprint=kFALSE;//doprint;  
 void source(Int_t nevents=1000)
 {
   //beam spot-------------------------------------
@@ -296,10 +296,7 @@ void source(Int_t nevents=1000)
   int step_max=5e4;
   if(step>step_max)
     step=step_max;  
-  Bool_t iprint=doprint;  
-
-  
-  
+    
   for (Int_t i=0; i<nevents; i++) {
     if(i%step==0) {
       printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
@@ -355,5 +352,16 @@ void source(Int_t nevents=1000)
       hhit->Fill(0);
       hmaskg->Fill(X,Y);
     }
-  }
+  }//end of generator loop
+}
+
+void masks()
+{
+  dr("hmask");
+  odr("hmaskg");
+  Double_t nhit=0;
+  Double_t nnohit=0;
+  nhit=hmaskg->GetSum();
+  nnohit=hmask->GetSum();
+  printf("Percentage of tragectories hitting mask = %.2f%%\n",nhit/nnohit);
 }
