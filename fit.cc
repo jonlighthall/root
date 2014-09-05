@@ -392,7 +392,7 @@ void odr(Char_t *histname)
     hname=histname;
     if(whatis(histname,0)==1||whatis(histname,0)==2){
       hProj=(TH1F*)gROOT->FindObject(hname.Data());
-      hPrjo->Draw("same");
+      hProj->Draw("same");
     }
     if(whatis(histname,0)==3||whatis(histname,0)==4){
       hInput=(TH2F*)gROOT->FindObject(hname.Data());
