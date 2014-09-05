@@ -3334,6 +3334,8 @@ void showXY()
   plothlines(66-6);
   plothlines(0,60-6);
   TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
+  ellipse->SetLineWidth(2);
+  ellipse->SetLineStyle(4); 
   ellipse->SetFillStyle(0);
   ellipse->Draw();
 }
