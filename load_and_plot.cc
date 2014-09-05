@@ -4061,6 +4061,7 @@ hname=histname;
   printf("estimated edge is %f\n",edge[5]);
   printf("       minimum is %f\n",min[3]);
   */
+  gaus->SetLineColor(1);
   if(det%2){//y-positions
     for(i=0;i<6;i++){
       printf("Edge %d estimated location is %7.3f",i,edge[i]);
