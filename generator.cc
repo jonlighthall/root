@@ -85,6 +85,7 @@ void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigm
     distrib="Uniform";
   printf("Beam created at x=%5.2f, y=%5.2f\n with sigma_x=%5.2f, sigma_y=%5.2f;\n distribution is %s.\n",offset_x,offset_y,sigma_x,sigma_y,distrib.Data());
 
+  clearhists();  
   if (gROOT->FindObject("hbeam"))
     gROOT->FindObject("hbeam")->Delete();   
   hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
