@@ -86,11 +86,6 @@ void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigm
   printf("Beam created at x=%5.2f, y=%5.2f\n with sigma_x=%5.2f, sigma_y=%5.2f;\n distribution is %s.\n",offset_x,offset_y,sigma_x,sigma_y,distrib.Data());
 
   clearhists();  
-  if (gROOT->FindObject("hbeam"))
-    gROOT->FindObject("hbeam")->Delete();   
-  hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
-  hbeam->SetXTitle("x-position (mm)");
-  hbeam->SetYTitle("y-position (mm)");
 }
 
 Float_t z_mask=637.0;
@@ -213,17 +208,28 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   theta_max=set_theta_max;
   phi_min=set_phi_min;
   phi_max=set_phi_max;
-
+  printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
   clearhists();
+}
+
+Double_t x_min=0;
+Double_t x_max=100;
+
+void definehists()
+{
+  printf("Defining histograms...\n");
+  hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
+  hbeam->SetXTitle("x-position (mm)");
+  hbeam->SetYTitle("y-position (mm)"); 
 
   htheta=new TH1D("htheta","Theta - Polar Angle",500,0,180);
   hphi=new TH1D("hphi","Phi - Azimuthal Angle",500,0,360);
   hangles=new TH2D("hangles","Phi vs. Theta",500,0,180,500,0,360);
   hangles->SetXTitle("Theta - Polar Angle (deg)");
   hangles->SetYTitle("Phi - Azimuthal Angle (deg)");
-
-  Double_t x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
-  Double_t x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
+  
+  x_min=z_mask*(TMath::Tan(theta_min*TMath::DegToRad()));
+  x_max=z_mask*(TMath::Tan(theta_max*TMath::DegToRad()));
   Double_t x_Max=124;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
@@ -271,21 +277,26 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
 
 void clearhists()
 {
-  const int Nhists = 30;
-  TString histnames[Nhists]={"htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hx0","hx1","hx2","hx3","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1"};
+  printf("Clearing histograms...\n");
+  const int Nhists = 31;
+  TString histnames[Nhists]={"hbeam","htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hx0","hx1","hx2","hx3","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
       if(doprint)
-	printf(" Histogram %10s already exits.  Deleting...\n",histnames[i].Data());
+	printf(" Histogram %10s already exits.  Clearing...\n",histnames[i].Data());
       gROOT->FindObject(histnames[i])->Clear();    
     }
   }
 }
 
-Bool_t iprint=kFALSE;//doprint;  
+Bool_t iprint=kFALSE; //doprint;  
 void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 {
+  if(!(gROOT->FindObject("hbeam")))
+    definehists();
+  printf("Generating %.0f events...\n",nevents);
+
   doprint=set_doprint;
   //beam spot-------------------------------------
   TRandom3 *rx=new TRandom3();//for x-position of beam spot
@@ -293,13 +304,11 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
   rx->SetSeed(0);
   ry->SetSeed(0);
  
-  //polar angle (scattering angle)----------------
+  //polar angle-----------------------------------
   TRandom3 *rtheta=new TRandom3();//for scattering angle 
   rtheta->SetSeed(0);
- 
   Double_t cos_theta_min=(TMath::Cos(theta_min*TMath::DegToRad()));
   Double_t cos_theta_max=(TMath::Cos(theta_max*TMath::DegToRad()));
-
   Double_t theta_center=30;
   //theta_min+=theta_center;
   //theta_max+=theta_center;
@@ -365,7 +374,6 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 
     //mask hit--------------------------
     hmask->Fill(X,Y);   
-    
     miss*=!(hit_mask());
     
     if(miss) {
@@ -398,7 +406,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       }
     }
 
-//calculate positions at Y2 shield
+    //calculate positions at Y2 shield
     Z=z_A2-delta_z/2;
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
