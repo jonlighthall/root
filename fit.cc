@@ -392,6 +392,7 @@ void odr(Char_t *histname)
     hname=histname;
     if(whatis(histname,0)==1||whatis(histname,0)==2){
       hProj=(TH1F*)gROOT->FindObject(hname.Data());
+      hProj->SetLineColor(2);
       hProj->Draw("same");
     }
     if(whatis(histname,0)==3||whatis(histname,0)==4){
@@ -1321,13 +1322,12 @@ void trimbin(Char_t *histin, Int_t left=0, Int_t right=0, Int_t top=0, Int_t bot
   }
 }
 
-void shiftx(Char_t *histin, Float_t shift=0, Int_t plot=2)
+void shiftx(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plot=2)
 { //copies a 1D histogram with zero suppression
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
   Float_t xmin,xmax; 
   Int_t xbin;
   Float_t x,y;
-  
   TH1F * hfit=(TH1F *) gROOT->FindObject(histin);
 
   xbin=hfit->GetXaxis()->GetNbins();
@@ -1343,9 +1343,12 @@ void shiftx(Char_t *histin, Float_t shift=0, Int_t plot=2)
     gROOT->FindObject(hname)->Delete();  
     printf(" Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
-
   // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
-  TH1F * hResult=new  TH1F(hname,htitle,xbin,xmin+shift,xmax+shift);
+  
+  if(move_axis)
+    TH1F * hResult=new  TH1F(hname,htitle,xbin,xmin+shift,xmax+shift);
+  else
+    TH1F * hResult=new  TH1F(hname,htitle,xbin,xmin,xmax);
 
   for(int i=0;i<(xbin+2);i++){
     //Note: The 0 bin contains the underflow, so the loop starts at 0;
@@ -1376,7 +1379,7 @@ void shiftx(Char_t *histin, Float_t shift=0, Int_t plot=2)
   }
 }
 
-void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
+void shiftx2(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plot=2)
 {//copies a 2D histogram with a given x-offset.
   if(plot>0)if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
 
@@ -1410,7 +1413,10 @@ void shiftx2(Char_t *histin, Float_t shift=0, Int_t plot=2)
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
   // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
-  TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+  if(move_axis)
+    TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin+shift,xmax+shift,ybin,ymin,ymax);
+  else
+    TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
 
   for(int i=1;i<(xbin+1);i++){
     for(int j=1;j<(ybin+1);j++){
