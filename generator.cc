@@ -171,9 +171,10 @@ Bool_t hit_shield(void)
   return kFALSE;
 }
 
+Float_t x_win=34.01;//nominally 34.01
 Bool_t hit_window(void)
 {
-  if(X>40.0)//34
+  if(X>x_win)
     return kTRUE;
   return kFALSE;
 }
@@ -183,9 +184,21 @@ Double_t theta_max=180;
 Double_t phi_min=0;
 Double_t phi_max=360;
 
+void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
+{//define angles and build histograms
+  theta_min=set_theta_min;
+  theta_max=set_theta_max;
+  phi_min=set_phi_min;
+  phi_max=set_phi_max;
+  printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
+  clearhists();
+}
+
 TH1D *htheta;
 TH1D *hphi;
-TH2D *hangles;
+TH2D *hthetaphi;
+TH1F *hcostheta;
+TH2F *hphicostheta;
 
 TH2D *hxtheta;
 TH2D *hytheta;
@@ -206,16 +219,7 @@ TH1F *hxg[4];
 TH2F *hyx[4];
 TH2F *hyxg[4];
 TH2F *hyxgm[2];
-
-void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
-{//define angles and build histograms
-  theta_min=set_theta_min;
-  theta_max=set_theta_max;
-  phi_min=set_phi_min;
-  phi_max=set_phi_max;
-  printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
-  clearhists();
-}
+TH2F *hyxgmr[2];
 
 Double_t x_min=0;
 Double_t x_max=100;
@@ -223,15 +227,35 @@ Double_t x_max=100;
 void definehists()
 {
   printf("Defining histograms...\n");
-  hbeam=new TH2D("hbeam","Beam Spot",500,-10,10,500,-10,10);
+  Double_t b_max=0;
+  Float_t b_width=7;
+  Double_t b_bin=500;
+  if((sigma_x==0)&&(sigma_y==0)){
+    b_max=0;
+    b_bin=3;
+  }
+  else
+    if(sigma_x>sigma_y)
+      b_max=sigma_x;
+    else
+      b_max=sigma_y;
+  b_max*=b_width;
+  if((fabs(offset_x))>(fabs(offset_y)))
+    b_max+=fabs(offset_x);
+  else
+    b_max+=fabs(offset_y);
+  hbeam=new TH2D("hbeam","Beam Spot",b_bin,-b_max,b_max,b_bin,-b_max,b_max);
   hbeam->SetXTitle("x-position (mm)");
   hbeam->SetYTitle("y-position (mm)"); 
 
-  htheta=new TH1D("htheta","Theta - Polar Angle",500,0,180);
-  hphi=new TH1D("hphi","Phi - Azimuthal Angle",500,0,360);
-  hangles=new TH2D("hangles","Phi vs. Theta",500,0,180,500,0,360);
-  hangles->SetXTitle("Theta - Polar Angle (deg)");
-  hangles->SetYTitle("Phi - Azimuthal Angle (deg)");
+  htheta=new TH1D("htheta","#theta (Polar Angle)",500,0,180);
+  hphi=new TH1D("hphi","#phi (Azimuthal Angle)",500,0,360);
+  hthetaphi=new TH2D("hthetaphi","#phi vs. #theta",500,0,180,500,0,360);
+  hthetaphi->SetXTitle("#theta - Polar Angle (deg)");
+  hthetaphi->SetYTitle("#phi - Azimuthal Angle (deg)");
+  hcostheta=new TH1F("hcostheta","Cos(#theta) - Cos Polar Angle",500,-1,1);
+  hphicostheta=new TH2F("hphicostheta","#phi vs. cos(#theta)",500,-1,1,500,0,360);
+
   
   x_min=z_X1*(TMath::Tan(theta_min*TMath::DegToRad()));
   x_max=z_X1*(TMath::Tan(theta_max*TMath::DegToRad()));
@@ -240,8 +264,8 @@ void definehists()
     x_max=x_Max;
   x_min=-x_max;
   
-  if(doprint)
-    printf(" Mask histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
+  // if(doprint)
+    printf(" Position histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
   hmask=new TH2D("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
   hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
   hhit=new TH1F("hhit","hhit",7,-0.5,6.5);
@@ -252,14 +276,14 @@ void definehists()
 
   if(diag) {
     //Other correlation plots----------------------
-    hxtheta=new TH2D("hxtheta","Theta (polar) vs. X",100,x_min,x_max,100,0,180);
-    hxtheta->SetYTitle("theta - polar angle (deg)");
-    hytheta=new TH2D("hytheta","Theta (polar) vs. Y",100,x_min,x_max,100,0,180);
-    hytheta->SetYTitle("theta - polar angle (deg)");
-    hxphi=new TH2D("hxphi","Phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
-    hxphi->SetYTitle("phi - azimuth angle (deg)");
-    hyphi=new TH2D("hyphi","Phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
-    hyphi->SetYTitle("phi - azimuth angle (deg)");
+    hxtheta=new TH2D("hxtheta","#theta (polar) vs. X",100,x_min,x_max,100,0,180);
+    hxtheta->SetYTitle("#theta - polar angle (deg)");
+    hytheta=new TH2D("hytheta","#theta (polar) vs. Y",100,x_min,x_max,100,0,180);
+    hytheta->SetYTitle("#theta - polar angle (deg)");
+    hxphi=new TH2D("hxphi","#phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
+    hxphi->SetYTitle("#phi - azimuth angle (deg)");
+    hyphi=new TH2D("hyphi","#phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
+    hyphi->SetYTitle("#phi - azimuth angle (deg)");
   }
 
   hx[0] = new TH1F("hx0","X1 Position",500,x_min,x_max);
@@ -274,23 +298,25 @@ void definehists()
      hx[i]->SetXTitle("Relative Position");
      hx[i]->SetYTitle("Number of Entries");
      }*/
-  hyx[0] = new TH2F("hyx0","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[1] = new TH2F("hyx1","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[2] = new TH2F("hyx2","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[3] = new TH2F("hyx3","Y vs X Positions",500,x_min,x_max,500,x_min,x_max);
-  hyxg[0] = new TH2F("hyxg0","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[1] = new TH2F("hyxg1","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[2] = new TH2F("hyxg2","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[3] = new TH2F("hyxg3","Y vs X Positions (gated)",500,x_min,x_max,500,x_min,x_max);
-  hyxgm[0] = new TH2F("hyxgm0","Y vs X Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
-  hyxgm[1] = new TH2F("hyxgm1","Y vs X Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
+  hyx[0] = new TH2F("hyx0","Y1 vs X1 Positions",500,x_min,x_max,500,x_min,x_max);
+  hyx[1] = new TH2F("hyx1","Y1 vs X1 Positions",500,x_min,x_max,500,x_min,x_max);
+  hyx[2] = new TH2F("hyx2","Y2 vs X2 Positions",500,x_min,x_max,500,x_min,x_max);
+  hyx[3] = new TH2F("hyx3","Y2 vs X2 Positions",500,x_min,x_max,500,x_min,x_max);
+  hyxg[0] = new TH2F("hyxg0","Y1 vs X1 Positions (gated on Y1)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[1] = new TH2F("hyxg1","Y1 vs X1 Positions (gated on X1)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[2] = new TH2F("hyxg2","Y2 vs X2 Positions (gated on Y2)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[3] = new TH2F("hyxg3","Y2 vs X2 Positions (gated on X2)",500,x_min,x_max,500,x_min,x_max);
+  hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
+  hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
+hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
+  hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
 }
 
 void clearhists()
 {
   printf("Clearing histograms...\n");
   const int Nhists = 37;
-  TString histnames[Nhists]={"hbeam","htheta","hphi","hangles","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hx0","hx1","hx2","hx3","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3"};
+  TString histnames[Nhists]={"hbeam","htheta","hphi","hthetaphi","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -361,10 +387,12 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     // Polar angle----------------------
     theta=(TMath::ACos(rtheta->Uniform(cos_theta_min,cos_theta_max))*(TMath::RadToDeg()));
     htheta->Fill(theta);
+    hcostheta->Fill(TMath::Cos(theta*TMath::DegToRad()));
     // Azimuthal angle------------------
     phi=rphi->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
-    hangles->Fill(theta,phi);
+    hthetaphi->Fill(theta,phi);
+    hphicostheta->Fill(TMath::Cos(theta*TMath::DegToRad()),phi);
     //diagnostics-----------------------
     if(diag){
       hxtheta->Fill(X,theta);
@@ -462,7 +490,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_y(y,theta,phi);
  
     if(miss){//at X2 shield, before calculating hits
-      hx[2]->Fill(Y);
+      hx[2]->Fill(X);
       hyx[2]->Fill(X,Y);
     }
     miss*=!(hit_shield());
@@ -528,7 +556,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_y(y,theta,phi);
  
     if(miss){//at X1 shield, before calculating hits
-      hx[0]->Fill(Y);
+      hx[0]->Fill(X);
       hyx[0]->Fill(X,Y);
     }
     miss*=!(hit_shield());
@@ -566,7 +594,7 @@ void masks()
 void windows()
 {
   mask("hwin","hwing");
-  plotvlines(0,0,34,0,2);
+  plotvlines(0,0,x_win,0,2);
 }
 
 void battleship()
@@ -643,7 +671,6 @@ void mask(Char_t *histin1, Char_t *histin2)
   plotvlines(-26,0,0,0,2);
   plotvlines(19,0,0,0,2);
   plotvlines(24,0,0,0,2);
-  plotvlines(0,0,34,0,2);
   plothlines(-15,0,0,-range,range,2);
   plothlines(-10,0,0,-range,range,2);
   plothlines(10,0,0,-range,range,2);
