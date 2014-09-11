@@ -1464,7 +1464,8 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
 {//shows detector coverage area(s)
   Float_t z;
   Float_t gap=.625;
-  printf("Sensor span is %f\n",aspan);
+  if(span)
+    printf("Sensor span is %f\n",aspan);
   if(edge1!=0){
     z=edge1;
     TLine *line = new TLine(z,minE,z,maxE);
