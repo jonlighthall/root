@@ -91,8 +91,8 @@ void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigm
 
 //Detector geometry
 Float_t z_mask=637.0;//position of mask
-Float_t z_window=z_mask+3.25;//position of window
-Float_t z_A2=z_window+6.35+12.7+23.6;//position of A2
+Float_t z_window=z_mask+3.25+6.35;//position of window (back edge)
+Float_t z_A2=z_window+12.7+23.6;//position of A2
 Float_t z_A1=z_A2+36.8;//anode separation
 Float_t delta_z=0.125*25.4;//plane separation
 
@@ -250,22 +250,32 @@ void definehists()
 
   htheta=new TH1D("htheta","#theta (Polar Angle)",500,0,180);
   hphi=new TH1D("hphi","#phi (Azimuthal Angle)",500,0,360);
-  hthetaphi=new TH2D("hthetaphi","#phi vs. #theta",500,0,180,500,0,360);
-  hthetaphi->SetXTitle("#theta - Polar Angle (deg)");
-  hthetaphi->SetYTitle("#phi - Azimuthal Angle (deg)");
+  hphitheta=new TH2D("hphitheta","#phi vs. #theta",500,0,180,500,0,360);
+  hphitheta->SetXTitle("#theta - Polar Angle (deg)");
+  hphitheta->SetYTitle("#phi - Azimuthal Angle (deg)");
   hcostheta=new TH1F("hcostheta","Cos(#theta) - Cos Polar Angle",500,-1,1);
   hphicostheta=new TH2F("hphicostheta","#phi vs. cos(#theta)",500,-1,1,500,0,360);
 
   
-  x_min=z_X1*(TMath::Tan(theta_min*TMath::DegToRad()));
+  //x_min=z_X1*(TMath::Tan(theta_min*TMath::DegToRad()));
   x_max=z_X1*(TMath::Tan(theta_max*TMath::DegToRad()));
+  Float_t offset_max=0;
+  if((fabs(offset_x))>(fabs(offset_y)))
+    offset_max+=fabs(offset_x);
+  else
+    offset_max+=fabs(offset_y);
+  // x_min-=offset_max;
+  x_max+=offset_max;
+  x_max*=1.05;
   Double_t x_Max=124;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
   
   // if(doprint)
-    printf(" Position histogram limits are xmin=%f, xmax=%f\n",x_min,x_max);
+  printf(" Position histogram limits are xmin=%7.2f, xmax=%7.2f\n",x_min,x_max);
+  printf(" to cover +/- %5.1f deg + %f mm (x1.05)\n",theta_max,offset_max);
+
   hmask=new TH2D("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
   hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
   hhit=new TH1F("hhit","hhit",7,-0.5,6.5);
@@ -308,7 +318,7 @@ void definehists()
   hyxg[3] = new TH2F("hyxg3","Y2 vs X2 Positions (gated on X2)",500,x_min,x_max,500,x_min,x_max);
   hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
   hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
-hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
+  hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
   hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
 }
 
@@ -316,7 +326,7 @@ void clearhists()
 {
   printf("Clearing histograms...\n");
   const int Nhists = 37;
-  TString histnames[Nhists]={"hbeam","htheta","hphi","hthetaphi","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1"};
+  TString histnames[Nhists]={"hbeam","htheta","hphi","hphitheta","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -358,11 +368,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
   Bool_t hit=kFALSE;
   Bool_t miss=kTRUE;
    
+  //step size to print updates 
   int step=(int) (nevents/10);
   int step_max=5e4;
   if(step>step_max)
     step=step_max;  
     
+  //create events!
   for (Int_t i=0; i<nevents; i++) {
     if(i%step==0) {
       printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
@@ -391,7 +403,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     // Azimuthal angle------------------
     phi=rphi->Uniform(phi_min,phi_max);
     hphi->Fill(phi);
-    hthetaphi->Fill(theta,phi);
+    hphitheta->Fill(theta,phi);
     hphicostheta->Fill(TMath::Cos(theta*TMath::DegToRad()),phi);
     //diagnostics-----------------------
     if(diag){
@@ -515,7 +527,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hxg[2]->Fill(X);
       hyxg[2]->Fill(X,Y);
     }
-//------------------------------------------------------
+    //------------------------------------------------------
     //Detector 1----------------------------------
     //calculate positions at Y1 shield
     Z=z_A1-delta_z/2;
@@ -585,16 +597,37 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 
   }//end of generator loop
 }
+Float_t range=0;
+void mask(Char_t *histin1, Char_t *histin2)
+{
+  gate(histin1,histin2)
+    TEllipse *ellipse = new TEllipse(0,0,99.5/2.);
+  ellipse->SetLineColor(2);
+  ellipse->SetLineWidth(2);
+  ellipse->SetLineStyle(4);
+  ellipse->SetFillStyle(0);
+  ellipse->Draw();
+  plotvlines(-31,0,0,0,2);
+  plotvlines(-26,0,0,0,2);
+  plotvlines(19,0,0,0,2);
+  plotvlines(24,0,0,0,2);
+  plothlines(-15,0,0,-range,range,2);
+  plothlines(-10,0,0,-range,range,2);
+  plothlines(10,0,0,-range,range,2);
+  plothlines(15,0,0,-range,range,2);
+}
 
 void masks()
 {
-  mask("hmask","hmaskg");
+  gate("hmask","hmaskg");
+  maskz(z_mask);
 }
 
 void windows()
 {
-  mask("hwin","hwing");
-  plotvlines(0,0,x_win,0,2);
+  gate("hwin","hwing");
+  maskz(z_window);
+  windowz(z_window);
 }
 
 void battleship()
@@ -609,70 +642,156 @@ void battleship()
   hnewhit->Draw();
 }
 
-void y2s()
+void y2s(Float_t z_plane=z_Y2+delta_z/2)
 {
-  shield("hyx3","hyxg3");
+  gate("hyx3","hyxg3");  
+  shadow(z_plane);
 }
 
-void x2s()
+void x2s(Float_t z_plane=z_X2-delta_z/2)
 {
-  shield("hyx2","hyxg2");
+  gate("hyx2","hyxg2");
+  shadow(z_plane);
+}
+
+void y1s(Float_t z_plane=z_Y1+delta_z/2)
+{
+  gate("hyx1","hyxg1"); 
+  shadow(z_plane);
+}
+
+void x1s(Float_t z_plane=z_X1-delta_z/2)
+{
+  gate("hyx0","hyxg0");
+  shadow(z_plane);
+}
+
+void shadow(Float_t z_plane=0)
+{
+  maskz(z_plane);
+  windowz(z_plane);
+  shieldz(z_plane);
+  printf("X-gaps are centered at %6.3f (%6.3f wide) and %6.3f (%6.3f wide)\n",(x_shadow[1]+x_shadow[2])/2,(x_shadow[2]-x_shadow[1]),(x_shadow[3]+x_shadow[4])/2,(x_shadow[4]-x_shadow[3]));
+  printf("X-spans are %6.3f, %6.3f, and ",(x_shadow[1]-x_shadow[0]),(x_shadow[3]-x_shadow[2]));
+  Float_t right_wide=0;
+  right_wide=(x_shadow[5]-x_shadow[4]);
+  if(right_wide>(x_shadow[6]-x_shadow[4]))
+    right_wide=(x_shadow[6]-x_shadow[4]);
+  printf("%6.3f wide\n",right_wide);
+
+  printf("Y-gaps are centered at %6.3f (%6.3f wide) and %6.3f (%6.3f wide)\n",(y_shadow[1]+y_shadow[2])/2,(y_shadow[2]-y_shadow[1]),(y_shadow[3]+y_shadow[4])/2,(y_shadow[4]-y_shadow[3]));
+  printf("Y-spans are %6.3f, %6.3f, and %6.3f wide\n",(y_shadow[1]-y_shadow[0]),(y_shadow[3]-y_shadow[2]),(y_shadow[5]-y_shadow[4]));
 }
 
 void shield(Char_t *histin1, Char_t *histin2)
 {
-  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
-  TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
-  dr(histin1);
-  odr(histin2);
-  Double_t nhit=0;
-  Double_t nnohit=0;
-  nhit=hist1->GetSum();
-  nnohit=hist2->GetSum();
-  printf("Percentage of tragectories passing through window = %.2f%%\n",nhit/nnohit);
-  /*  
-      TEllipse *ellipse = new TEllipse(0,0,99.5/2.);
-      ellipse->SetLineColor(2);
-      ellipse->SetLineWidth(2);
-      ellipse->SetLineStyle(4);
-      ellipse->SetFillStyle(0);
-      ellipse->Draw();
-  */
-  Float_t range=0;
-  range=hist1->GetXaxis()->GetXmax();
-  setvlines(-range,range);
+  gate(histin1,histin2);
   plotvlines(-118,0,0,0,2);
   plotvlines(36,0,0,0,2);
   plothlines(-27,0,0,-range,range,2);
   plothlines(27,0,0,-range,range,2);
 }
 
-void mask(Char_t *histin1, Char_t *histin2)
+Float_t x_feature[7]={-49.75, -31, -26, 19, 24, 36, 34.0073412589711};
+Float_t y_feature[6]={-27, -15, -10, 10, 15, 27};
+Float_t theta_proj[7]=0;
+Float_t x_shadow[7]=0;
+Float_t y_shadow[6]=0;
+
+void maskz(Float_t z_plane)
+{
+  Float_t z_feature=z_mask;
+  for(int i=0; i<5; i++) {
+    printf("%d z_feature = %5.1f ",i, z_feature);
+    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
+    printf("x_shadow = %7.2f\n", x_shadow[i]);
+    plotvlines(x_shadow[i],0,0,0,2);
+  }
+  
+  for(int i=1; i<5; i++){
+    printf("%d z_feature = %5.1f ",i, z_feature);
+    theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
+    printf("y_shadow = %7.2f\n", y_shadow[i]);
+    plothlines(y_shadow[i],0,0,-range,range,2);   
+  }
+
+  TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
+  emask->SetLineColor(2);
+  emask->SetLineWidth(2);
+  emask->SetLineStyle(4);
+  emask->SetFillStyle(0);
+  emask->Draw();
+
+  //beam envelope
+  TEllipse *econe = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_max*TMath::DegToRad()));
+  econe->SetLineColor(3);
+  econe->SetLineWidth(2);
+  econe->SetLineStyle(4);
+  econe->SetFillStyle(0);
+  econe->Draw();
+}
+
+void windowz(Float_t z_plane)
+{
+  Float_t z_feature=z_window;
+  Int_t i=6;
+  printf("%d z_feature = %5.1f ",i, z_feature);
+  theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
+  printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+  x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
+  printf("x_shadow = %7.2f\n", x_shadow[i]);
+  plotvlines(0,x_shadow[i],0,0,4);
+}
+
+void shieldz(Float_t z_plane)
+{
+  Float_t z_feature=0;
+  if(z_plane>z_A1)
+    z_feature=z_A1+delta_z/2;
+  else
+    if(z_plane>z_Y1)
+      z_feature=z_A1-delta_z/2;
+    else
+      if(z_plane>z_A2)
+	z_feature=z_A2+delta_z/2;
+      else
+	z_feature=z_A2-delta_z/2;
+  for(int i=5; i<6; i++) {
+    printf("%d z_feature = %5.1f ",i, z_feature);
+    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
+    printf("x_shadow = %7.2f\n", x_shadow[i]);
+    plotvlines(x_shadow[i],0,0,0,6);
+  }
+  
+  for(int i=0; i<6; i+=5){
+    printf("%d z_feature = %5.1f ",i, z_feature);
+    theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
+    printf("y_shadow = %7.2f\n", y_shadow[i]);
+    plothlines(y_shadow[i],0,0,-range,range,6);   
+  }
+}
+
+void gate(Char_t *histin1, Char_t *histin2)
 {
   TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
   dr(histin1);
   odr(histin2);
-  Double_t nhit=0;
-  Double_t nnohit=0;
-  nhit=hist1->GetSum();
-  nnohit=hist2->GetSum();
-  printf("Percentage of tragectories passing through window = %.2f%%\n",nhit/nnohit);
-  TEllipse *ellipse = new TEllipse(0,0,99.5/2.);
-  ellipse->SetLineColor(2);
-  ellipse->SetLineWidth(2);
-  ellipse->SetLineStyle(4);
-  ellipse->SetFillStyle(0);
-  ellipse->Draw();
-  Float_t range=0;
+  Double_t nstart=0;
+  Double_t npass=0;
+  nstart=hist1->Integral();
+  npass=hist2->Integral();
+  printf("%9.2f entries in ungated spectrum\n",nstart);
+  printf("%9.2f entries in gated spectrum\n",npass);
+  printf("Percentage of tragectories passing through window = %.2f%%\n",100*npass/nstart);
   range=hist1->GetXaxis()->GetXmax();
   setvlines(-range,range);
-  plotvlines(-31,0,0,0,2);
-  plotvlines(-26,0,0,0,2);
-  plotvlines(19,0,0,0,2);
-  plotvlines(24,0,0,0,2);
-  plothlines(-15,0,0,-range,range,2);
-  plothlines(-10,0,0,-range,range,2);
-  plothlines(10,0,0,-range,range,2);
-  plothlines(15,0,0,-range,range,2);
 }
