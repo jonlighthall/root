@@ -397,6 +397,8 @@ void odr(Char_t *histname)
     }
     if(whatis(histname,0)==3||whatis(histname,0)==4){
       hInput=(TH2F*)gROOT->FindObject(hname.Data());
+      hInput->SetMarkerStyle(21);     
+      hInput->SetMarkerSize(0.125);
       hInput->Draw("same");
     }
     if(whatis(histname,0)==5)
