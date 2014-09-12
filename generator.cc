@@ -148,6 +148,25 @@ void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
   }
 }
 
+Bool_t hit_slits(void)
+{
+  Float_t slit_width=0.5;
+  Float_t slits[5]={-20,-10,0,5,10};
+  for(int i=0; i<5; i++) {
+    if(iprint)
+    printf("Slit position %f to %f ", slits[i]-slit_width/2,slits[i]+slit_width/2);
+    if((X>(slits[i]-slit_width/2))&&(X<(slits[i]+slit_width/2))) {
+      if(iprint)
+	printf("hit!\n");
+      return kFALSE;
+    }
+    else
+      if(iprint)
+	printf("miss!\n");
+ }
+  return kTRUE;
+}
+
 Bool_t hit_mask(void)
 {
   if(rho>(99.5/2)) 
@@ -348,6 +367,8 @@ void setres(Float_t set_xres=0, Float_t set_yres=0)
 }
 
 Bool_t iprint=kFALSE; //doprint;  
+Bool_t donewhit=kFALSE;
+Bool_t doslits=kFALSE;
 void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 {
   if(!(gROOT->FindObject("hbeam")))
@@ -386,7 +407,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
    
   //step size to print updates 
   int step=(int) (nevents/10);
-  int step_max=5e4;
+  int step_max=5e3;
   if(step>step_max)
     step=step_max;  
     
@@ -429,7 +450,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyphi->Fill(Y,phi);
     } 
     hmiss->Fill(0);//initial number of particles
- 
+       
     //calculate positions at mask-------
     Z=z_mask;
     trace_r(Z,theta,phi);
@@ -440,7 +461,6 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));    
 
     //mask hit--------------------------
-    // if(miss)
     hmask->Fill(X,Y);//position at mask before hit
     miss*=!(hit_mask());
     
@@ -449,10 +469,12 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hmaskg->Fill(X,Y);
     }
     else {
-      if(iprint)
-	printf("  Hit mask!\n");
-      hhit->Fill(1);
-      hnewhit->Fill(1);
+      if(donewhit){
+	if(iprint)
+	  printf("  Hit mask!\n");
+	hhit->Fill(1);
+	hnewhit->Fill(1);
+      }
     }
   
     if(miss) {    
@@ -469,11 +491,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hwing->Fill(X,Y);   
     }
     else {//hit obstruction
-      hhit->Fill(2);	      
-      if(hit_window()) {
-	hnewhit->Fill(2);
-	if(iprint)
-	  printf("  Hit window!\n");
+      if(donewhit){
+	hhit->Fill(2);	      
+	if(hit_window()) {
+	  hnewhit->Fill(2);
+	  if(iprint)
+	    printf("  Hit window!\n");
+	}
       }
     }
 
@@ -494,12 +518,14 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hmiss->Fill(3); 
     }
     else{//hit obstruction
+      if(donewhit) {
       hhit->Fill(3);
       if(hit_shield()) {
 	if(iprint)
 	  printf("  Hit Y2 shield!\n");
 	hnewhit->Fill(3);
       }
+    }
     }
    
     if(miss){
@@ -527,15 +553,17 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hmiss->Fill(4);
     }
     else{//hit obstruction
-      hhit->Fill(4);     
-      if(hit_shield()) {
+      if(donewhit) {     
+	hhit->Fill(4);     
+	if(hit_shield()) {
 	if(iprint)
 	  printf("  Hit X2 shield!\n");
 	hnewhit->Fill(4);	
       }
     }
+    }
        
-    if(miss){
+    if(miss) {
       //calculate positions at X2
       Z=z_X2; 
       trace_r(Z,theta,phi);
@@ -543,20 +571,21 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       trace_y(y,theta,phi);     
       hxg[2]->Fill(X);
       hyxg[2]->Fill(X,Y);
-      //  }
-    
-      // if(miss){
+   
       //calculate positions at anode (step back)
       Z=z_A2;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);
+    }
+    if(doslits)
+      miss*=!(hit_slits());
+    if(miss) {
       hyxgm[1]->Fill(X,Y);
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
       hyxgmr[1]->Fill(Xr,Yr);
     }
-
     //------------------------------------------------------
     //Detector 1----------------------------------
     //calculate positions at Y1 shield
@@ -574,14 +603,16 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hmiss->Fill(5); 
     }
     else{//hit obstruction
-      hhit->Fill(5);
-      if(hit_shield()) {
-	if(iprint)
-	  printf("  Hit Y1 shield!\n");
-	hnewhit->Fill(5);
+      if(donewhit) {     
+	hhit->Fill(5);
+	if(hit_shield()) {
+	  if(iprint)
+	    printf("  Hit Y1 shield!\n");
+	  hnewhit->Fill(5);
+	}
       }
     }
-   
+    
     if(miss){
       //calculate positions at Y1 (step back)
       Z=z_Y1; 
@@ -606,14 +637,15 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hmiss->Fill(6);
     }
     else{//hit obstruction
-      hhit->Fill(6);     
+      if(donewhit) {    
+	hhit->Fill(6);     
       if(hit_shield()) {
 	if(iprint)
 	  printf("  Hit X1 shield!\n");
 	hnewhit->Fill(6);	
       }
     }
-    
+    }
     if(miss){
       //calculate positions at X1
       Z=z_X1; 
