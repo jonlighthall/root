@@ -8,7 +8,6 @@
 #include "TMath.h"
 #include "TRandom3.h"
 
-
 void testRandom(Int_t nrEvents=500000000)
 {
   TRandom *r1=new TRandom();
@@ -148,22 +147,15 @@ void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
   }
 }
 
+Float_t slit_width=0.5;
+Float_t slits[5]={-20,-10,0,5,10};
+//the position of the slits are not needed outside fo the function, but delcaring the variables each run is very slow
 Bool_t hit_slits(void)
 {
-  Float_t slit_width=0.5;
-  Float_t slits[5]={-20,-10,0,5,10};
   for(int i=0; i<5; i++) {
-    if(iprint)
-    printf("Slit position %f to %f ", slits[i]-slit_width/2,slits[i]+slit_width/2);
-    if((X>(slits[i]-slit_width/2))&&(X<(slits[i]+slit_width/2))) {
-      if(iprint)
-	printf("hit!\n");
+    if((X>(slits[i]-slit_width/2))&&(X<(slits[i]+slit_width/2)))
       return kFALSE;
-    }
-    else
-      if(iprint)
-	printf("miss!\n");
- }
+  }
   return kTRUE;
 }
 
@@ -356,8 +348,8 @@ void clearhists()
     }
   }
 }
-Float_t xres=0, yres=0;
 
+Float_t xres=0, yres=0;
 void setres(Float_t set_xres=0, Float_t set_yres=0)
 {
   xres=set_xres;
@@ -467,17 +459,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     if(miss) {
       hmiss->Fill(1);
       hmaskg->Fill(X,Y);
-    }
-    else {
-      if(donewhit){
-	if(iprint)
-	  printf("  Hit mask!\n");
-	hhit->Fill(1);
-	hnewhit->Fill(1);
-      }
-    }
-  
-    if(miss) {    
+     
       //calculate positions at window-----
       Z=z_window;
       trace_r(Z,theta,phi);
@@ -489,22 +471,9 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     if(miss) {//passed through
       hmiss->Fill(2);
       hwing->Fill(X,Y);   
-    }
-    else {//hit obstruction
-      if(donewhit){
-	hhit->Fill(2);	      
-	if(hit_window()) {
-	  hnewhit->Fill(2);
-	  if(iprint)
-	    printf("  Hit window!\n");
-	}
-      }
-    }
-
-    //------------------------------------------------------
-    //Detector 2----------------------------------
-    if(miss){//at Y2 shield, before calculating hits
-      //calculate positions at Y2 shield
+      //------------------------------------------------------
+      //Detector 2----------------------------------
+      //calculate positions at Y2 shield before calculating hits
       Z=z_A2-delta_z/2;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
@@ -516,19 +485,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     miss*=!(hit_shield());
     if(miss){
       hmiss->Fill(3); 
-    }
-    else{//hit obstruction
-      if(donewhit) {
-      hhit->Fill(3);
-      if(hit_shield()) {
-	if(iprint)
-	  printf("  Hit Y2 shield!\n");
-	hnewhit->Fill(3);
-      }
-    }
-    }
-   
-    if(miss){
+    
       //calculate positions at Y2 (step back)
       Z=z_Y2; 
       trace_r(Z,theta,phi);
@@ -536,9 +493,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       trace_y(y,theta,phi);    
       hxg[3]->Fill(Y);
       hyxg[3]->Fill(X,Y);
-      //}
-   
-      //   if(miss){//at X2 shield, before calculating hits
+    
       //calculate positions at X2 shield
       Z=z_A2+delta_z/2;
       trace_r(Z,theta,phi);
@@ -551,19 +506,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     miss*=!(hit_shield());
     if(miss){
       hmiss->Fill(4);
-    }
-    else{//hit obstruction
-      if(donewhit) {     
-	hhit->Fill(4);     
-	if(hit_shield()) {
-	if(iprint)
-	  printf("  Hit X2 shield!\n");
-	hnewhit->Fill(4);	
-      }
-    }
-    }
-       
-    if(miss) {
+   
       //calculate positions at X2
       Z=z_X2; 
       trace_r(Z,theta,phi);
@@ -585,35 +528,22 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
       hyxgmr[1]->Fill(Xr,Yr);
-    }
-    //------------------------------------------------------
-    //Detector 1----------------------------------
-    //calculate positions at Y1 shield
-    Z=z_A1-delta_z/2;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
- 
-    if(miss){//at Y1 shield, before calculating hits
+    
+      //------------------------------------------------------
+      //Detector 1----------------------------------
+      //calculate positions at Y1 shield before calculating hits
+      Z=z_A1-delta_z/2;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);
+    
       hx[1]->Fill(Y);
       hyx[1]->Fill(X,Y);
     }
     miss*=!(hit_shield());
     if(miss){
       hmiss->Fill(5); 
-    }
-    else{//hit obstruction
-      if(donewhit) {     
-	hhit->Fill(5);
-	if(hit_shield()) {
-	  if(iprint)
-	    printf("  Hit Y1 shield!\n");
-	  hnewhit->Fill(5);
-	}
-      }
-    }
-    
-    if(miss){
+   
       //calculate positions at Y1 (step back)
       Z=z_Y1; 
       trace_r(Z,theta,phi);
@@ -621,10 +551,8 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       trace_y(y,theta,phi);   
       hxg[1]->Fill(Y);
       hyxg[1]->Fill(X,Y);
-    }
-     
-    if(miss){//at X1 shield, before calculating hits
-      //calculate positions at X1 shield
+  
+      //calculate positions at X1 shield before calculating hits
       Z=z_A1+delta_z/2;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
@@ -635,18 +563,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     miss*=!(hit_shield());
     if(miss){
       hmiss->Fill(6);
-    }
-    else{//hit obstruction
-      if(donewhit) {    
-	hhit->Fill(6);     
-      if(hit_shield()) {
-	if(iprint)
-	  printf("  Hit X1 shield!\n");
-	hnewhit->Fill(6);	
-      }
-    }
-    }
-    if(miss){
+    
       //calculate positions at X1
       Z=z_X1; 
       trace_r(Z,theta,phi);
