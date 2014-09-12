@@ -336,6 +336,15 @@ void clearhists()
     }
   }
 }
+Float_t xres=0, yres=0;
+
+void setres(Float_t set_xres=0, Float_t set_yres=0)
+{
+  xres=set_xres;
+  yres=set_yres;
+  printf("Dectector resolution set to %f (x) and %f (y)\n",xres,yres);
+  clearhists();
+}
 
 Bool_t iprint=kFALSE; //doprint;  
 void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
@@ -364,6 +373,12 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
   TRandom3 *rphi=new TRandom3();
   rphi->SetSeed(0);
  
+  //measurement-----------------------------------
+  TRandom3 *rxres=new TRandom3();
+  TRandom3 *ryres=new TRandom3();
+  rxres->SetSeed(0);
+  ryres->SetSeed(0);
+
   //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
   Bool_t miss=kTRUE;
@@ -527,6 +542,19 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hxg[2]->Fill(X);
       hyxg[2]->Fill(X,Y);
     }
+    
+ //calculate positions at anode (step back)
+    Z=z_A2;
+    trace_r(Z,theta,phi);
+    trace_x(x,theta,phi);
+    trace_y(y,theta,phi);
+
+    if(miss){
+      hyxgm[1]->Fill(X,Y);
+
+    }
+
+
     //------------------------------------------------------
     //Detector 1----------------------------------
     //calculate positions at Y1 shield
