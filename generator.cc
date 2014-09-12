@@ -105,6 +105,7 @@ Double_t x=0,y=0;//point on target
 Double_t theta=0;//scattering angle
 Double_t phi=0;//azimuthal angle
 Double_t X=0, Y=0, Z=0;//position
+Float_t Xm=0, Ym=0, Xr=0, Yr=0;
 Double_t r=0,rho=0;//radius
 Bool_t doprint=1;//kFALSE;
 Bool_t diag=kFALSE;
@@ -439,8 +440,8 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));    
 
     //mask hit--------------------------
-    if(miss)
-      hmask->Fill(X,Y);//position at mask before hit
+    // if(miss)
+    hmask->Fill(X,Y);//position at mask before hit
     miss*=!(hit_mask());
     
     if(miss) {
@@ -454,14 +455,14 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hnewhit->Fill(1);
     }
   
-    //calculate positions at window-----
-    Z=z_window;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
- 
-    if(miss)
+    if(miss) {    
+      //calculate positions at window-----
+      Z=z_window;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);
       hwin->Fill(X,Y);
+    }
     miss*=!(hit_window());
     if(miss) {//passed through
       hmiss->Fill(2);
@@ -478,13 +479,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 
     //------------------------------------------------------
     //Detector 2----------------------------------
-    //calculate positions at Y2 shield
-    Z=z_A2-delta_z/2;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
- 
     if(miss){//at Y2 shield, before calculating hits
+      //calculate positions at Y2 shield
+      Z=z_A2-delta_z/2;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);
+      
       hx[3]->Fill(Y);
       hyx[3]->Fill(X,Y);
     }
@@ -501,22 +502,23 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       }
     }
    
-    //calculate positions at Y2 (step back)
-    Z=z_Y2; 
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
     if(miss){
+      //calculate positions at Y2 (step back)
+      Z=z_Y2; 
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);    
       hxg[3]->Fill(Y);
       hyxg[3]->Fill(X,Y);
-    }
-    //calculate positions at X2 shield
-    Z=z_A2+delta_z/2;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
- 
-    if(miss){//at X2 shield, before calculating hits
+      //}
+   
+      //   if(miss){//at X2 shield, before calculating hits
+      //calculate positions at X2 shield
+      Z=z_A2+delta_z/2;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);   
+      
       hx[2]->Fill(X);
       hyx[2]->Fill(X,Y);
     }
@@ -532,28 +534,28 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 	hnewhit->Fill(4);	
       }
     }
-   
-    //calculate positions at X2
-    Z=z_X2; 
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
+       
     if(miss){
+      //calculate positions at X2
+      Z=z_X2; 
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);     
       hxg[2]->Fill(X);
       hyxg[2]->Fill(X,Y);
-    }
+      //  }
     
- //calculate positions at anode (step back)
-    Z=z_A2;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
-
-    if(miss){
+      // if(miss){
+      //calculate positions at anode (step back)
+      Z=z_A2;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);
       hyxgm[1]->Fill(X,Y);
-
+      Xr=rxres->Gaus(X,xres);
+      Yr=ryres->Gaus(Y,yres);
+      hyxgmr[1]->Fill(Xr,Yr);
     }
-
 
     //------------------------------------------------------
     //Detector 1----------------------------------
@@ -580,22 +582,22 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       }
     }
    
-    //calculate positions at Y1 (step back)
-    Z=z_Y1; 
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
     if(miss){
+      //calculate positions at Y1 (step back)
+      Z=z_Y1; 
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);   
       hxg[1]->Fill(Y);
       hyxg[1]->Fill(X,Y);
     }
-    //calculate positions at X1 shield
-    Z=z_A1+delta_z/2;
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
- 
+     
     if(miss){//at X1 shield, before calculating hits
+      //calculate positions at X1 shield
+      Z=z_A1+delta_z/2;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);    
       hx[0]->Fill(X);
       hyx[0]->Fill(X,Y);
     }
@@ -611,18 +613,16 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
 	hnewhit->Fill(6);	
       }
     }
-   
-    //calculate positions at X1
-    Z=z_X1; 
-    trace_r(Z,theta,phi);
-    trace_x(x,theta,phi);
-    trace_y(y,theta,phi);
+    
     if(miss){
+      //calculate positions at X1
+      Z=z_X1; 
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      trace_y(y,theta,phi);    
       hxg[0]->Fill(X);
       hyxg[0]->Fill(X,Y);
     }
-
-
   }//end of generator loop
 }
 Float_t range=0;
