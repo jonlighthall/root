@@ -4033,35 +4033,8 @@ hname=histname;
   double edge[6]={};
   for(int i=0;i<6;i++){
     edge[i]=(positions[i]-offset)/slope;
-    // printf("Edge %d estimated location is %f\n",i,edge[i]);
   }
   
-  /*
-  pol2->SetLineStyle(2);
-  hist1->Fit("gaus","+q","",edge[0]-width,edge[0]+width);
-  hist1->Fit("pol2","+q","",edge[0]-width,edge[0]+width);
-  for(int i=0;i<3;i++){
-    temp[i+6]=pol2->GetParameter(i);
-  }
-  c=temp[6];
-  b=temp[7];
-  a=temp[8];
-  min[2]=-b/(2*a);
-  printf("estimated edge is %f\n",edge[0]);
-  printf("       minimum is %f\n",min[2]);
-
-  hist1->Fit("gaus","+q","",edge[5]-width,edge[5]+width);
-  hist1->Fit("pol2","+q","",edge[5]-width,edge[5]+width);
-  for(int i=0;i<3;i++){
-    temp[i+9]=pol2->GetParameter(i);
-  }
-  c=temp[9];
-  b=temp[10];
-  a=temp[11];
-  min[3]=-b/(2*a);
-  printf("estimated edge is %f\n",edge[5]);
-  printf("       minimum is %f\n",min[3]);
-  */
   gaus->SetLineColor(1);
   if(det%2){//y-positions
     for(i=0;i<6;i++){
