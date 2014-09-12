@@ -696,6 +696,7 @@ void x1s(Float_t z_plane=z_X1-delta_z/2)
 
 void shadow(Float_t z_plane=0)
 {
+  printf("Calculating positions at z=%f\n",z_plane);
   maskz(z_plane);
   windowz(z_plane);
   shieldz(z_plane);
@@ -729,22 +730,23 @@ Float_t y_shadow[6]=0;
 void maskz(Float_t z_plane)
 {
   Float_t z_feature=z_mask;
-  for(int i=0; i<5; i++) {
-    printf("%d z_feature = %5.1f ",i, z_feature);
-    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
-    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
-    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-    printf("x_shadow = %7.2f\n", x_shadow[i]);
-    plotvlines(x_shadow[i],0,0,0,2);
-  }
-  
+  printf("Positions in y-direction\n");
   for(int i=1; i<5; i++){
-    printf("%d z_feature = %5.1f ",i, z_feature);
+    printf("% d z_feature = %5.1f ",i, z_feature);
     theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f\n", y_shadow[i]);
     plothlines(y_shadow[i],0,0,-range,range,2);   
+  }
+  printf("Positions in x-direction\n");
+  for(int i=0; i<5; i++) {
+    printf("% d z_feature = %5.1f ",i, z_feature);
+    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
+    printf("x_shadow = %7.2f\n", x_shadow[i]);
+    plotvlines(x_shadow[i],0,0,0,2);
   }
 
   TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
