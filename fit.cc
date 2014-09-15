@@ -2059,9 +2059,14 @@ void sum(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymi
   hist1->GetXaxis()->SetRange(lowbin,highbin);
 }
 
-void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999)
+void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W")
 {//adapted from util.cc
-  Float_t sigma=0, width=0; 
+  //Float_t sigma=0, width=0; 
+  if(!(gROOT->FindObject(histname))) {
+      printf("Histogram %s not found!\n",histname);
+      return;
+    }
+
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   if (xmin==-999999. && xmax==999999.) {
     xmin=hist1->GetXaxis()->GetXmin();
@@ -2069,12 +2074,40 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999)
   } else if (xmax==999999. && xmin !=-999999.) {
     xmax=xmin;
   } 
-  hist1->Fit("gaus","W","",xmin,xmax);
-  sigma=hist1->GetFunction("gaus")->GetParameter(2);
-  width=sigma*2.35482;
-  printf("Width of peak is %f or %f FWHM\n",sigma,width);
-  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,hist1->GetFunction("gaus")->GetParameter(1)/5.);
-  printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,hist1->GetFunction("gaus")->GetParameter(1)/5./2.5);
+  hist1->Fit("gaus",option,"",xmin,xmax);
+   if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q'))))
+     ginfo();
+}
+
+/*void test(Char_t *option="W")
+{
+  if((bool)(strchr(option,'q')))
+    printf("q is present\n");
+  if((bool) (strchr(option,'Q')))
+    printf("Q is present\n");
+  if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q')))){
+    printf("neither!\n");
+    ginfo();
+  }
+  else
+    printf("either!\n");
+  return; 
+  }*/
+
+void ginfo (void)
+{
+  Float_t sigma=0, width=0, mean=0; 
+ sigma=gaus->GetParameter(2);
+ mean=gaus->GetParameter(1);
+ width=sigma*2.35482;
+ printf("Width of peak is %f or %f FWHM\n",sigma,width);
+ printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
+  printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
+}
+
+void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W")
+{//fit a quadratic given a center and a width
+  gfit(histname,center-wide,center+wide,option);
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
@@ -3371,9 +3404,15 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     }
     positions=sorted;  
   }//end version IF 
+  Float_t sig_av=0;
   for (Int_t i=0; i<npeaks; i++){
-    cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    printf(" Peak %d found at channel %.2f",i,positions[i]);
+    gfitc(hname.Data(),positions[i],resolution,"+q");
+    printf(" (%.2f wide)\n",gaus->GetParameter(2));
+    sig_av+=gaus->GetParameter(2);
   }
+  printf(" Average peak width is %f\n",sig_av/npeaks);
  
   if(!filename==""){
     for (Int_t i=0; i<npeaks; i++) {
