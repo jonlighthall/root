@@ -622,30 +622,30 @@ void battleship()
 void y2s(Float_t z_plane=z_Y2+delta_z/2)
 {
   gate("hyx3","hyxg3");  
-  shadow(z_plane);
+  shadowz(z_plane);
 }
 
 void x2s(Float_t z_plane=z_X2-delta_z/2)
 {
   gate("hyx2","hyxg2");
-  shadow(z_plane);
+  shadowz(z_plane);
 }
 
 void y1s(Float_t z_plane=z_Y1+delta_z/2)
 {
   gate("hyx1","hyxg1"); 
-  shadow(z_plane);
+  shadowz(z_plane);
 }
 
 void x1s(Float_t z_plane=z_X1-delta_z/2)
 {
   gate("hyx0","hyxg0");
-  shadow(z_plane);
+  shadowz(z_plane);
 }
 
-void shadow(Float_t z_plane=0)
+void shadowz(Float_t z_plane=0)
 {
-  printf("Calculating positions at z=%f\n",z_plane);
+  printf("Calculating positions at z=%7.2f\n",z_plane);
   maskz(z_plane);
   windowz(z_plane);
   shieldz(z_plane);
@@ -655,10 +655,10 @@ void shadow(Float_t z_plane=0)
   right_wide=(x_shadow[5]-x_shadow[4]);
   if(right_wide>(x_shadow[6]-x_shadow[4]))
     right_wide=(x_shadow[6]-x_shadow[4]);
-  printf("%6.3f wide\n",right_wide);
+  printf("%6.3f wide (%6.3f total)\n",right_wide,(x_shadow[5]-x_shadow[0]));
 
   printf("Y-gaps are centered at %6.3f (%6.3f wide) and %6.3f (%6.3f wide)\n",(y_shadow[1]+y_shadow[2])/2,(y_shadow[2]-y_shadow[1]),(y_shadow[3]+y_shadow[4])/2,(y_shadow[4]-y_shadow[3]));
-  printf("Y-spans are %6.3f, %6.3f, and %6.3f wide\n",(y_shadow[1]-y_shadow[0]),(y_shadow[3]-y_shadow[2]),(y_shadow[5]-y_shadow[4]));
+  printf("Y-spans are %6.3f, %6.3f, and %6.3f wide (%6.3f total)\n",(y_shadow[1]-y_shadow[0]),(y_shadow[3]-y_shadow[2]),(y_shadow[5]-y_shadow[4]),(y_shadow[5]-y_shadow[0]));
 }
 
 void shield(Char_t *histin1, Char_t *histin2)
@@ -679,24 +679,33 @@ Float_t y_shadow[6]=0;
 void maskz(Float_t z_plane)
 {
   Float_t z_feature=z_mask;
-  printf("Positions in y-direction\n");
+  FILE * outfile_x, * outfile_y;
+  outfile_y=fopen("temp_Y.lst","w");
+  outfile_x=fopen("temp_X.lst","w");
+  //printf("Calculating for z=%7.2f\n",z_plane); 
+
+  printf("Positions in y-direction of mask\n");
   for(int i=1; i<5; i++){
-    printf("% d z_feature = %5.1f ",i, z_feature);
+    printf(" %d z_feature = %5.1f ",i+1, z_feature);
     theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
-    printf("y_shadow = %7.2f\n", y_shadow[i]);
+    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+54/2);
+    fprintf(outfile_y,"%g\n",y_shadow[i]+54/2);
     plothlines(y_shadow[i],0,0,-range,range,2);   
   }
-  printf("Positions in x-direction\n");
+  fclose(outfile_y);
+  printf("Positions in x-direction of mask\n");
   for(int i=0; i<5; i++) {
-    printf("% d z_feature = %5.1f ",i, z_feature);
+    printf(" %d z_feature = %5.1f ",i+1, z_feature);
     theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-    printf("x_shadow = %7.2f\n", x_shadow[i]);
+    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+118);
+    fprintf(outfile_x,"%g\n",x_shadow[i]+118);    
     plotvlines(x_shadow[i],0,0,0,2);
   }
+  fclose(outfile_x);
 
   TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
   emask->SetLineColor(2);
@@ -718,7 +727,7 @@ void windowz(Float_t z_plane)
 {
   Float_t z_feature=z_window;
   Int_t i=6;
-  printf("%d z_feature = %5.1f ",i, z_feature);
+  printf(" %d z_feature = %5.1f ",i+1, z_feature);
   theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
   printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
   x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
@@ -739,23 +748,26 @@ void shieldz(Float_t z_plane)
 	z_feature=z_A2+delta_z/2;
       else
 	z_feature=z_A2-delta_z/2;
-  for(int i=5; i<6; i++) {
-    printf("%d z_feature = %5.1f ",i, z_feature);
-    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
-    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
-    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-    printf("x_shadow = %7.2f\n", x_shadow[i]);
-    plotvlines(x_shadow[i],0,0,0,6);
-  }
-  
-  for(int i=0; i<6; i+=5){
-    printf("%d z_feature = %5.1f ",i, z_feature);
+  printf("Positions in y-direction of shields\n");  
+  for(int i=0; i<6; i+=5) {
+    printf(" %d z_feature = %5.1f ",i+1, z_feature);
     theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
-    printf("y_shadow = %7.2f\n", y_shadow[i]);
+    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+54/2);
     plothlines(y_shadow[i],0,0,-range,range,6);   
   }
+  printf("Positions in x-direction of shields\n");  
+  for(int i=5; i<6; i++) {
+    printf(" %d z_feature = %5.1f ",i+1, z_feature);
+    theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
+    printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
+    x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
+    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+118);
+    plotvlines(x_shadow[i],0,0,0,6);
+  }
+  
+  
 }
 
 void gate(Char_t *histin1, Char_t *histin2)
