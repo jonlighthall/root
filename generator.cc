@@ -176,7 +176,7 @@ Bool_t hit_mask(void)
 
 Bool_t hit_shield(void)
 {
-  if((X<-118)||(X>36))
+  if((X<-x_cal)||(X>36))
     return kTRUE;//hits shield (x)
   if((Y<-27)||(Y>27))
     return kTRUE;//hist shield (y)
@@ -235,6 +235,8 @@ TH2F *hyxgmr[2];
 
 Double_t x_min=0;
 Double_t x_max=100;
+Float_t x_cal=118;//location of central beam axis, relative to edge of shield; not to be confused with offset_x
+Float_t y_cal=54/2;// not to be confused with offset_y
 
 void definehists()
 {
@@ -242,6 +244,7 @@ void definehists()
   Double_t b_max=0;
   Float_t b_width=7;
   Double_t b_bin=500;
+  
   if((sigma_x==0)&&(sigma_y==0)){
     b_max=0;
     b_bin=3;
@@ -328,10 +331,10 @@ void definehists()
   hyxg[1] = new TH2F("hyxg1","Y1 vs X1 Positions (gated on X1)",500,x_min,x_max,500,x_min,x_max);
   hyxg[2] = new TH2F("hyxg2","Y2 vs X2 Positions (gated on Y2)",500,x_min,x_max,500,x_min,x_max);
   hyxg[3] = new TH2F("hyxg3","Y2 vs X2 Positions (gated on X2)",500,x_min,x_max,500,x_min,x_max);
-  hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
-  hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min,x_max,500,x_min,x_max);
-  hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
-  hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",500,x_min,x_max,500,x_min,x_max);
+  hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
+  hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
+  hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
+  hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
 }
 
 void clearhists()
@@ -524,10 +527,10 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     if(doslits)
       miss*=!(hit_slits());
     if(miss) {
-      hyxgm[1]->Fill(X,Y);
+      hyxgm[1]->Fill(X+x_cal,Y+y_cal);
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
-      hyxgmr[1]->Fill(Xr,Yr);
+      hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
     
       //------------------------------------------------------
       //Detector 1----------------------------------
@@ -664,7 +667,7 @@ void shadowz(Float_t z_plane=0)
 void shield(Char_t *histin1, Char_t *histin2)
 {
   gate(histin1,histin2);
-  plotvlines(-118,0,0,0,2);
+  plotvlines(-x_cal,0,0,0,2);
   plotvlines(36,0,0,0,2);
   plothlines(-27,0,0,-range,range,2);
   plothlines(27,0,0,-range,range,2);
@@ -690,8 +693,8 @@ void maskz(Float_t z_plane)
     theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
-    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+54/2);
-    fprintf(outfile_y,"%g\n",y_shadow[i]+54/2);
+    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
+    fprintf(outfile_y,"%g\n",y_shadow[i]+y_cal);
     plothlines(y_shadow[i],0,0,-range,range,2);   
   }
   fclose(outfile_y);
@@ -701,8 +704,8 @@ void maskz(Float_t z_plane)
     theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+118);
-    fprintf(outfile_x,"%g\n",x_shadow[i]+118);    
+    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+x_cal);
+    fprintf(outfile_x,"%g\n",x_shadow[i]+x_cal);    
     plotvlines(x_shadow[i],0,0,0,2);
   }
   fclose(outfile_x);
@@ -754,7 +757,7 @@ void shieldz(Float_t z_plane)
     theta_proj[i]=TMath::ATan((y_feature[i]-offset_y)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
-    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+54/2);
+    printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
     plothlines(y_shadow[i],0,0,-range,range,6);   
   }
   printf("Positions in x-direction of shields\n");  
@@ -763,11 +766,9 @@ void shieldz(Float_t z_plane)
     theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+118);
+    printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+x_cal);
     plotvlines(x_shadow[i],0,0,0,6);
   }
-  
-  
 }
 
 void gate(Char_t *histin1, Char_t *histin2)
