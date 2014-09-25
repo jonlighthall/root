@@ -3309,9 +3309,8 @@ void timeplot3()
 
 //-----------------------------------------------------------------------------------------------
 //macros for checking and setting calibration for EMMA PGAC test data----------------------------
-void showX()
+void showX(float ymin=-100,float ymax=100)
 {//test extent of x-positions (calibrated)
-  //setvlines(-300,100);
   plotvlines(0.001-6,6.001-6);
   plotvlines(166-6,160-6);
 }
@@ -3326,19 +3325,22 @@ void showY()
   plotvlines(0,60-6);
 }
 
-void showXY()
+void showXY(float xmin=55,float xmax=180,float ymin=-100,float ymax=100)
 {
+  setvlines(ymin,ymax);
   showX();
   plothlines(0.001-6,6.001-6);
-  plothlines(22-6,0,0,-100,100,2);
-  plothlines(44-6,0,0,-100,100,2);
+  plothlines(22-6,0,0,xmin,xmax,2);
+  plothlines(44-6,0,0,xmin,xmax,2);
   plothlines(66-6);
   plothlines(0,60-6);
-  TEllipse *ellipse = new TEllipse(118+6,54/2+6,99.5/2.);
-  ellipse->SetLineWidth(2);
-  ellipse->SetLineStyle(4); 
-  ellipse->SetFillStyle(0);
-  ellipse->Draw();
+  /*  
+      TEllipse *ellipse = new TEllipse(118,54/2,99.5/2.);
+      ellipse->SetLineWidth(2);
+      ellipse->SetLineStyle(4); 
+      ellipse->SetFillStyle(0);
+      ellipse->Draw();
+  */
 }
 
 void showX1(float ymin=-100,float ymax=100)
@@ -3358,24 +3360,22 @@ void showY1x(float ymin=-100,float ymax=100)
   setvlines(ymin,ymax);  
   showY();
   loadcal("cal/Y1.lst");  
-  //setvlines(-300,100);
-  // plotvlines(0,0,sorted[0]);
   plotvlines(0,0,sorted[1]);
   plotvlines(0,0,sorted[2]);
   plotvlines(0,0,sorted[3]);
   plotvlines(0,0,sorted[4]);
 }
 
-void showY1y()
+void showY1y(float xmin=55,float xmax=180,float ymin=-100,float ymax=100)
 {
   showXY();
-  showX1();
   loadcal("cal/Y1.lst");
-  setvlines(-300,100);
-  plothlines(0,0,10.1);
-  plothlines(0,0,15.8);
-  plothlines(0,0,38.2);
-  plothlines(0,0,43.9);
+  setvlines(ymin,ymax);  
+  plothlines(0,0,sorted[1],xmin,xmax);
+  plothlines(0,0,sorted[2],xmin,xmax);
+  plothlines(0,0,sorted[3],xmin,xmax);
+  plothlines(0,0,sorted[4],xmin,xmax);
+  showX1();
 }
 
 void showX2(float ymin=-100,float ymax=100)
@@ -3395,23 +3395,21 @@ void showY2x(float ymin=-100,float ymax=100)
   setvlines(ymin,ymax);  
   showY();
   loadcal("cal/Y2.lst");  
-  setvlines(-300,100);
-  // plotvlines(0,0,sorted[0]);
   plotvlines(0,0,sorted[1]);
   plotvlines(0,0,sorted[2]);
   plotvlines(0,0,sorted[3]);
   plotvlines(0,0,sorted[4]);
 }
 
-void showY2y()
+void showY2y(float xmin=55,float xmax=180,float ymin=-100,float ymax=100)
 {
   showXY();
-  showX2();
-  setvlines(-300,100);
-  plothlines(0,0,11+6);
-  plothlines(0,0,16.3+6);
-  plothlines(0,0,37.7+6);
-  plothlines(0,0,43+6);
+  loadcal("cal/Y2.lst");  
+  plothlines(0,0,sorted[1],xmin,xmax);
+  plothlines(0,0,sorted[2],xmin,xmax);
+  plothlines(0,0,sorted[3],xmin,xmax);
+  plothlines(0,0,sorted[4],xmin,xmax);
+  showX2(ymin,ymax);
 }
 
 static const int npeaks=6;  
@@ -4018,6 +4016,7 @@ hname=histname;
   printf("Detector number is %d\n",det);
   double slope=(mid[1]-mid[0])/(min[1]-min[0]);
   printf(" The difference in the measured minima is %f\n",min[1]-min[0]);
+  printf(" The midpoint between the measured minima is %f\n",(min[1]-min[0])/2+min[0]);
   printf(" slope is %f\n",slope);
   double offset=slope*-min[0]+mid[0];
   printf(" offset is %f\n",offset);
