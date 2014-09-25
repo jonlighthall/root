@@ -107,7 +107,7 @@ Float_t z_X1s=z_A1+delta_z/2;
 Float_t x=0,y=0;//point on target
 Float_t theta=0;//scattering angle
 Float_t phi=0;//azimuthal angle
-Float_t X=0, Y=0, Z=0;//position
+Float_t X=0, Y=0, Z=0, Rho=0;//position
 Float_t Xm=0, Ym=0, Xr=0, Yr=0;
 Float_t r=0,rho=0;//radius
 Bool_t doprint=1;//kFALSE;
@@ -163,7 +163,8 @@ Bool_t hit_slits(void)
 
 Bool_t hit_mask(void)
 {
-  if(rho>(99.5/2)) 
+  Rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
+  if(Rho>(99.5/2)) 
     return kTRUE;//hits radius
   if((X>-31)&&(X<-26))
     return kTRUE;//hist left strip
@@ -237,7 +238,7 @@ TH2F *hyxgmr[2];
 
 Float_t x_min=0;
 Float_t x_max=100;
-Float_t x_cal=118;//location of central beam axis, relative to edge of shield; not to be confused with offset_x
+Float_t x_cal=0;//118;//location of central beam axis, relative to edge of shield; not to be confused with offset_x
 Float_t y_cal=0;//54/2;// not to be confused with offset_y
 
 void definehists()
@@ -341,7 +342,7 @@ void definehists()
 
 void clearhists()
 {
-  printf("Clearing histograms...\n");
+  printf(" Clearing histograms...\n");
   const int Nhists = 37;
   TString histnames[Nhists]={"hbeam","htheta","hphi","hphitheta","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1"};
 
@@ -366,7 +367,7 @@ void setres(Float_t set_xres=0, Float_t set_yres=0)
 Bool_t iprint=kFALSE; //doprint;  
 Bool_t donewhit=kFALSE;
 Bool_t doslits=kFALSE;
-void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
+void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
 {
   if(!(gROOT->FindObject("hbeam")))
     definehists();
@@ -453,7 +454,6 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
-    // rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
    
     //mask hit--------------------------
     hmask->Fill(X,Y);//position at mask before hit
@@ -519,12 +519,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyxg[2]->Fill(X,Y);
    
       //calculate positions *measured* at anode (step back)
-      Z=z_A2;
+      Z=z_Y2s;
       trace_r(Z,theta,phi);
       trace_y(y,theta,phi);
-      //Z=z_X2s;
-      // trace_r(Z,theta,phi);
-      trace_x(y,theta,phi);
+      Z=z_X2s;
+      trace_r(Z,theta,phi);
+      trace_x(x,theta,phi);
+      
     }
     if(doslits)
       miss*=!(hit_slits());
@@ -584,7 +585,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       trace_y(y,theta,phi);
       Z=z_X1s;
       trace_r(Z,theta,phi);
-      trace_x(y,theta,phi);
+      trace_x(x,theta,phi);
 
       hyxgm[0]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
@@ -665,7 +666,7 @@ void x1s(Float_t z_plane=z_X1-delta_z/2)
 
 void shadowz(Float_t z_plane=0)
 {
-  printf("Calculating positions at z=%7.2f\n",z_plane);
+  printf("Calculating positions at z=%7.2f\n with calibration offsets of x=%f, y=%f\n",z_plane,x_cal,y_cal);
   maskz(z_plane);
   windowz(z_plane);
   shieldz(z_plane);
