@@ -13,9 +13,9 @@ void testRandom(Int_t nrEvents=500000000)
   TRandom *r1=new TRandom();
   TRandom2 *r2=new TRandom2();
   TRandom3 *r3=new TRandom3();
-  TH1D *h1=new TH1D("h1","TRandom",500,0,1);
-  TH1D *h2=new TH1D("h2","TRandom2",500,0,1);
-  TH1D *h3=new TH1D("h3","TRandom3",500,0,1);
+  TH1F *h1=new TH1F("h1","TRandom",500,0,1);
+  TH1F *h2=new TH1F("h2","TRandom2",500,0,1);
+  TH1F *h3=new TH1F("h3","TRandom3",500,0,1);
   TStopwatch *st=new TStopwatch();
   st->Start();
   for (Int_t i=0; i<nrEvents; i++) { h1->Fill(r1->Uniform(0,1)); }
@@ -28,7 +28,7 @@ void testRandom(Int_t nrEvents=500000000)
   st->Stop(); cout << “Random3: “ << st->CpuTime() << endl;
 }
 
-void testRandom2(Int_t nrEvents=10e+08, double mean = 0, double sigma = 100)
+void testRandom2(Int_t nrEvents=10e+08, Float_t mean = 0, Float_t sigma = 100)
 {
   TRandom *r1=new TRandom();
   TRandom *r2=new TRandom();
@@ -47,16 +47,16 @@ void testRandom2(Int_t nrEvents=10e+08, double mean = 0, double sigma = 100)
     printf("Histogram \"h3\" already exists. Deleting old histogram.\n");
   } 
   
-  TH1D *h1=new TH1D("h1","TRandom, Uniform",500,mean-sigma*4,mean+sigma*4);
-  TH1D *h2=new TH1D("h2","TRandom, Gaus",500,mean-sigma*4,mean+sigma*4);
-  TH1D *h3=new TH1D("h3","TRandom, Rndm",5000,0,1);
+  TH1F *h1=new TH1F("h1","TRandom, Uniform",500,mean-sigma*4,mean+sigma*4);
+  TH1F *h2=new TH1F("h2","TRandom, Gaus",500,mean-sigma*4,mean+sigma*4);
+  TH1F *h3=new TH1F("h3","TRandom, Rndm",5000,0,1);
   
   for (Int_t i=0; i<nrEvents; i++) {
     h1->Fill(r1->Uniform(mean-sigma*4,mean+sigma*4));
     h2->Fill(r2->Gaus(mean,sigma));
     h3->Fill(r3->Rndm());
     if(i%500000==0)
-      printf("%5.1f\%: %d events generated\n",(double)i/nrEvents*100,i);
+      printf("%5.1f\%: %d events generated\n",(Float_t)i/nrEvents*100,i);
   }
   
   plotall("h");
@@ -65,13 +65,13 @@ void testRandom2(Int_t nrEvents=10e+08, double mean = 0, double sigma = 100)
 }
 
 //Beam variables
-Double_t sigma_x=0.607956845;//for 90% in a 1mm radius
-Double_t sigma_y=sigma_x;
-Double_t offset_x=0, offset_y=0;
+Float_t sigma_x=0.607956845;//for 90% in a 1mm radius
+Float_t sigma_y=sigma_x;
+Float_t offset_x=0, offset_y=0;
 Bool_t is_gaussian=kTRUE;
-TH2D *hbeam;
+TH2F *hbeam;
 
-void setbeam(Double_t set_offset_x=0, Double_t set_offset_y=0, Double_t set_sigma_x=0.607956845, Double_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE)
+void setbeam(Float_t set_offset_x=0, Float_t set_offset_y=0, Float_t set_sigma_x=0.607956845, Float_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE)
 {
   sigma_x=set_sigma_x;
   sigma_y=set_sigma_y;
@@ -99,49 +99,51 @@ Float_t z_Y2=z_A2-delta_z;
 Float_t z_X2=z_A2+delta_z;
 Float_t z_Y1=z_A1-delta_z;
 Float_t z_X1=z_A1+delta_z;
+Float_t z_Y2s=z_A2-delta_z/2;
+Float_t z_X2s=z_A2+delta_z/2;
+Float_t z_Y1s=z_A1-delta_z/2;
+Float_t z_X1s=z_A1+delta_z/2;
 
-Double_t x=0,y=0;//point on target
-Double_t theta=0;//scattering angle
-Double_t phi=0;//azimuthal angle
-Double_t X=0, Y=0, Z=0;//position
+Float_t x=0,y=0;//point on target
+Float_t theta=0;//scattering angle
+Float_t phi=0;//azimuthal angle
+Float_t X=0, Y=0, Z=0;//position
 Float_t Xm=0, Ym=0, Xr=0, Yr=0;
-Double_t r=0,rho=0;//radius
+Float_t r=0,rho=0;//radius
 Bool_t doprint=1;//kFALSE;
 Bool_t diag=kFALSE;
 
-void trace_r(Double_t z_start,Double_t theta_start, Double_t phi_start)
+void trace_r(Float_t z_start,Float_t theta_start, Float_t phi_start)
 {//given z, theta, phi; calculate r
   r=z_start/(TMath::Cos(theta_start*TMath::DegToRad()));
-    
+  rho=r*(TMath::Sin(theta_start*TMath::DegToRad()));
   if(iprint) {
     printf(" Emmission angle (theta,phi)=(%f,%f)\n",theta_start,phi_start);
     printf("  Current position is Z=%7.2f\n",Z);
-    printf("  Radius is           r=%7.2f\n",r);
+    printf("  Spherical radius is r=%7.2f\n",r);
+    printf("  Cylindrical rad. is rho=%7.2f\n",rho);
   }
 }
 
-void trace_x(Double_t x_start, Double_t theta_start, Double_t phi_start)
+void trace_x(Float_t x_start, Float_t theta_start, Float_t phi_start)
 {
-  X=r*(TMath::Sin(theta_start*TMath::DegToRad()))*(TMath::Cos(phi_start*TMath::DegToRad()));
+  X=rho*(TMath::Cos(phi_start*TMath::DegToRad()));
   if(iprint) {
     printf("  X-position is %7.2f (relative), with offset %7.2f\n",X,x_start);
   }
   X+=x_start;  
-
   if(iprint) {
     printf("  X-position is %7.2f (absolute)\n",X);
   }
 }
 
-void trace_y(Double_t y_start, Double_t theta_start, Double_t phi_start)
+void trace_y(Float_t y_start, Float_t theta_start, Float_t phi_start)
 {
-  Y=r*(TMath::Sin(theta_start*TMath::DegToRad()))*(TMath::Sin(phi_start*TMath::DegToRad()));
-  
+  Y=rho*(TMath::Sin(phi_start*TMath::DegToRad()));
   if(iprint) {
     printf("  Y-position is %7.2f (relative), with offset %7.2f\n",Y,y_start);
   }
   Y+=y_start;  
-
   if(iprint) {
     printf("  Y-position is %7.2f (absolute)\n",Y);
   }
@@ -176,7 +178,7 @@ Bool_t hit_mask(void)
 
 Bool_t hit_shield(void)
 {
-  if((X<-x_cal)||(X>36))
+  if((X<-118)||(X>36))
     return kTRUE;//hits shield (x)
   if((Y<-27)||(Y>27))
     return kTRUE;//hist shield (y)
@@ -191,12 +193,12 @@ Bool_t hit_window(void)
   return kFALSE;
 }
 
-Double_t theta_min=0;
-Double_t theta_max=180;
-Double_t phi_min=0;
-Double_t phi_max=360;
+Float_t theta_min=0;
+Float_t theta_max=180;
+Float_t phi_min=0;
+Float_t phi_max=360;
 
-void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t set_phi_min=0, Double_t set_phi_max=360)
+void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_phi_min=0, Float_t set_phi_max=360)
 {//define angles and build histograms
   theta_min=set_theta_min;
   theta_max=set_theta_max;
@@ -206,18 +208,18 @@ void setangles(Double_t set_theta_min=0, Double_t set_theta_max=180, Double_t se
   clearhists();
 }
 
-TH1D *htheta;
-TH1D *hphi;
-TH2D *hthetaphi;
+TH1F *htheta;
+TH1F *hphi;
+TH2F *hthetaphi;
 TH1F *hcostheta;
 TH2F *hphicostheta;
 
-TH2D *hxtheta;
-TH2D *hytheta;
-TH2D *hxphi;
-TH2D *hyphi;
+TH2F *hxtheta;
+TH2F *hytheta;
+TH2F *hxphi;
+TH2F *hyphi;
 
-TH2D *hmask;
+TH2F *hmask;
 TH2F *hmaskg;
 TH1F *hhit;
 TH1F *hmiss;
@@ -233,17 +235,17 @@ TH2F *hyxg[4];
 TH2F *hyxgm[2];
 TH2F *hyxgmr[2];
 
-Double_t x_min=0;
-Double_t x_max=100;
+Float_t x_min=0;
+Float_t x_max=100;
 Float_t x_cal=118;//location of central beam axis, relative to edge of shield; not to be confused with offset_x
-Float_t y_cal=54/2;// not to be confused with offset_y
+Float_t y_cal=0;//54/2;// not to be confused with offset_y
 
 void definehists()
 {
   printf("Defining histograms...\n");
-  Double_t b_max=0;
+  Float_t b_max=0;
   Float_t b_width=7;
-  Double_t b_bin=500;
+  Float_t b_bin=500;
   
   if((sigma_x==0)&&(sigma_y==0)){
     b_max=0;
@@ -259,13 +261,13 @@ void definehists()
     b_max+=fabs(offset_x);
   else
     b_max+=fabs(offset_y);
-  hbeam=new TH2D("hbeam","Beam Spot",b_bin,-b_max,b_max,b_bin,-b_max,b_max);
+  hbeam=new TH2F("hbeam","Beam Spot",b_bin,-b_max,b_max,b_bin,-b_max,b_max);
   hbeam->SetXTitle("x-position (mm)");
   hbeam->SetYTitle("y-position (mm)"); 
 
-  htheta=new TH1D("htheta","#theta (Polar Angle)",500,0,180);
-  hphi=new TH1D("hphi","#phi (Azimuthal Angle)",500,0,360);
-  hphitheta=new TH2D("hphitheta","#phi vs. #theta",500,0,180,500,0,360);
+  htheta=new TH1F("htheta","#theta (Polar Angle)",500,0,180);
+  hphi=new TH1F("hphi","#phi (Azimuthal Angle)",500,0,360);
+  hphitheta=new TH2F("hphitheta","#phi vs. #theta",500,0,180,500,0,360);
   hphitheta->SetXTitle("#theta - Polar Angle (deg)");
   hphitheta->SetYTitle("#phi - Azimuthal Angle (deg)");
   hcostheta=new TH1F("hcostheta","Cos(#theta) - Cos Polar Angle",500,-1,1);
@@ -282,7 +284,7 @@ void definehists()
   // x_min-=offset_max;
   x_max+=offset_max;
   x_max*=1.05;
-  Double_t x_Max=124;
+  Float_t x_Max=124;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
@@ -291,7 +293,7 @@ void definehists()
   printf(" Position histogram limits are xmin=%7.2f, xmax=%7.2f\n",x_min,x_max);
   printf(" to cover +/- %5.1f deg + %f mm (x1.05)\n",theta_max,offset_max);
 
-  hmask=new TH2D("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
+  hmask=new TH2F("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
   hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
   hhit=new TH1F("hhit","hhit",7,-0.5,6.5);
   hmiss=new TH1F("hmiss","hmiss",7,-0.5,6.5);
@@ -301,13 +303,13 @@ void definehists()
 
   if(diag) {
     //Other correlation plots----------------------
-    hxtheta=new TH2D("hxtheta","#theta (polar) vs. X",100,x_min,x_max,100,0,180);
+    hxtheta=new TH2F("hxtheta","#theta (polar) vs. X",100,x_min,x_max,100,0,180);
     hxtheta->SetYTitle("#theta - polar angle (deg)");
-    hytheta=new TH2D("hytheta","#theta (polar) vs. Y",100,x_min,x_max,100,0,180);
+    hytheta=new TH2F("hytheta","#theta (polar) vs. Y",100,x_min,x_max,100,0,180);
     hytheta->SetYTitle("#theta - polar angle (deg)");
-    hxphi=new TH2D("hxphi","#phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
+    hxphi=new TH2F("hxphi","#phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
     hxphi->SetYTitle("#phi - azimuth angle (deg)");
-    hyphi=new TH2D("hyphi","#phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
+    hyphi=new TH2F("hyphi","#phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
     hyphi->SetYTitle("#phi - azimuth angle (deg)");
   }
 
@@ -323,14 +325,14 @@ void definehists()
      hx[i]->SetXTitle("Relative Position");
      hx[i]->SetYTitle("Number of Entries");
      }*/
-  hyx[0] = new TH2F("hyx0","Y1 vs X1 Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[1] = new TH2F("hyx1","Y1 vs X1 Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[2] = new TH2F("hyx2","Y2 vs X2 Positions",500,x_min,x_max,500,x_min,x_max);
-  hyx[3] = new TH2F("hyx3","Y2 vs X2 Positions",500,x_min,x_max,500,x_min,x_max);
-  hyxg[0] = new TH2F("hyxg0","Y1 vs X1 Positions (gated on Y1)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[1] = new TH2F("hyxg1","Y1 vs X1 Positions (gated on X1)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[2] = new TH2F("hyxg2","Y2 vs X2 Positions (gated on Y2)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[3] = new TH2F("hyxg3","Y2 vs X2 Positions (gated on X2)",500,x_min,x_max,500,x_min,x_max);
+  hyx[0] = new TH2F("hyx0","Y vs X at X1",500,x_min,x_max,500,x_min,x_max);
+  hyx[1] = new TH2F("hyx1","Y vs X at Y1",500,x_min,x_max,500,x_min,x_max);
+  hyx[2] = new TH2F("hyx2","Y vs X at X2",500,x_min,x_max,500,x_min,x_max);
+  hyx[3] = new TH2F("hyx3","Y vs X at Y2",500,x_min,x_max,500,x_min,x_max);
+  hyxg[0] = new TH2F("hyxg0","Y vs X at X1 (gated on X1 Shield)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[1] = new TH2F("hyxg1","Y vs X at Y1 (gated on Y1 Shield)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[2] = new TH2F("hyxg2","Y vs X at X2 (gated on X2 Shield)",500,x_min,x_max,500,x_min,x_max);
+  hyxg[3] = new TH2F("hyxg3","Y vs X at Y2 (gated on Y2 Shield)",500,x_min,x_max,500,x_min,x_max);
   hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
   hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
   hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
@@ -380,9 +382,9 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
   //polar angle-----------------------------------
   TRandom3 *rtheta=new TRandom3();//for scattering angle 
   rtheta->SetSeed(0);
-  Double_t cos_theta_min=(TMath::Cos(theta_min*TMath::DegToRad()));
-  Double_t cos_theta_max=(TMath::Cos(theta_max*TMath::DegToRad()));
-  Double_t theta_center=30;
+  Float_t cos_theta_min=(TMath::Cos(theta_min*TMath::DegToRad()));
+  Float_t cos_theta_max=(TMath::Cos(theta_max*TMath::DegToRad()));
+  Float_t theta_center=30;
   //theta_min+=theta_center;
   //theta_max+=theta_center;
  
@@ -409,7 +411,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
   //create events!
   for (Int_t i=0; i<nevents; i++) {
     if(i%step==0) {
-      printf("%5.1f%%: %d events generated\n",(double)i/nevents*100,i);
+      printf("%5.1f%%: %d events generated\n",(Float_t)i/nevents*100,i);
       iprint=doprint*kTRUE;
     }
     else
@@ -419,7 +421,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     //Position of origin (beam spot)-----------------
     if(is_gaussian) {
       x=rx->Gaus(offset_x,sigma_x);
-      y=rx->Gaus(offset_y,sigma_y);
+      y=ry->Gaus(offset_y,sigma_y);
     }
     else {
       x=rx->Uniform(-sigma_x,sigma_x);
@@ -437,7 +439,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     hphi->Fill(phi);
     hphitheta->Fill(theta,phi);
     hphicostheta->Fill(TMath::Cos(theta*TMath::DegToRad()),phi);
-    //diagnostics-----------------------
+    // Diagnostics----------------------
     if(diag){
       hxtheta->Fill(X,theta);
       hytheta->Fill(Y,theta);
@@ -451,15 +453,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
-    rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
-    if(iprint)
-      printf("  rho=%f, z=%f\n",rho,TMath::Sqrt(r*r-rho*rho));    
-
+    // rho=TMath::Sqrt((TMath::Power(X,2))+(TMath::Power(Y,2)));
+   
     //mask hit--------------------------
     hmask->Fill(X,Y);//position at mask before hit
     miss*=!(hit_mask());
     
-    if(miss) {
+    if(miss) {//passes through mask
       hmiss->Fill(1);
       hmaskg->Fill(X,Y);
      
@@ -471,13 +471,13 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hwin->Fill(X,Y);
     }
     miss*=!(hit_window());
-    if(miss) {//passed through
+    if(miss) {//passes through mask, window
       hmiss->Fill(2);
       hwing->Fill(X,Y);   
       //------------------------------------------------------
       //Detector 2----------------------------------
       //calculate positions at Y2 shield before calculating hits
-      Z=z_A2-delta_z/2;
+      Z=z_Y2s;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);
@@ -486,7 +486,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyx[3]->Fill(X,Y);
     }
     miss*=!(hit_shield());
-    if(miss){
+    if(miss){//passes through mask, window, Y2 shield
       hmiss->Fill(3); 
     
       //calculate positions at Y2 (step back)
@@ -497,8 +497,8 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hxg[3]->Fill(Y);
       hyxg[3]->Fill(X,Y);
     
-      //calculate positions at X2 shield
-      Z=z_A2+delta_z/2;
+      //calculate positions at X2 shield before calculating hits
+      Z=z_X2s;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);   
@@ -507,10 +507,10 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyx[2]->Fill(X,Y);
     }
     miss*=!(hit_shield());
-    if(miss){
+    if(miss){//passes through mask, window, Y2 shield, X2 shield (detected at A2)
       hmiss->Fill(4);
    
-      //calculate positions at X2
+      //calculate positions at X2 (step forward)
       Z=z_X2; 
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
@@ -518,16 +518,19 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hxg[2]->Fill(X);
       hyxg[2]->Fill(X,Y);
    
-      //calculate positions at anode (step back)
+      //calculate positions *measured* at anode (step back)
       Z=z_A2;
       trace_r(Z,theta,phi);
-      trace_x(x,theta,phi);
       trace_y(y,theta,phi);
+      //Z=z_X2s;
+      // trace_r(Z,theta,phi);
+      trace_x(y,theta,phi);
     }
     if(doslits)
       miss*=!(hit_slits());
-    if(miss) {
+    if(miss) {//passes through slits (if pressent)
       hyxgm[1]->Fill(X+x_cal,Y+y_cal);
+      //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
       hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
@@ -535,7 +538,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       //------------------------------------------------------
       //Detector 1----------------------------------
       //calculate positions at Y1 shield before calculating hits
-      Z=z_A1-delta_z/2;
+      Z=z_Y1s;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);
@@ -544,7 +547,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyx[1]->Fill(X,Y);
     }
     miss*=!(hit_shield());
-    if(miss){
+    if(miss){//passes through Y1 shield
       hmiss->Fill(5); 
    
       //calculate positions at Y1 (step back)
@@ -556,7 +559,7 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyxg[1]->Fill(X,Y);
   
       //calculate positions at X1 shield before calculating hits
-      Z=z_A1+delta_z/2;
+      Z=z_X1s;
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);    
@@ -564,16 +567,30 @@ void source(Int_t nevents=1000, Bool_t set_doprint=kFALSE)
       hyx[0]->Fill(X,Y);
     }
     miss*=!(hit_shield());
-    if(miss){
+    if(miss) {//passes through Y1 shield, X1 shield (detected at A1)
       hmiss->Fill(6);
     
-      //calculate positions at X1
+      //calculate positions at X1 (step forward)
       Z=z_X1; 
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
       trace_y(y,theta,phi);    
       hxg[0]->Fill(X);
       hyxg[0]->Fill(X,Y);
+
+      //calculate positions *measured* at anode (step back)
+      Z=z_Y1s;
+      trace_r(Z,theta,phi);
+      trace_y(y,theta,phi);
+      Z=z_X1s;
+      trace_r(Z,theta,phi);
+      trace_x(y,theta,phi);
+
+      hyxgm[0]->Fill(X+x_cal,Y+y_cal);
+      //calculate measured positions with given detector resolution
+      Xr=rxres->Gaus(X,xres);
+      Yr=ryres->Gaus(Y,yres);
+      hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
     }
   }//end of generator loop
 }
@@ -667,7 +684,7 @@ void shadowz(Float_t z_plane=0)
 void shield(Char_t *histin1, Char_t *histin2)
 {
   gate(histin1,histin2);
-  plotvlines(-x_cal,0,0,0,2);
+  plotvlines(-118,0,0,0,2);
   plotvlines(36,0,0,0,2);
   plothlines(-27,0,0,-range,range,2);
   plothlines(27,0,0,-range,range,2);
@@ -777,8 +794,8 @@ void gate(Char_t *histin1, Char_t *histin2)
   TH2F *hist2=(TH2F *) gROOT->FindObject(histin2);
   dr(histin1);
   odr(histin2);
-  Double_t nstart=0;
-  Double_t npass=0;
+  Float_t nstart=0;
+  Float_t npass=0;
   nstart=hist1->Integral();
   npass=hist2->Integral();
   printf("%9.2f entries in ungated spectrum\n",nstart);
