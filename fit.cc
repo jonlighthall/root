@@ -707,7 +707,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	     Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
   Int_t no0=0;
   printf("Searching for histograms named %s%s...\n",histin,suffix);
