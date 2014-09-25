@@ -246,8 +246,10 @@ void definehists()
   printf("Defining histograms...\n");
   Float_t b_max=0;
   Float_t b_width=7;
-  Float_t b_bin=500;
-  
+  Float_t b_bin=500;//beam spot bin
+  Float_t x_bin=b_bin;//position bin
+  Float_t a_bin=100;//angle bin
+
   if((sigma_x==0)&&(sigma_y==0)){
     b_max=0;
     b_bin=3;
@@ -265,79 +267,77 @@ void definehists()
   hbeam=new TH2F("hbeam","Beam Spot",b_bin,-b_max,b_max,b_bin,-b_max,b_max);
   hbeam->SetXTitle("x-position (mm)");
   hbeam->SetYTitle("y-position (mm)"); 
-
-  htheta=new TH1F("htheta","#theta (Polar Angle)",500,0,180);
-  hphi=new TH1F("hphi","#phi (Azimuthal Angle)",500,0,360);
-  hphitheta=new TH2F("hphitheta","#phi vs. #theta",500,0,180,500,0,360);
+  printf(" Beam histogram limits are bmin=%7.2f, bmax=%7.2f\n",-b_max,b_max);
+  
+  htheta=new TH1F("htheta","#theta (Polar Angle)",a_bin,0,180);
+  hphi=new TH1F("hphi","#phi (Azimuthal Angle)",a_bin,0,360);
+  hphitheta=new TH2F("hphitheta","#phi vs. #theta",a_bin,0,180,a_bin,0,360);
   hphitheta->SetXTitle("#theta - Polar Angle (deg)");
   hphitheta->SetYTitle("#phi - Azimuthal Angle (deg)");
-  hcostheta=new TH1F("hcostheta","Cos(#theta) - Cos Polar Angle",500,-1,1);
-  hphicostheta=new TH2F("hphicostheta","#phi vs. cos(#theta)",500,-1,1,500,0,360);
+  hcostheta=new TH1F("hcostheta","Cos(#theta) - Cos Polar Angle",a_bin,-1,1);
+  hphicostheta=new TH2F("hphicostheta","#phi vs. cos(#theta)",a_bin,-1,1,a_bin,0,360);
 
-  
-  //x_min=z_X1*(TMath::Tan(theta_min*TMath::DegToRad()));
   x_max=z_X1*(TMath::Tan(theta_max*TMath::DegToRad()));
   Float_t offset_max=0;
   if((fabs(offset_x))>(fabs(offset_y)))
     offset_max+=fabs(offset_x);
   else
     offset_max+=fabs(offset_y);
-  // x_min-=offset_max;
   x_max+=offset_max;
   x_max*=1.05;
+  x_max=ceil(x_max);
   Float_t x_Max=124;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
   
-  // if(doprint)
   printf(" Position histogram limits are xmin=%7.2f, xmax=%7.2f\n",x_min,x_max);
   printf(" to cover +/- %5.1f deg + %f mm (x1.05)\n",theta_max,offset_max);
 
-  hmask=new TH2F("hmask" ,"Mask Plane",500,x_min,x_max,500,x_min,x_max);
-  hmaskg=new TH2F("hmaskg","Mask Plane (gated)",500,x_min,x_max,500,x_min,x_max);
+  hmask=new TH2F("hmask" ,"Mask Plane",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hmaskg=new TH2F("hmaskg","Mask Plane (gated)",x_bin,x_min,x_max,x_bin,x_min,x_max);
   hhit=new TH1F("hhit","hhit",7,-0.5,6.5);
   hmiss=new TH1F("hmiss","hmiss",7,-0.5,6.5);
   hnewhit=new TH1F("hnewhit","hnewhit",7,-0.5,6.5);
-  hwin=new TH2F("hwin" ,"Window Plane",500,x_min,x_max,500,x_min,x_max);
-  hwing=new TH2F("hwing","Window Plane (gated)",500,x_min,x_max,500,x_min,x_max);
+  hwin=new TH2F("hwin" ,"Window Plane",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hwing=new TH2F("hwing","Window Plane (gated)",x_bin,x_min,x_max,x_bin,x_min,x_max);
 
   if(diag) {
     //Other correlation plots----------------------
-    hxtheta=new TH2F("hxtheta","#theta (polar) vs. X",100,x_min,x_max,100,0,180);
+    hxtheta=new TH2F("hxtheta","#theta (polar) vs. X",x_bin,x_min,x_max,a_bin,0,180);
     hxtheta->SetYTitle("#theta - polar angle (deg)");
-    hytheta=new TH2F("hytheta","#theta (polar) vs. Y",100,x_min,x_max,100,0,180);
+    hytheta=new TH2F("hytheta","#theta (polar) vs. Y",x_bin,x_min,x_max,a_bin,0,180);
     hytheta->SetYTitle("#theta - polar angle (deg)");
-    hxphi=new TH2F("hxphi","#phi (azimuthal) vs. X",100,x_min,x_max,500,0,360);
+    hxphi=new TH2F("hxphi","#phi (azimuthal) vs. X",x_bin,x_min,x_max,a_bin,0,360);
     hxphi->SetYTitle("#phi - azimuth angle (deg)");
-    hyphi=new TH2F("hyphi","#phi (azimuthal) vs. Y",100,x_min,x_max,500,0,360);
+    hyphi=new TH2F("hyphi","#phi (azimuthal) vs. Y",x_bin,x_min,x_max,a_bin,0,360);
     hyphi->SetYTitle("#phi - azimuth angle (deg)");
   }
 
-  hx[0] = new TH1F("hx0","X1 Position",500,x_min,x_max);
-  hx[1] = new TH1F("hx1","Y1 Position",500,x_min,x_max);
-  hx[2] = new TH1F("hx2","X2 Position",500,x_min,x_max);
-  hx[3] = new TH1F("hx3","Y2 Position",500,x_min,x_max);
-  hxg[0] = new TH1F("hxg0","X1 Position (gated)",500,x_min,x_max);
-  hxg[1] = new TH1F("hxg1","Y1 Position (gated)",500,x_min,x_max);
-  hxg[2] = new TH1F("hxg2","X2 Position (gated)",500,x_min,x_max);
-  hxg[3] = new TH1F("hxg3","Y2 Position (gated)",500,x_min,x_max);
+  hx[0] = new TH1F("hx0","X1 Position",x_bin,x_min,x_max);
+  hx[1] = new TH1F("hx1","Y1 Position",x_bin,x_min,x_max);
+  hx[2] = new TH1F("hx2","X2 Position",x_bin,x_min,x_max);
+  hx[3] = new TH1F("hx3","Y2 Position",x_bin,x_min,x_max);
+  hxg[0] = new TH1F("hxg0","X1 Position (gated)",x_bin,x_min,x_max);
+  hxg[1] = new TH1F("hxg1","Y1 Position (gated)",x_bin,x_min,x_max);
+  hxg[2] = new TH1F("hxg2","X2 Position (gated)",x_bin,x_min,x_max);
+  hxg[3] = new TH1F("hxg3","Y2 Position (gated)",x_bin,x_min,x_max);
   /* for(int i = 0; i < 4; i++) {//1D position plots
      hx[i]->SetXTitle("Relative Position");
      hx[i]->SetYTitle("Number of Entries");
      }*/
-  hyx[0] = new TH2F("hyx0","Y vs X at X1",500,x_min,x_max,500,x_min,x_max);
-  hyx[1] = new TH2F("hyx1","Y vs X at Y1",500,x_min,x_max,500,x_min,x_max);
-  hyx[2] = new TH2F("hyx2","Y vs X at X2",500,x_min,x_max,500,x_min,x_max);
-  hyx[3] = new TH2F("hyx3","Y vs X at Y2",500,x_min,x_max,500,x_min,x_max);
-  hyxg[0] = new TH2F("hyxg0","Y vs X at X1 (gated on X1 Shield)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[1] = new TH2F("hyxg1","Y vs X at Y1 (gated on Y1 Shield)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[2] = new TH2F("hyxg2","Y vs X at X2 (gated on X2 Shield)",500,x_min,x_max,500,x_min,x_max);
-  hyxg[3] = new TH2F("hyxg3","Y vs X at Y2 (gated on Y2 Shield)",500,x_min,x_max,500,x_min,x_max);
-  hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
-  hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
-  hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
-  hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",500,x_min+x_cal,x_max+x_cal,500,x_min+y_cal,x_max+y_cal);
+  hyx[0] = new TH2F("hyx0","Y vs X at X1",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyx[1] = new TH2F("hyx1","Y vs X at Y1",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyx[2] = new TH2F("hyx2","Y vs X at X2",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyx[3] = new TH2F("hyx3","Y vs X at Y2",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyxg[0] = new TH2F("hyxg0","Y vs X at X1 (gated on X1 Shield)",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyxg[1] = new TH2F("hyxg1","Y vs X at Y1 (gated on Y1 Shield)",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyxg[2] = new TH2F("hyxg2","Y vs X at X2 (gated on X2 Shield)",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyxg[3] = new TH2F("hyxg3","Y vs X at Y2 (gated on Y2 Shield)",x_bin,x_min,x_max,x_bin,x_min,x_max);
+  hyxgm[0] = new TH2F("hyxgm0","Y1 vs X1 Positions (gated), measured",x_bin,x_min+x_cal,x_max+x_cal,x_bin,x_min+y_cal,x_max+y_cal);
+  hyxgm[1] = new TH2F("hyxgm1","Y2 vs X2 Positions (gated), measured",x_bin,x_min+x_cal,x_max+x_cal,x_bin,x_min+y_cal,x_max+y_cal);
+  hyxgmr[0] = new TH2F("hyxgmr0","Y1 vs X1 Positions (gated), measured, blurred",x_bin,x_min+x_cal,x_max+x_cal,x_bin,x_min+y_cal,x_max+y_cal);
+  hyxgmr[1] = new TH2F("hyxgmr1","Y2 vs X2 Positions (gated), measured, blurred",x_bin,x_min+x_cal,x_max+x_cal,x_bin,x_min+y_cal,x_max+y_cal);
 }
 
 void clearhists()
