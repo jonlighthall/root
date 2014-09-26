@@ -371,6 +371,7 @@ void setres(Float_t set_xres=0, Float_t set_yres=0)
   xres=set_xres;
   yres=set_yres;
   printf("Dectector resolution set to %f (x) and %f (y)\n",xres,yres);
+  printf("                       %f FWHM (x) and %f FWHM (y)\n",xres*2.35482,yres*2.35482);
   clearhists();
 }
 
@@ -404,10 +405,15 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
   rphi->SetSeed(0);
  
   //measurement-----------------------------------
-  TRandom3 *rxres=new TRandom3();
-  TRandom3 *ryres=new TRandom3();
+  TRandom3 *rxres=new TRandom3();//x resolution
+  TRandom3 *ryres=new TRandom3();//y resoultion
   rxres->SetSeed(0);
   ryres->SetSeed(0);
+  //jucntion peaks------------
+  Float_t yjunk1=22-6-y_cal;
+  Float_t yjunk2=44-6-y_cal;
+  Float_t junk_width=0.75;
+  Float_t junk_res=junk_width/12;
 
   //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
@@ -545,11 +551,20 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
       hyxgm[1]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
-      Yr=ryres->Gaus(Y,yres);
-      hxgmr[3]->Fill(Yr+y_cal);
-      hxgmr[2]->Fill(Xr+x_cal);
-      hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
-    
+      hxgmr[2]->Fill(Xr+x_cal);      
+      if(((Y<yjunk1+junk_width/2)&&(Y>yjunk1-junk_width))||((Y<yjunk2+junk_width/2)&&(Y>yjunk2-junk_width))) {
+       	for (Int_t j=0; j<1; j++) {
+	  Yr=ryres->Gaus(Y,junk_res);
+	  hxgmr[3]->Fill(Yr+y_cal);
+	  hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
+	}
+      }
+      // else{
+	Yr=ryres->Gaus(Y,yres);
+	hxgmr[3]->Fill(Yr+y_cal);
+	hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
+	//  }
+      
       //------------------------------------------------------
       //Detector 1----------------------------------
       //calculate positions at Y1 shield before calculating hits
@@ -606,10 +621,19 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
       hyxgm[0]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
-      Yr=ryres->Gaus(Y,yres);
-      hxgmr[1]->Fill(Yr+y_cal);
-      hxgmr[0]->Fill(Xr+x_cal);
-      hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
+      hxgmr[0]->Fill(Xr+x_cal);     
+      if(((Y<yjunk1+junk_width/2)&&(Y>yjunk1-junk_width))||((Y<yjunk2+junk_width/2)&&(Y>yjunk2-junk_width))) {
+       	for (Int_t j=0; j<1; j++) {
+	  Yr=ryres->Gaus(Y,junk_res);
+	  hxgmr[1]->Fill(Yr+y_cal);
+	  hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
+	}
+      }
+      //   else{
+	Yr=ryres->Gaus(Y,yres);
+	hxgmr[1]->Fill(Yr+y_cal);
+	hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
+	//   }
     }
   }//end of generator loop
 }
@@ -823,34 +847,147 @@ void gate(Char_t *histin1, Char_t *histin2)
   range=hist1->GetXaxis()->GetXmax();
   setvlines(-range,range);
 }
-void setsim(Float_t set_res=0, Float_t set_events=1e5)
+void setsim(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
   setres(set_res,set_res);
+  setbeam(0,0,set_beam,set_beam);
   source(set_events);
 }
 
-void compY2(Float_t set_res=0, Float_t set_events=1e5)
+void compY2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
-  setsim(set_res,set_events);
+  if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf("...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+  else
+setsim(set_res,set_beam,set_events);
   dr("hxc3");
   odr("hxgmr3");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc3","data");
+  leg->AddEntry("hxgmr3","sim");
+  leg->Draw();
 }
 
-void compX2(Float_t set_res=0, Float_t set_events=1e5)
+void compX2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
-  setsim(set_res,set_events);
+ if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf("...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+ else
+setsim(set_res,set_beam,set_events); 
   dr("hxc2");
   odr("hxgmr2");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc2","data");
+  leg->AddEntry("hxgmr2","sim");
+  leg->Draw();
 }
-void compY1(Float_t set_res=0, Float_t set_events=1e5)
+void compY1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
-  setsim(set_res,set_events);
+  if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf("...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+  else
+setsim(set_res,set_beam,set_events);
   dr("hxc1");
   odr("hxgmr1");
+leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc1","data");
+  leg->AddEntry("hxgmr1","sim");
+  leg->Draw();
 }
-void compX1(Float_t set_res=0, Float_t set_events=1e5)
+void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
-  setsim(set_res,set_events);
+  if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf("...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+  else
+setsim(set_res,set_beam,set_events);
   dr("hxc0");
   odr("hxgmr0");
+leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc0","data");
+  leg->AddEntry("hxgmr0","sim");
+  leg->Draw();
+}
+void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
+{
+  if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf("...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+  else
+    setsim(set_res,set_beam,set_events);  
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
+  cFit->Clear();
+  cFit->Divide(1,2);
+  cFit->cd(1);
+  hxc0->Draw();
+  odr("hxgmr0");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc0","data");
+  leg->AddEntry("hxgmr0","sim");
+  leg->Draw();
+  cFit->cd(2);
+  hxc2->Draw();
+  odr("hxgmr2");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc2","data");
+  leg->AddEntry("hxgmr2","sim");
+  leg->Draw();
+}
+void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
+{
+  if((xres==set_res)&&(yres==set_res))
+    {
+      printf("Resolutions match\n");
+      if((sigma_x==set_beam)&&(sigma_y==set_beam))
+	printf(" ...and beam spot sizes match.\n");
+      else
+	setsim(set_res,set_beam,set_events);  
+    }
+  else
+    setsim(set_res,set_beam,set_events);  
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
+  cFit->Clear();
+  cFit->Divide(1,2);
+  cFit->cd(1);
+  hxc1->Draw();
+  odr("hxgmr1");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc1","data");
+  leg->AddEntry("hxgmr1","sim");
+  leg->Draw();
+  cFit->cd(2);
+  hxc3->Draw();
+  odr("hxgmr3");
+  leg = new TLegend(.78,.71,.86,.81);
+  leg->AddEntry("hxc3","data");
+  leg->AddEntry("hxgmr3","sim");
+  leg->Draw();
 }
