@@ -324,16 +324,15 @@ void definehists()
   hxg[1] = new TH1F("hxg1","Y1 Position (gated)",x_bin,x_min,x_max);
   hxg[2] = new TH1F("hxg2","X2 Position (gated)",x_bin,x_min,x_max);
   hxg[3] = new TH1F("hxg3","Y2 Position (gated)",x_bin,x_min,x_max);
-  /*hxgm[0] = new TH1F("hxgm0","X1 Position (gated)",x_bin,x_min,x_max);
-  hxgm[1] = new TH1F("hxgm1","Y1 Position (gated)",x_bin,x_min,x_max);
-  hxgm[2] = new TH1F("hxgm2","X2 Position (gated)",x_bin,x_min,x_max);
-  hxgm[3] = new TH1F("hxgm3","Y2 Position (gated)",x_bin,x_min,x_max);
-  hxgmr[0] = new TH1F("hxgmr0","X1 Position (gated)",x_bin,x_min,x_max);
-  hxgmr[1] = new TH1F("hxgmr1","Y1 Position (gated)",x_bin,x_min,x_max);
-  hxgmr[2] = new TH1F("hxgmr2","X2 Position (gated)",x_bin,x_min,x_max);
-  hxgmr[3] = new TH1F("hxgmr3","Y2 Position (gated)",x_bin,x_min,x_max);
-  */ 
- /* for(int i = 0; i < 4; i++) {//1D position plots
+  hxgm[0] = new TH1F("hxgm0","X1 Position (gated)",x_bin,x_min+x_cal,x_max+x_cal);
+  hxgm[1] = new TH1F("hxgm1","Y1 Position (gated)",x_bin,x_min+y_cal,x_max+y_cal);
+  hxgm[2] = new TH1F("hxgm2","X2 Position (gated)",x_bin,x_min+x_cal,x_max+x_cal);
+  hxgm[3] = new TH1F("hxgm3","Y2 Position (gated)",x_bin,x_min+y_cal,x_max+y_cal);
+  hxgmr[0] = new TH1F("hxgmr0","X1 Position (gated)",x_bin,x_min+x_cal,x_max+x_cal);
+  hxgmr[1] = new TH1F("hxgmr1","Y1 Position (gated)",x_bin,x_min+y_cal,x_max+y_cal);
+  hxgmr[2] = new TH1F("hxgmr2","X2 Position (gated)",x_bin,x_min+x_cal,x_max+x_cal);
+  hxgmr[3] = new TH1F("hxgmr3","Y2 Position (gated)",x_bin,x_min+y_cal,x_max+y_cal);
+  /* for(int i = 0; i < 4; i++) {//1D position plots
      hx[i]->SetXTitle("Relative Position");
      hx[i]->SetYTitle("Number of Entries");
      }*/
@@ -355,7 +354,7 @@ void clearhists()
 {
   printf(" Clearing histograms...\n");
   const int Nhists = 45;
-  TString histnames[Nhists]={"hbeam","htheta","hphi","hphitheta","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1","hxgm0","hxgm1","hxgm2","hxgm3","hxgmr0","hxgmr1","hxgmr2","hxgmr3"}
+  TString histnames[Nhists]={"hbeam","htheta","hphi","hphitheta","hmask","hmaskg","hxtheta","hytheta","hxphi","hyphi","hhit","hx0","hx1","hx2","hx3","hwin","hwing","hxg0","hxg1","hxg2","hxg3","hyx0","hyx1","hyxg0","hyxg1","hyxgm0","hyxgm1","hmiss","hnewhit","hyx2","hyx3","hyxg2","hyxg3","hcostheta","hphicostheta","hyxgmr0","hyxgmr1","hxgm0","hxgm1","hxgm2","hxgm3","hxgmr0","hxgmr1","hxgmr2","hxgmr3"};
 
   for(int i=0; i < Nhists; i++) {
     if (gROOT->FindObject(histnames[i])) {
@@ -541,14 +540,14 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
     if(doslits)
       miss*=!(hit_slits());
     if(miss) {//passes through slits (if pressent)
-      //hxgm[3]->Fill(Y+y_cal);
-      //hxgm[2]->Fill(X+x_cal);
+      hxgm[3]->Fill(Y+y_cal);
+      hxgm[2]->Fill(X+x_cal);
       hyxgm[1]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
-      //hxgmr[3]->Fill(Yr+y_cal);
-      //hxgmr[2]->Fill(Xr+x_cal);
+      hxgmr[3]->Fill(Yr+y_cal);
+      hxgmr[2]->Fill(Xr+x_cal);
       hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
     
       //------------------------------------------------------
@@ -602,15 +601,15 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
       trace_r(Z,theta,phi);
       trace_x(x,theta,phi);
 
-      //hxgm[1]->Fill(Y+y_cal);
-      //hxgm[0]->Fill(X+x_cal);
+      hxgm[1]->Fill(Y+y_cal);
+      hxgm[0]->Fill(X+x_cal);
       hyxgm[0]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
       Yr=ryres->Gaus(Y,yres);
+      hxgmr[1]->Fill(Yr+y_cal);
+      hxgmr[0]->Fill(Xr+x_cal);
       hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
-      //hxgmr[1]->Fill(Yr+y_cal);
-      //hxgmr[0]->Fill(Xr+x_cal);
     }
   }//end of generator loop
 }
@@ -823,4 +822,35 @@ void gate(Char_t *histin1, Char_t *histin2)
   printf("Percentage of tragectories passing through window = %.2f%%\n",100*npass/nstart);
   range=hist1->GetXaxis()->GetXmax();
   setvlines(-range,range);
+}
+void setsim(Float_t set_res=0, Float_t set_events=1e5)
+{
+  setres(set_res,set_res);
+  source(set_events);
+}
+
+void compY2(Float_t set_res=0, Float_t set_events=1e5)
+{
+  setsim(set_res,set_events);
+  dr("hxc3");
+  odr("hxgmr3");
+}
+
+void compX2(Float_t set_res=0, Float_t set_events=1e5)
+{
+  setsim(set_res,set_events);
+  dr("hxc2");
+  odr("hxgmr2");
+}
+void compY1(Float_t set_res=0, Float_t set_events=1e5)
+{
+  setsim(set_res,set_events);
+  dr("hxc1");
+  odr("hxgmr1");
+}
+void compX1(Float_t set_res=0, Float_t set_events=1e5)
+{
+  setsim(set_res,set_events);
+  dr("hxc0");
+  odr("hxgmr0");
 }
