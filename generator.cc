@@ -706,7 +706,7 @@ void x1s(Float_t z_plane=z_X1-delta_z/2)
   shadowz(z_plane);
 }
 
-void shadowz(Float_t z_plane=0)
+void shadowz(Float_t z_plane=0, Bool_t docal=kFALSE)
 {
   printf("Calculating positions at z=%7.2f\n with calibration offsets of x=%f, y=%f\n",z_plane,x_cal,y_cal);
   maskz(z_plane);
