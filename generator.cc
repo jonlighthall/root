@@ -560,10 +560,10 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
 	}
       }
       // else{
-	Yr=ryres->Gaus(Y,yres);
-	hxgmr[3]->Fill(Yr+y_cal);
-	hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
-	//  }
+      Yr=ryres->Gaus(Y,yres);
+      hxgmr[3]->Fill(Yr+y_cal);
+      hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
+      //  }
       
       //------------------------------------------------------
       //Detector 1----------------------------------
@@ -630,10 +630,10 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
 	}
       }
       //   else{
-	Yr=ryres->Gaus(Y,yres);
-	hxgmr[1]->Fill(Yr+y_cal);
-	hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
-	//   }
+      Yr=ryres->Gaus(Y,yres);
+      hxgmr[1]->Fill(Yr+y_cal);
+      hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
+      //   }
     }
   }//end of generator loop
 }
@@ -709,9 +709,9 @@ void x1s(Float_t z_plane=z_X1-delta_z/2)
 void shadowz(Float_t z_plane=0, Bool_t docal=kFALSE)
 {
   printf("Calculating positions at z=%7.2f\n with calibration offsets of x=%f, y=%f\n",z_plane,x_cal,y_cal);
-  maskz(z_plane);
-  windowz(z_plane);
-  shieldz(z_plane);
+  maskz(z_plane,docal);
+  windowz(z_plane,docal);
+  shieldz(z_plane,docal);
   printf("X-gaps are centered at %6.3f (%6.3f wide) and %6.3f (%6.3f wide)\n",(x_shadow[1]+x_shadow[2])/2,(x_shadow[2]-x_shadow[1]),(x_shadow[3]+x_shadow[4])/2,(x_shadow[4]-x_shadow[3]));
   printf("X-spans are %6.3f, %6.3f, and ",(x_shadow[1]-x_shadow[0]),(x_shadow[3]-x_shadow[2]));
   Float_t right_wide=0;
@@ -739,14 +739,13 @@ Float_t theta_proj[7]=0;
 Float_t x_shadow[7]=0;
 Float_t y_shadow[6]=0;
 
-void maskz(Float_t z_plane)
-{
+void maskz(Float_t z_plane, Bool_t docal=kFALSE)
+{//calculate position of mask features at position z
   Float_t z_feature=z_mask;
   FILE * outfile_x, * outfile_y;
   outfile_y=fopen("temp_Y.lst","w");
   outfile_x=fopen("temp_X.lst","w");
-  //printf("Calculating for z=%7.2f\n",z_plane); 
-
+ 
   printf("Positions in y-direction of mask\n");
   for(int i=1; i<5; i++){
     printf(" %d z_feature = %5.1f ",i+1, z_feature);
@@ -755,7 +754,10 @@ void maskz(Float_t z_plane)
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
     fprintf(outfile_y,"%g\n",y_shadow[i]+y_cal);
-    plothlines(y_shadow[i],0,0,-range,range,2);   
+    if(docal)
+      plothlines(y_shadow[i]+y_cal,0,0,range-span,range,2);   
+    else
+      plothlines(y_shadow[i],0,0,-range,range,2);   
   }
   fclose(outfile_y);
   printf("Positions in x-direction of mask\n");
@@ -766,28 +768,36 @@ void maskz(Float_t z_plane)
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
     printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+x_cal);
     fprintf(outfile_x,"%g\n",x_shadow[i]+x_cal);    
-    plotvlines(x_shadow[i],0,0,0,2);
+    if(docal){
+      if(i>0)
+	plotvlines(x_shadow[i]+x_cal,0,0,0,2);
+    }
+    else
+      plotvlines(x_shadow[i],0,0,0,2);
   }
   fclose(outfile_x);
 
-  TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
+  if(docal)
+    TEllipse *emask = new TEllipse(0+x_cal,0+y_cal,-x_shadow[0]);
+  else {
+    TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
+    //beam envelope
+    TEllipse *econe = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_max*TMath::DegToRad()));
+    econe->SetLineColor(3);
+    econe->SetLineWidth(2);
+    econe->SetLineStyle(4);
+    econe->SetFillStyle(0);
+    econe->Draw();
+  }
   emask->SetLineColor(2);
   emask->SetLineWidth(2);
   emask->SetLineStyle(4);
   emask->SetFillStyle(0);
   emask->Draw();
-
-  //beam envelope
-  TEllipse *econe = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_max*TMath::DegToRad()));
-  econe->SetLineColor(3);
-  econe->SetLineWidth(2);
-  econe->SetLineStyle(4);
-  econe->SetFillStyle(0);
-  econe->Draw();
 }
 
-void windowz(Float_t z_plane)
-{
+void windowz(Float_t z_plane, Bool_t docal=kFALSE)
+{//plot the position of the window edge for a given z
   Float_t z_feature=z_window;
   Int_t i=6;
   printf(" %d z_feature = %5.1f ",i+1, z_feature);
@@ -795,10 +805,13 @@ void windowz(Float_t z_plane)
   printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
   x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
   printf("x_shadow = %7.2f\n", x_shadow[i]);
-  plotvlines(0,x_shadow[i],0,0,4);
+  if(docal)
+    plotvlines(0,x_shadow[i]+x_cal,0,0,4);
+  else
+    plotvlines(0,x_shadow[i],0,0,4);
 }
 
-void shieldz(Float_t z_plane)
+void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
 {
   Float_t z_feature=0;
   if(z_plane>z_A1)
@@ -818,7 +831,10 @@ void shieldz(Float_t z_plane)
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
-    plothlines(y_shadow[i],0,0,-range,range,6);   
+    if(docal)   
+      plothlines(y_shadow[i]+y_cal,0,0,range-span,range,6);   
+    else
+      plothlines(y_shadow[i],0,0,-range,range,6);   
   }
   printf("Positions in x-direction of shields\n");  
   for(int i=5; i<6; i++) {
@@ -827,7 +843,10 @@ void shieldz(Float_t z_plane)
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
     printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+x_cal);
-    plotvlines(x_shadow[i],0,0,0,6);
+    if(docal)
+      plotvlines(x_shadow[i]+x_cal,0,0,0,6);
+    else
+      plotvlines(x_shadow[i],0,0,0,6);
   }
 }
 
@@ -847,6 +866,18 @@ void gate(Char_t *histin1, Char_t *histin2)
   range=hist1->GetXaxis()->GetXmax();
   setvlines(-range,range);
 }
+
+Float_t span=0;
+void shadowzc(Char_t *histin1,Float_t z_plane=0)
+{
+  TH2F *hist1=(TH2F *) gROOT->FindObject(histin1);
+  dr(histin1);
+  range=hist1->GetXaxis()->GetXmax();
+  span=range-(hist1->GetXaxis()->GetXmin());
+  setvlines(hist1->GetYaxis()->GetXmin(),hist1->GetYaxis()->GetXmax());
+  shadowz(z_plane, kTRUE);
+}
+
 void setsim(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
   setres(set_res,set_res);
@@ -865,7 +896,7 @@ void compY2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
 	setsim(set_res,set_beam,set_events);  
     }
   else
-setsim(set_res,set_beam,set_events);
+    setsim(set_res,set_beam,set_events);
   dr("hxc3");
   odr("hxgmr3");
   leg = new TLegend(.78,.71,.86,.81);
@@ -876,7 +907,7 @@ setsim(set_res,set_beam,set_events);
 
 void compX2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
- if((xres==set_res)&&(yres==set_res))
+  if((xres==set_res)&&(yres==set_res))
     {
       printf("Resolutions match\n");
       if((sigma_x==set_beam)&&(sigma_y==set_beam))
@@ -884,8 +915,8 @@ void compX2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
       else
 	setsim(set_res,set_beam,set_events);  
     }
- else
-setsim(set_res,set_beam,set_events); 
+  else
+    setsim(set_res,set_beam,set_events); 
   dr("hxc2");
   odr("hxgmr2");
   leg = new TLegend(.78,.71,.86,.81);
@@ -904,10 +935,10 @@ void compY1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
 	setsim(set_res,set_beam,set_events);  
     }
   else
-setsim(set_res,set_beam,set_events);
+    setsim(set_res,set_beam,set_events);
   dr("hxc1");
   odr("hxgmr1");
-leg = new TLegend(.78,.71,.86,.81);
+  leg = new TLegend(.78,.71,.86,.81);
   leg->AddEntry("hxc1","data");
   leg->AddEntry("hxgmr1","sim");
   leg->Draw();
@@ -923,10 +954,10 @@ void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
 	setsim(set_res,set_beam,set_events);  
     }
   else
-setsim(set_res,set_beam,set_events);
+    setsim(set_res,set_beam,set_events);
   dr("hxc0");
   odr("hxgmr0");
-leg = new TLegend(.78,.71,.86,.81);
+  leg = new TLegend(.78,.71,.86,.81);
   leg->AddEntry("hxc0","data");
   leg->AddEntry("hxgmr0","sim");
   leg->Draw();
