@@ -186,10 +186,19 @@ Bool_t hit_shield(void)
   return kFALSE;
 }
 
-Float_t x_win=34.01;//nominally 34.01
+Float_t x_win=34.0073412589711;//nominally 34.01
+Float_t y_win=100;
+void setwin(Float_t set_x_win=34.0073412589711,Float_t set_y_win=100)
+{
+  x_win=set_x_win;
+  y_win=set_y_win;
+  x_feature[6]=x_win;
+  clearhists();  
+}
+
 Bool_t hit_window(void)
 {
-  if(X>x_win)
+  if(X>x_win||Y>y_win||Y<-y_win)
     return kTRUE;
   return kFALSE;
 }
@@ -733,7 +742,7 @@ void shield(Char_t *histin1, Char_t *histin2)
   plothlines(27,0,0,-range,range,2);
 }
 
-Float_t x_feature[7]={-49.75, -31, -26, 19, 24, 36, 34.0073412589711};
+Float_t x_feature[7]={-49.75, -31, -26, 19, 24, 36, x_win};
 Float_t y_feature[6]={-27, -15, -10, 10, 15, 27};
 Float_t theta_proj[7]=0;
 Float_t x_shadow[7]=0;
@@ -804,7 +813,7 @@ void windowz(Float_t z_plane, Bool_t docal=kFALSE)
   theta_proj[i]=TMath::ATan((x_feature[i]-offset_x)/z_feature);
   printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
   x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
-  printf("x_shadow = %7.2f\n", x_shadow[i]);
+  printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+x_cal);
   if(docal)
     plotvlines(0,x_shadow[i]+x_cal,0,0,4);
   else
