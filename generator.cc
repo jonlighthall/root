@@ -220,7 +220,7 @@ void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_p
 
 TH1F *htheta;
 TH1F *hphi;
-TH2F *hthetaphi;
+TH2F *hphitheta;
 TH1F *hcostheta;
 TH2F *hphicostheta;
 
@@ -691,25 +691,25 @@ void battleship()
   hnewhit->Draw();
 }
 
-void y2s(Float_t z_plane=z_Y2+delta_z/2)
+void y2s(Float_t z_plane=z_Y2s)
 {
   gate("hyx3","hyxg3");  
   shadowz(z_plane);
 }
 
-void x2s(Float_t z_plane=z_X2-delta_z/2)
+void x2s(Float_t z_plane=z_X2s)
 {
   gate("hyx2","hyxg2");
   shadowz(z_plane);
 }
 
-void y1s(Float_t z_plane=z_Y1+delta_z/2)
+void y1s(Float_t z_plane=z_Y1s)
 {
   gate("hyx1","hyxg1"); 
   shadowz(z_plane);
 }
 
-void x1s(Float_t z_plane=z_X1-delta_z/2)
+void x1s(Float_t z_plane=z_X1s)
 {
   gate("hyx0","hyxg0");
   shadowz(z_plane);
