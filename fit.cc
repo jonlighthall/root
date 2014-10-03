@@ -166,8 +166,20 @@ void h3(Char_t *histname, Char_t *title, Int_t nxchan=100,Float_t lowx=0,Float_t
   newhist->SetName(histname);
 }
 
-void mkhist(Char_t *histin="h", Int_t bins=3, Float_t size=10)
-{//creates a small histogram to test copy2()
+void mkhist1(Char_t *histin="h", Int_t bins=3, Float_t size=10)
+{//creates a small 1D histogram
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  hname=histin;
+  if ((TH1F *) gROOT->FindObject(hname.Data())) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  } 
+  TH1F * hProj=new  TH1F(hname,"Small Histogram",bins,0.,size);
+  hProj->Draw("");
+}
+
+void mkhist2(Char_t *histin="h", Int_t bins=3, Float_t size=10)
+{//creates a small 2D histogram to test copy2()
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
   hname=histin;
   if ((TH2F *) gROOT->FindObject(hname.Data())) {
