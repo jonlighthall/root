@@ -3529,7 +3529,7 @@ void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
 
 TF1 *ruth;
 void ruthdef()
-{//Rutherford scattering cross section function
+{//Rutherford scattering cross section function with offsets and scale
   ruth =new TF1("ruth","[0]+[1]*TMath::Power(sin([2]*x-[3]),-4)");
   ruth->SetParLimits(1,0,1e+05);
   ruth->SetParLimits(2,-1e-01,1e-01);
@@ -3537,6 +3537,33 @@ void ruthdef()
   ruth->SetParName(1,"y scale");  
   ruth->SetParName(2,"x scale");  
   ruth->SetParName(3,"x offset");  
+}
+
+TF1 *ruther;
+void rutherdef()
+{//Rutherford scattering cross section function (simple)
+  //  ruther =new TF1("ruther","[0]*TMath::Power(sin((x*TMath::DegToRad())/2),-4)",1e-5,180);
+  ruther =new TF1("ruther","[0]*TMath::Power(TMath::Sin(TMath::DegToRad()*x/2),-4)",1e-1,180);
+  ruther->SetParLimits(0,0,1e+05);
+  ruther->SetParName(0,"y scale");  
+  ruther->SetParameter(0,1);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  cFit->SetLogy();  
+  ruther->Draw();
+}
+
+void rutherfill(Int_t nfill=1e4, Char_t *histin="h1")
+{
+  if(!(gROOT->FindObject("ruther")))
+    rutherdef();
+  hname=histin;
+  if(!gROOT->FindObject(histin))
+    mkhist1(hname,360,180);
+  hProj=(TH1F *) gROOT->FindObject(histin); 
+  for(int i=0;i<nfill;i++){
+    hProj->Fill(ruther->GetRandom());
+  }
+  hProj->Fit("ruther","q","",1,180);
 }
 
 void ruthset()
