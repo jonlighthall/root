@@ -69,9 +69,10 @@ Float_t sigma_x=0.607956845;//for 90% in a 1mm radius
 Float_t sigma_y=sigma_x;
 Float_t offset_x=0, offset_y=0;
 Bool_t is_gaussian=kTRUE;
+Bool_t is_rutherford=kFALSE;
 TH2F *hbeam;
 
-void setbeam(Float_t set_offset_x=0, Float_t set_offset_y=0, Float_t set_sigma_x=0.607956845, Float_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE)
+void setbeam(Float_t set_offset_x=0, Float_t set_offset_y=0, Float_t set_sigma_x=0.607956845, Float_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE, Bool_t set_is_rutherford=kFALSE)
 {
   sigma_x=set_sigma_x;
   sigma_y=set_sigma_y;
@@ -212,6 +213,9 @@ void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_p
 {//define angles and build histograms
   theta_min=set_theta_min;
   theta_max=set_theta_max;
+  if(is_rutherford) {
+  //  rutherdef(theta_canter theta_min
+  }
   phi_min=set_phi_min;
   phi_max=set_phi_max;
   printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
@@ -457,7 +461,11 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
     
     //Emmission angle-----------------------------
     // Polar angle----------------------
-    theta=(TMath::ACos(rtheta->Uniform(cos_theta_min,cos_theta_max))*(TMath::RadToDeg()));
+    if(!is_rutherford)
+      theta=(TMath::ACos(rtheta->Uniform(cos_theta_min,cos_theta_max))*(TMath::RadToDeg()));
+    else {
+      theta=theta_center;
+    }
     htheta->Fill(theta);
     hcostheta->Fill(TMath::Cos(theta*TMath::DegToRad()));
     // Azimuthal angle------------------
