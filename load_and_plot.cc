@@ -3540,13 +3540,14 @@ void ruthdef()
 }
 
 TF1 *ruther;
-void rutherdef()
+Float_t ruther_min=1e-1;
+void rutherdef(Float_t min=ruther_min, Float_t max=180)
 {//Rutherford scattering cross section function (simple)
-  //  ruther =new TF1("ruther","[0]*TMath::Power(sin((x*TMath::DegToRad())/2),-4)",1e-5,180);
   ruther =new TF1("ruther","[0]*TMath::Power(TMath::Sin(TMath::DegToRad()*x/2),-4)",1e-1,180);
   ruther->SetParLimits(0,0,1e+05);
   ruther->SetParName(0,"y scale");  
   ruther->SetParameter(0,1);
+  ruther->SetRange(min,max);
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->SetLogy();  
   ruther->Draw();
