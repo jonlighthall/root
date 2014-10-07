@@ -69,23 +69,21 @@ Float_t sigma_x=0.607956845;//for 90% in a 1mm radius
 Float_t sigma_y=sigma_x;
 Float_t offset_x=0, offset_y=0;
 Bool_t is_gaussian=kTRUE;
-Bool_t is_rutherford=kFALSE;
 TH2F *hbeam;
 
-void setbeam(Float_t set_offset_x=0, Float_t set_offset_y=0, Float_t set_sigma_x=0.607956845, Float_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE, Bool_t set_is_rutherford=kFALSE)
+void setbeam(Float_t set_offset_x=0, Float_t set_offset_y=0, Float_t set_sigma_x=0.607956845, Float_t set_sigma_y=0.607956845, Bool_t set_is_gaussian=kTRUE)
 {
   sigma_x=set_sigma_x;
   sigma_y=set_sigma_y;
   offset_x=set_offset_x;
   offset_y=set_offset_y;
   is_gaussian=set_is_gaussian;
-  TString distrib;
+  TString beam_distrib;
   if(is_gaussian)
-    distrib="Gaussian";
+    beam_distrib="Gaussian";
   else
-    distrib="Uniform";
-  printf("Beam created at x=%5.2f, y=%5.2f\n with sigma_x=%5.2f, sigma_y=%5.2f;\n distribution is %s.\n",offset_x,offset_y,sigma_x,sigma_y,distrib.Data());
-
+    beam_distrib="Uniform";
+  printf("Beam created at x=%5.2f, y=%5.2f\n with sigma_x=%5.2f, sigma_y=%5.2f;\n distribution is %s.\n",offset_x,offset_y,sigma_x,sigma_y,beam_distrib.Data());
   clearhists();  
 }
 
@@ -206,19 +204,29 @@ Bool_t hit_window(void)
 
 Float_t theta_min=0;
 Float_t theta_max=180;
+Float_t theta_center=30;
 Float_t phi_min=0;
 Float_t phi_max=360;
+Bool_t is_rutherford=kFALSE;
 
-void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_phi_min=0, Float_t set_phi_max=360)
+void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_phi_min=0, Float_t set_phi_max=360,Bool_t set_is_rutherford=kFALSE)
 {//define angles and build histograms
   theta_min=set_theta_min;
   theta_max=set_theta_max;
-  if(is_rutherford) {
-  //  rutherdef(theta_canter theta_min
-  }
   phi_min=set_phi_min;
   phi_max=set_phi_max;
   printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
+ is_rutherford=set_is_rutherford;
+  TString ang_distrib;
+  if(is_rutherford) {
+    ang_distrib="Rutherford scattering cross section";
+    rutherdef(theta_min,theta_max);
+    //    rutherdef(theta_min+theta_center,theta_max+theta_center);
+  }
+  else
+    ang_distrib="uniform (over unit sphere)";
+  printf(" Angular distribution is %s.\n",ang_distrib.Data());
+  printf(" Central angle is %f.\n",theta_center);
   clearhists();
 }
 
@@ -301,7 +309,7 @@ void definehists()
   x_max+=offset_max;
   x_max*=1.05;
   x_max=ceil(x_max);
-  Float_t x_Max=124;
+  Float_t x_Max=1240;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
@@ -409,10 +417,7 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
   rtheta->SetSeed(0);
   Float_t cos_theta_min=(TMath::Cos(theta_min*TMath::DegToRad()));
   Float_t cos_theta_max=(TMath::Cos(theta_max*TMath::DegToRad()));
-  Float_t theta_center=30;
-  //theta_min+=theta_center;
-  //theta_max+=theta_center;
- 
+   
   //azimuthal angle-------------------------------
   TRandom3 *rphi=new TRandom3();
   rphi->SetSeed(0);
@@ -464,8 +469,8 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
     if(!is_rutherford)
       theta=(TMath::ACos(rtheta->Uniform(cos_theta_min,cos_theta_max))*(TMath::RadToDeg()));
     else {
-      theta=theta_center;
-    }
+         theta=ruther->GetRandom();
+       }
     htheta->Fill(theta);
     hcostheta->Fill(TMath::Cos(theta*TMath::DegToRad()));
     // Azimuthal angle------------------
@@ -805,6 +810,12 @@ void maskz(Float_t z_plane, Bool_t docal=kFALSE)
     econe->SetLineStyle(4);
     econe->SetFillStyle(0);
     econe->Draw();
+ TEllipse *econe2 = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_min*TMath::DegToRad()));
+    econe2->SetLineColor(4);
+    econe2->SetLineWidth(2);
+    econe2->SetLineStyle(4);
+    econe2->SetFillStyle(0);
+    econe2->Draw();
   }
   emask->SetLineColor(2);
   emask->SetLineWidth(2);
