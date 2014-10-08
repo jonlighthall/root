@@ -782,10 +782,6 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
  
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) {//if histograms are 2D
-	
-	  if(log)
-	    pOutput->SetLogz();
-
 	  hInput=(TH2F*)gROOT->FindObject(hname.Data());
 
 	  if(hInput->GetEntries()>0) {
@@ -811,14 +807,12 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	      hInput->GetXaxis()->UnZoom();
 	      hInput->GetYaxis()->UnZoom();
 	    }
-	  
+	    if(log)
+	      pOutput->SetLogz();
 	    hInput->Draw("COL2");
 	  }else if(show_blank)pno++;
 	}
 	else{//if histograms are 1-D
-	  if(log)
-	    pOutput->SetLogy();
-	 
 	  hProj=(TH1F*)gROOT->FindObject(hname.Data());
 	  if(hProj->GetEntries()>0) {
 	    pno++;
@@ -836,6 +830,8 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	      hProj->SetAxisRange(-1,-1,"X");
 	      hProj->GetXaxis()->UnZoom();
 	    }
+	    if(log)
+	      pOutput->SetLogy();  
 	    hProj->Draw("");
 	  }else if(show_blank)pno++;
 	}
