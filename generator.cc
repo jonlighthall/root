@@ -108,9 +108,23 @@ Float_t theta=0;//scattering angle
 Float_t phi=0;//azimuthal angle
 Float_t X=0, Y=0, Z=0, Rho=0;//position
 Float_t Xm=0, Ym=0, Xr=0, Yr=0;
-Float_t r=0,rho=0;//radius
+Float_t r=0,rho=0;//radii
 Bool_t doprint=1;//kFALSE;
 Bool_t diag=kFALSE;
+
+void rotate_axis(Float_t z_start,Float_t theta_start, Float_t phi_start)
+{
+  //first, calculate positions
+  trace_r(Z,theta,phi);
+  trace_x(x,theta,phi);
+  trace_y(y,theta,phi);
+  Float_t XX=0,YY=0,ZZ=0;
+  XX=X*TMath::Cos(theta_center*TMath::DegToRad())-Z*TMath::Sin(theta_center*TMath::DegToRad());
+  YY=Y;
+  ZZ=X*TMath::Sin(theta_center*TMath::DegToRad())+Z*TMath::Cos(theta_center*TMath::DegToRad());
+  theta=TMath::RadToDeg()*TMath::ACos(ZZ/r);
+  //phi=TMath::RadToDeg()*TMath::ATan(YY/XX);
+}
 
 void trace_r(Float_t z_start,Float_t theta_start, Float_t phi_start)
 {//given z, theta, phi; calculate r
@@ -130,7 +144,7 @@ void trace_x(Float_t x_start, Float_t theta_start, Float_t phi_start)
   if(iprint) {
     printf("  X-position is %7.2f (relative), with offset %7.2f\n",X,x_start);
   }
-  X+=x_start;  
+  X+=x_start*TMath::Cos(theta_center*TMath::DegToRad());  
   if(iprint) {
     printf("  X-position is %7.2f (absolute)\n",X);
   }
@@ -209,12 +223,13 @@ Float_t phi_min=0;
 Float_t phi_max=360;
 Bool_t is_rutherford=kFALSE;
 
-void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_phi_min=0, Float_t set_phi_max=360,Bool_t set_is_rutherford=kFALSE)
+void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_phi_min=0, Float_t set_phi_max=360, Float_t set_theta_center =0, Bool_t set_is_rutherford=kFALSE)
 {//define angles and build histograms
   theta_min=set_theta_min;
   theta_max=set_theta_max;
   phi_min=set_phi_min;
   phi_max=set_phi_max;
+  theta_center=set_theta_center;
   printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
  is_rutherford=set_is_rutherford;
   TString ang_distrib;
@@ -309,7 +324,7 @@ void definehists()
   x_max+=offset_max;
   x_max*=1.05;
   x_max=ceil(x_max);
-  Float_t x_Max=1240;
+  Float_t x_Max=124;
   if((x_max>x_Max)||(x_max<0))
     x_max=x_Max;
   x_min=-x_max;
@@ -489,6 +504,7 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
        
     //calculate positions at mask-------
     Z=z_mask;
+    rotate_axis(Z,theta,phi);
     trace_r(Z,theta,phi);
     trace_x(x,theta,phi);
     trace_y(y,theta,phi);
