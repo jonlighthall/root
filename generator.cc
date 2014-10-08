@@ -113,17 +113,39 @@ Bool_t doprint=1;//kFALSE;
 Bool_t diag=kFALSE;
 
 void rotate_axis(Float_t z_start,Float_t theta_start, Float_t phi_start)
-{
+{//rotate system about the y-axis by theta_center
   //first, calculate positions
-  trace_r(Z,theta,phi);
-  trace_x(x,theta,phi);
-  trace_y(y,theta,phi);
+  trace_r(z_start,theta_start,phi_start);
+  trace_x(x,theta_start,phi_start);
+  trace_y(y,theta_start,phi_start);
+  //next, calculate the transformed coordinates
+  if(iprint) 
+    printf("  Rotating by %7.2f...\n",theta_center);
   Float_t XX=0,YY=0,ZZ=0;
-  XX=X*TMath::Cos(theta_center*TMath::DegToRad())-Z*TMath::Sin(theta_center*TMath::DegToRad());
+  XX=X*TMath::Cos(theta_center*TMath::DegToRad())-z_start*TMath::Sin(theta_center*TMath::DegToRad());
   YY=Y;
-  ZZ=X*TMath::Sin(theta_center*TMath::DegToRad())+Z*TMath::Cos(theta_center*TMath::DegToRad());
+  ZZ=X*TMath::Sin(theta_center*TMath::DegToRad())+z_start*TMath::Cos(theta_center*TMath::DegToRad());
+  r=TMath::Sqrt(XX*XX+YY*YY+ZZ*ZZ);
+  if(iprint) 
+    printf("   New positions are X=%7.2f Y=%7.2f Z=%7.2f r=%7.2f\n",XX,YY,ZZ,r);  
+  //export position to global variables
+  X=XX;
+  Y=YY;
+  Z=ZZ; 
+  //then, calculate the new trajectories
+  Float_t old_theta=theta_start;
+  Float_t old_phi=phi_start;
   theta=TMath::RadToDeg()*TMath::ACos(ZZ/r);
-  //phi=TMath::RadToDeg()*TMath::ATan(YY/XX);
+  phi=TMath::RadToDeg()*TMath::ATan(YY/XX);
+  if(XX<0) phi+=180;
+  if(YY<0&&XX>0) phi+=360;
+  if(iprint) {
+    printf("   New angles are (theta,phi)=(%7.2f,%7.2f)\n",theta,phi);  
+    if(fabs(old_theta-theta)>1e-2)
+      printf("---Theta mis-match! old_theta=%7.2f theta=%7.2f\n",old_theta,theta);
+    if(fabs(old_phi-phi)>1e-2)
+      printf("---Phi mis-match! old_phi=%7.2f phi=%7.2f\n",old_phi,phi);
+  }
 }
 
 void trace_r(Float_t z_start,Float_t theta_start, Float_t phi_start)
@@ -131,10 +153,10 @@ void trace_r(Float_t z_start,Float_t theta_start, Float_t phi_start)
   r=z_start/(TMath::Cos(theta_start*TMath::DegToRad()));
   rho=r*(TMath::Sin(theta_start*TMath::DegToRad()));
   if(iprint) {
-    printf(" Emmission angle (theta,phi)=(%f,%f)\n",theta_start,phi_start);
-    printf("  Current position is Z=%7.2f\n",Z);
-    printf("  Spherical radius is r=%7.2f\n",r);
-    printf("  Cylindrical rad. is rho=%7.2f\n",rho);
+    printf("  Emmission angle (theta,phi)=(%7.2f,%7.2f)\n",theta_start,phi_start);
+    printf("   Current position is Z=%7.2f\n",z_start);
+    printf("   Spherical radius is r=%7.2f\n",r);
+    printf("   Cylindrical rad. is rho=%7.2f\n",rho);
   }
 }
 
@@ -142,11 +164,11 @@ void trace_x(Float_t x_start, Float_t theta_start, Float_t phi_start)
 {
   X=rho*(TMath::Cos(phi_start*TMath::DegToRad()));
   if(iprint) {
-    printf("  X-position is %7.2f (relative), with offset %7.2f\n",X,x_start);
+    printf("   X-position is %7.2f (relative), with offset %7.2f\n",X,x_start);
   }
   X+=x_start*TMath::Cos(theta_center*TMath::DegToRad());  
   if(iprint) {
-    printf("  X-position is %7.2f (absolute)\n",X);
+    printf("   X-position is %7.2f (absolute)\n",X);
   }
 }
 
@@ -154,11 +176,11 @@ void trace_y(Float_t y_start, Float_t theta_start, Float_t phi_start)
 {
   Y=rho*(TMath::Sin(phi_start*TMath::DegToRad()));
   if(iprint) {
-    printf("  Y-position is %7.2f (relative), with offset %7.2f\n",Y,y_start);
+    printf("   Y-position is %7.2f (relative), with offset %7.2f\n",Y,y_start);
   }
   Y+=y_start;  
   if(iprint) {
-    printf("  Y-position is %7.2f (absolute)\n",Y);
+    printf("   Y-position is %7.2f (absolute)\n",Y);
   }
 }
 
@@ -231,12 +253,11 @@ void setangles(Float_t set_theta_min=0, Float_t set_theta_max=180, Float_t set_p
   phi_max=set_phi_max;
   theta_center=set_theta_center;
   printf("Emmission angles defined over:\n Theta %f to %f\n Cos(theta) %f to %f\n Phi %f to %f\n",theta_min,theta_max,TMath::Cos(theta_min*TMath::DegToRad()),TMath::Cos(theta_max*TMath::DegToRad()),phi_min,phi_max);
- is_rutherford=set_is_rutherford;
+  is_rutherford=set_is_rutherford;
   TString ang_distrib;
   if(is_rutherford) {
     ang_distrib="Rutherford scattering cross section";
     rutherdef(theta_min,theta_max);
-    //    rutherdef(theta_min+theta_center,theta_max+theta_center);
   }
   else
     ang_distrib="uniform (over unit sphere)";
@@ -791,7 +812,7 @@ void maskz(Float_t z_plane, Bool_t docal=kFALSE)
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
-    fprintf(outfile_y,"%g\n",y_shadow[i]+y_cal);
+    fprintf(outfile_y,"%f\n",y_shadow[i]+y_cal);
     if(docal)
       plothlines(y_shadow[i]+y_cal,0,0,range-span,range,2);   
     else
@@ -805,7 +826,7 @@ void maskz(Float_t z_plane, Bool_t docal=kFALSE)
     printf("theta_proj = %6.3f ",(TMath::RadToDeg()*theta_proj[i]));
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
     printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i],x_shadow[i]+x_cal);
-    fprintf(outfile_x,"%g\n",x_shadow[i]+x_cal);    
+    fprintf(outfile_x,"%f\n",x_shadow[i]+x_cal);    
     if(docal){
       if(i>0)
 	plotvlines(x_shadow[i]+x_cal,0,0,0,2);
@@ -820,13 +841,18 @@ void maskz(Float_t z_plane, Bool_t docal=kFALSE)
   else {
     TEllipse *emask = new TEllipse(0,0,-x_shadow[0]);
     //beam envelope
-    TEllipse *econe = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_max*TMath::DegToRad()));
+    Float_t temp_x=0;
+    rotate_axis(z_mask,0,0);
+    temp_x=X;
+    rotate_axis(z_mask,theta_max,0);
+    TEllipse *econe = new TEllipse(temp_x+offset_x,Y+offset_y,z_plane*TMath::Tan(theta*TMath::DegToRad()));
     econe->SetLineColor(3);
     econe->SetLineWidth(2);
     econe->SetLineStyle(4);
     econe->SetFillStyle(0);
     econe->Draw();
- TEllipse *econe2 = new TEllipse(offset_x,offset_y,z_plane*TMath::Tan(theta_min*TMath::DegToRad()));
+    rotate_axis(z_mask,theta_min,0);
+    TEllipse *econe2 = new TEllipse(temp_x+offset_x,Y+offset_y,z_plane*TMath::Tan(theta*TMath::DegToRad()));
     econe2->SetLineColor(4);
     econe2->SetLineWidth(2);
     econe2->SetLineStyle(4);
@@ -1066,3 +1092,31 @@ void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
   leg->AddEntry("hxgmr3","sim");
   leg->Draw();
 }
+
+void show_angles(Float_t set_theta_center=30,Bool_t set_rutherford=kFALSE,
+		 Bool_t doset=kFALSE)
+{
+  theta_center=set_theta_center;
+  iprint=kFALSE;
+  Float_t set_theta_min=0,set_theta_max=0,set_phi_max=0;
+  printf("Calculating angle ranges...\n");
+  rotate_axis(z_mask,TMath::ATan((99.5/2)/z_mask)*TMath::RadToDeg(),0);
+  printf(" The minimum polar angle is %7.2f\n",theta);  
+  set_theta_min=theta;
+  rotate_axis(z_mask,TMath::ATan((99.5/2)/z_mask)*TMath::RadToDeg(),180);
+  printf(" The maximum polar angle is %7.2f\n",theta);
+  set_theta_max=theta;
+  // rotate_axis(z_mask,TMath::ATan((99.5/2)/z_mask)*TMath::RadToDeg(),90);
+  printf(" (phi = %7.2f",phi);
+  if(phi>140)
+    set_phi_max=180-phi;
+  else
+    set_phi_max=phi/2;
+  set_phi_max=TMath::RadToDeg()*TMath::ASin((99.5/2)/(X+(99.5/2)));
+  printf(" set_phi_max=%7.2f)\n",set_phi_max);
+  printf(" The aximuthal angle range is %7.2f (%7.2f to %7.2f)\n",set_phi_max*2,-set_phi_max,set_phi_max);
+
+ if(doset)
+   setangles(set_theta_min,set_theta_max,-set_phi_max,set_phi_max,set_theta_center,set_rutherford);
+}
+
