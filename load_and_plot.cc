@@ -1500,7 +1500,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
 
     z-=aspan;
     line = new TLine(z,minE,z,maxE);
-    line->SetLineStyle(2);
+    line->SetLineStyle(2);//dashed
     line->SetLineWidth(2);
     line->Draw();
   }
@@ -1537,7 +1537,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
     }
     z-=aspan;
     line = new TLine(z,minE,z,maxE);
-    line->SetLineStyle(1);
+    line->SetLineStyle(1);//solid
     line->SetLineWidth(2);
     line->Draw();
   }
@@ -1545,7 +1545,7 @@ void plotvlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,Bool_t span
   if(edge3!=0){
     z=edge3;
     line = new TLine(z,minE,z,maxE);
-    line->SetLineStyle(4);
+    line->SetLineStyle(4);//dot-dash
     line->SetLineWidth(2);
     line->SetLineColor(color);
     line->Draw();
@@ -1586,7 +1586,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
   if(edge1!=0){
     z=edge1;
     TLine *line = new TLine(xmin,z,xmax,z);
-    line->SetLineStyle(2);
+    line->SetLineStyle(2);//dashed
     line->SetLineWidth(2);
     line->SetLineColor(color);
     line->Draw();
@@ -1595,7 +1595,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
   if(edge2!=0){
     z=edge2;
     line = new TLine(xmin,z,xmax,z);
-    line->SetLineStyle(1);
+    line->SetLineStyle(1);//solid
     line->SetLineWidth(2);
     line->SetLineColor(color);
     line->Draw();
@@ -1604,7 +1604,7 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
   if(edge3!=0){
     z=edge3;
     line = new TLine(xmin,z,xmax,z);
-    line->SetLineStyle(4);
+    line->SetLineStyle(4);//dot-dash
     line->SetLineWidth(2);
     line->SetLineColor(color);
     line->Draw();
@@ -3451,7 +3451,7 @@ void loadcal(Char_t *filename="cal/X1.lst")
     positions[i]=sorted[i];
     printf(" %13.6f ",positions[i]);
   }
-printf("\n");
+  printf("\n");
 }
 
 TF1 *ls1,*ls2,*ls3,*lstotal;
@@ -3757,7 +3757,7 @@ void lsreset()
  // lsload();
   ls1->SetParameter(6,617);
   ls1->SetParameter(7,-170);
- }
+}
 
 void lsfix()
 {//fix fit parameters (before adjusting the range parameters)
@@ -3843,14 +3843,14 @@ void ruthfit3(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slo
 
 void qfitc(Char_t *histname,Float_t center=0, Float_t width=10)
 {//fit a quadratic function about a central point
- if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
- TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
- hist1->Draw();
- Float_t xmin=center-width;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  hist1->Draw();
+  Float_t xmin=center-width;
   Float_t xmax=center+width;
   hist1->Fit("pol2","","",xmin,xmax);
   Float_t a=0,b=0,c=0;
-   double temp[3]={};
+  double temp[3]={};
   for(int i=0;i<3;i++){
     temp[i]=pol2->GetParameter(i);
   }
@@ -3904,21 +3904,21 @@ void qfitc2(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=
   printf("     Fit minimum is %f\n",min[1]);
 }
 
- double mid[2]={};
+double mid[2]={};
 
 void loadcalm(Char_t *filename="cal/X1.lst")
 {//load cal and find midpoints of masks
   loadcal(filename);
 
   printf("The midpoint of the mask projections are:\n"); 
-for(int i=0;i<2;i++){
-  mid[i]=(positions[(i+1)*2]-positions[(i+1)*2-1])/2.;
-  printf(" The midpoint of %13.6f and %13.6f is (%13.6f wide)",positions[(i+1)*2-1],positions[(i+1)*2],mid[i]);
-  mid[i]+=positions[(i+1)*2-1];
-  printf(" at %13.6f\n",mid[i]);
+  for(int i=0;i<2;i++){
+    mid[i]=(positions[(i+1)*2]-positions[(i+1)*2-1])/2.;
+    printf(" The midpoint of %13.6f and %13.6f is (%13.6f wide)",positions[(i+1)*2-1],positions[(i+1)*2],mid[i]);
+    mid[i]+=positions[(i+1)*2-1];
+    printf(" at %13.6f\n",mid[i]);
   }
- printf(" The difference in the midpoints is       %f\n",mid[1]-mid[0]);
- }
+  printf(" The difference in the midpoints is       %f\n",mid[1]-mid[0]);
+}
 
 void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width=0.0021,Char_t *filename="cal/X1.lst")
 {//fit two quadratic functions, relative to two central points & set calibration scale based on mask position from file
@@ -3965,7 +3965,7 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
 
   printf("Histogram is %s with title %s.\n",histname,hist1->GetTitle());
   loadcalm(filename);
- hname=histname;
+  hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
     tempst=hname(i,hname.Length()-i);
@@ -4043,7 +4043,7 @@ void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t widt
 
   printf("Hisogram is %s with title %s.\n",histname,hist1->GetTitle());
   loadcalm(filename);
-hname=histname;
+  hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
     tempst=hname(i,hname.Length()-i);
@@ -4087,7 +4087,7 @@ hname=histname;
     }
   }
   else{//x-positions
- for(i=0;i<6;i++){
+    for(i=0;i<6;i++){
       printf("Edge %d estimated location is %7.3f",i,edge[i]);
       if(i%2)//right-hand sides
 	hist1->Fit("gaus","q+","",edge[i]-width/3,edge[i]+width/2);
@@ -4248,7 +4248,7 @@ void getressum(Char_t *hsum, Char_t *hcorrelation, Float_t coef_x=1., Float_t co
   printf(" Scaled:  The width of %s is %f (FWHM = %f); variance = %f\n",histin1,sigma_sum*0.70711,sigma_sum*2.35482*0.70711,var_sum*0.70711);
   printf(" Full:  The std dev of %s is %f (FWHM = %f); variance = %f\n",histin1,hist1->GetStdDev(),(hist1->GetStdDev())*2.35482,TMath::Power(hist1->GetStdDev(),2));
   //  printf(" The variance of the sum is %f (%f full)\n\n",var_sum,TMath::Power(hist1->GetStdDev(),2));
- hist1->GetXaxis()->SetRangeUser(mean_sum-4*sigma_sum,mean_sum+4*sigma_sum);
+  hist1->GetXaxis()->SetRangeUser(mean_sum-4*sigma_sum,mean_sum+4*sigma_sum);
   hist1->Draw();
 
   double covar = 0;
