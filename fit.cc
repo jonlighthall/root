@@ -2111,11 +2111,26 @@ void ginfo (void)
  printf("Width of peak is %f or %f FWHM\n",sigma,width);
  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
+
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
+  fprintf(outfile,"%g, %g, %g\n",mean,sigma,width/sigma);
+  fclose(outfile);
 }
 
 void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W")
 {//fit a quadratic given a center and a width
   gfit(histname,center-wide,center+wide,option);
+  hname=histname;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString tempst="";
+    tempst=hname(i,hname.Length()-i);
+    if(tempst.IsFloat())
+      {
+	det=tempst.Atoi();
+	break;
+      }
+  }
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
