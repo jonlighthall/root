@@ -3567,6 +3567,18 @@ void rutherfill(Int_t nfill=1e4, Char_t *histin="h1")
   hProj->Fit("ruther","q","",1,180);
 }
 
+void rlindef(Float_t min=ruther_min, Float_t max=180)
+{//Rutherford scattering cross section function (simple)
+  rlin =new TF1("rlin","[0]+[1]*x",1e-1,180);
+  rlin->SetParName(0,"offset");  
+  rlin->SetParName(1,"slope");  
+  rlin->SetParameter(0,1);
+  rlin->SetRange(min,max);
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  cFit->SetLogy();  
+  rlin->Draw();
+}
+
 void ruthset()
 {
   ruthdef();
