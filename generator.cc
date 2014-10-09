@@ -212,17 +212,18 @@ Bool_t hit_mask(void)
   return kFALSE;
 }
 
+Float_t y_shield=28;
 Bool_t hit_shield(void)
 {
   if((X<-118)||(X>36))
     return kTRUE;//hits shield (x)
-  if((Y<-27)||(Y>27))
+  if((Y<-y_shield)||(Y>y_shield))
     return kTRUE;//hist shield (y)
   return kFALSE;
 }
 
-Float_t x_win=34.0073412589711;//nominally 34.01
-Float_t y_win=100;
+Float_t x_win=32;//34.0073412589711;//nominally 34.01
+Float_t y_win=25;
 void setwin(Float_t set_x_win=34.0073412589711,Float_t set_y_win=100)
 {
   x_win=set_x_win;
@@ -435,7 +436,7 @@ void setres(Float_t set_xres=0, Float_t set_yres=0)
 Bool_t iprint=kFALSE; //doprint;  
 Bool_t donewhit=kFALSE;
 Bool_t doslits=kFALSE;
-void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
+void source(Int_t nevents=5e4, Float_t weight=1, Bool_t set_doprint=kFALSE)
 {
   if(!(gROOT->FindObject("hbeam")))
     definehists();
@@ -464,10 +465,13 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
   rxres->SetSeed(0);
   ryres->SetSeed(0);
   //jucntion peaks------------
-  Float_t yjunk1=22-6-y_cal;
-  Float_t yjunk2=44-6-y_cal;
-  Float_t junk_width=0.75;
-  Float_t junk_res=junk_width/12;
+  Float_t yjunk1l=22-6-y_cal-.5;
+  Float_t yjunk1r=44-6-y_cal-.3;
+  Float_t yjunk2l=22-6-y_cal;
+  Float_t yjunk2r=44-6-y_cal-.55;
+  Float_t junk_width1=1.7;
+  Float_t junk_width2=0.41;
+  Float_t junk_res=.4;
 
   //X, Y positions (ray-tracing)------------------
   Bool_t hit=kFALSE;
@@ -610,17 +614,17 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
       hyxgm[1]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
-      hxgmr[2]->Fill(Xr+x_cal);      
-      if(((Y<yjunk1+junk_width/2)&&(Y>yjunk1-junk_width))||((Y<yjunk2+junk_width/2)&&(Y>yjunk2-junk_width))) {
-       	for (Int_t j=0; j<1; j++) {
+      hxgmr[2]->Fill(Xr+x_cal,weight);      
+      if(((Y<yjunk2l+junk_width2/2)&&(Y>yjunk2l-junk_width2/2))||((Y<yjunk2r+junk_width2/2)&&(Y>yjunk2r-junk_width2/2))) {
+       	for (Int_t j=0; j<2; j++) {
 	  Yr=ryres->Gaus(Y,junk_res);
-	  hxgmr[3]->Fill(Yr+y_cal);
+	  hxgmr[3]->Fill(Yr+y_cal,weight);
 	  hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
 	}
       }
       // else{
       Yr=ryres->Gaus(Y,yres);
-      hxgmr[3]->Fill(Yr+y_cal);
+      hxgmr[3]->Fill(Yr+y_cal,weight);
       hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
       //  }
       
@@ -680,17 +684,17 @@ void source(Int_t nevents=5e4, Bool_t set_doprint=kFALSE)
       hyxgm[0]->Fill(X+x_cal,Y+y_cal);
       //calculate measured positions with given detector resolution
       Xr=rxres->Gaus(X,xres);
-      hxgmr[0]->Fill(Xr+x_cal);     
-      if(((Y<yjunk1+junk_width/2)&&(Y>yjunk1-junk_width))||((Y<yjunk2+junk_width/2)&&(Y>yjunk2-junk_width))) {
+      hxgmr[0]->Fill(Xr+x_cal,weight);     
+      if(((Y<yjunk1l+junk_width1/2)&&(Y>yjunk1l-junk_width1/2))||((Y<yjunk1r+junk_width1/2)&&(Y>yjunk1r-junk_width1/2))) {
        	for (Int_t j=0; j<1; j++) {
 	  Yr=ryres->Gaus(Y,junk_res);
-	  hxgmr[1]->Fill(Yr+y_cal);
+	  hxgmr[1]->Fill(Yr+y_cal,weight);
 	  hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
 	}
       }
       //   else{
       Yr=ryres->Gaus(Y,yres);
-      hxgmr[1]->Fill(Yr+y_cal);
+      hxgmr[1]->Fill(Yr+y_cal,weight);
       hyxgmr[0]->Fill(Xr+x_cal,Yr+y_cal);
       //   }
     }
@@ -769,7 +773,8 @@ void shadowz(Float_t z_plane=0, Bool_t docal=kFALSE)
 {
   printf("Calculating positions at z=%7.2f\n with calibration offsets of x=%f, y=%f\n",z_plane,x_cal,y_cal);
   maskz(z_plane,docal);
-  windowz(z_plane,docal);
+  //if(!docal)
+    windowz(z_plane,docal);
   shieldz(z_plane,docal);
   printf("X-gaps are centered at %6.3f (%6.3f wide) and %6.3f (%6.3f wide)\n",(x_shadow[1]+x_shadow[2])/2,(x_shadow[2]-x_shadow[1]),(x_shadow[3]+x_shadow[4])/2,(x_shadow[4]-x_shadow[3]));
   printf("X-spans are %6.3f, %6.3f, and ",(x_shadow[1]-x_shadow[0]),(x_shadow[3]-x_shadow[2]));
@@ -902,7 +907,7 @@ void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
     if(docal)   
-      plothlines(y_shadow[i]+y_cal,0,0,range-span,range,6);   
+      plothlines(0,0,y_shadow[i]+y_cal,range-span,range,3);   
     else
       plothlines(y_shadow[i],0,0,-range,range,6);   
   }
@@ -914,7 +919,7 @@ void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
     printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+x_cal);
     if(docal)
-      plotvlines(x_shadow[i]+x_cal,0,0,0,6);
+      plotvlines(0,0,x_shadow[i]+x_cal,0,3);
     else
       plotvlines(x_shadow[i],0,0,0,6);
   }
@@ -948,11 +953,11 @@ void shadowzc(Char_t *histin1,Float_t z_plane=0)
   shadowz(z_plane, kTRUE);
 }
 
-void setsim(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
+void setsim(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
 {
   setres(set_res,set_res);
   setbeam(0,0,set_beam,set_beam);
-  source(set_events);
+  source(set_events,set_weight);
 }
 
 void compY2(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
@@ -1032,7 +1037,7 @@ void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
   leg->AddEntry("hxgmr0","sim");
   leg->Draw();
 }
-void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
+void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
 {
   if((xres==set_res)&&(yres==set_res))
     {
@@ -1040,10 +1045,10 @@ void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
       if((sigma_x==set_beam)&&(sigma_y==set_beam))
 	printf("...and beam spot sizes match.\n");
       else
-	setsim(set_res,set_beam,set_events);  
+	setsim(set_res,set_beam,set_events,set_weight);  
     }
   else
-    setsim(set_res,set_beam,set_events);  
+    setsim(set_res,set_beam,set_events,set_weight);  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
   cFit->Clear();
   cFit->Divide(1,2);
@@ -1062,7 +1067,7 @@ void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
   leg->AddEntry("hxgmr2","sim");
   leg->Draw();
 }
-void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
+void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
 {
   if((xres==set_res)&&(yres==set_res))
     {
@@ -1070,10 +1075,10 @@ void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
       if((sigma_x==set_beam)&&(sigma_y==set_beam))
 	printf(" ...and beam spot sizes match.\n");
       else
-	setsim(set_res,set_beam,set_events);  
+	setsim(set_res,set_beam,set_events,set_weight);  
     }
   else
-    setsim(set_res,set_beam,set_events);  
+    setsim(set_res,set_beam,set_events,set_weight);  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
   cFit->Clear();
   cFit->Divide(1,2);
