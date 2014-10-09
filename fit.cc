@@ -174,7 +174,7 @@ void mkhist1(Char_t *histin="h", Int_t bins=3, Float_t size=10)
     gROOT->FindObject(hname)->Delete();  
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   } 
-  TH1F * hProj=new  TH1F(hname,"Small Histogram",bins,0.,size);
+  TH1F * hProj=new  TH1F(hname.Data(),"Small Histogram",bins,0.,size);
   hProj->Draw("");
 }
 
@@ -1387,8 +1387,9 @@ void shiftx1(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plo
   }
 }
 
-void shiftx2(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plot=2)
-{//copies a 2D histogram with a given x-offset.
+void shiftx2(Char_t *histin, Float_t shift_x=0, Bool_t move_x_axis=kFALSE, Float_t shift_y=0,
+	     Bool_t move_y_axis=kFALSE, Int_t plot=2)
+{//copies a 2D histogram with a given y-offset.
   if(plot>0)if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
 
   Float_t xmin,xmax; 
@@ -1420,15 +1421,27 @@ void shiftx2(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plo
     gROOT->FindObject(hname)->Delete();  
     printf(" Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
-  // printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,xmin,xmax,ybin,ymin,ymax);
-  if(move_axis)
-    TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin+shift,xmax+shift,ybin,ymin,ymax);
-  else
-    TH2F * hOutput=new  TH2F(hname,htitle,xbin,xmin,xmax,ybin,ymin,ymax);
+ 
+  Float_t set_xmin=xmin, set_xmax=xmax, set_ymin=ymin, set_ymax=ymax;
+   if(move_x_axis) {
+    set_xmin+=shift_x;
+    set_xmax+=shift_x;
+  }
+  if(move_y_axis) {
+    set_ymin+=shift_y;
+    set_ymax+=shift_y;
+  }
+  TH2F * hOutput=new  TH2F(hname,htitle,xbin,set_xmin,set_xmax,ybin,set_ymin,set_ymax);
+  printf("Output histogram is constructed as:\n TH2F(\"%s\",\"%s\",%d,%1.0f,%1.0f,%d,%1.0f,%1.0f)\n",hname.Data(),htitle,xbin,set_xmin,set_xmax,ybin,set_ymin,set_ymax); 
+
   Float_t xbinw=hInput->GetXaxis()->GetBinWidth(0);
-  printf(" Note: bin width is %f.  Shift is %f bins.\n",xbinw,shift/xbinw);
-  if(shift!=0&&fabs(shift)<(hInput->GetXaxis()->GetBinWidth(0)))
-    printf(" Note: the offset is less than the bin width.\n");
+  Float_t ybinw=hInput->GetYaxis()->GetBinWidth(0);
+  printf(" Note: X bin width is %f.  X shift is %f bins.\n",xbinw,shift_x/xbinw);
+  printf(" Note: Y bin width is %f.  Y shift is %f bins.\n",ybinw,shift_y/ybinw);
+  if(shift_x!=0&&fabs(shift_x)<(hInput->GetXaxis()->GetBinWidth(0)))
+    printf(" Note: the x-offset is less than the x-bin width.\n");
+  if(shift_y!=0&&fabs(shift_y)<(hInput->GetYaxis()->GetBinWidth(0)))
+    printf(" Note: the y-offset is less than the y-bin width.\n");
   
   for(int i=1;i<(xbin+1);i++){
     for(int j=1;j<(ybin+1);j++){
@@ -1437,12 +1450,11 @@ void shiftx2(Char_t *histin, Float_t shift=0, Bool_t move_axis=kFALSE, Int_t plo
       x=hInput->GetXaxis()->GetBinCenter(i);
       y=hInput->GetYaxis()->GetBinCenter(j);
       z=hInput->GetBinContent(i,j);
-      //printf("i=%2d, j=%2d, z=%2.0f \n",i,j,z);
       if(z!=0){
-	for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of entries is the same in the copied histogram (for minz=0).  Otherwise, the number of entries is equal to the number of non-zero bins.
-	  hOutput->Fill(x+shift,y,1);
-	  //	 entry++;
-	  //	 printf("Entry %2d is %2f,%2f,%2.0f\n",entry,x,y,1);
+	for(int k=0;k<(z);k++){//Each bin is filled with a for loop so the number of entries 
+	  // is the same in the copied histogram (for minz=0).  Otherwise, the number of entries 
+	  //is equal to the number of non-zero bins.
+	  hOutput->Fill(x+shift_x,y+shift_y,1);
 	}
       }
     }
@@ -2071,9 +2083,9 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
 {//adapted from util.cc
   //Float_t sigma=0, width=0; 
   if(!(gROOT->FindObject(histname))) {
-      printf("Histogram %s not found!\n",histname);
-      return;
-    }
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
 
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   if (xmin==-999999. && xmax==999999.) {
@@ -2083,33 +2095,33 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
     xmax=xmin;
   } 
   hist1->Fit("gaus",option,"",xmin,xmax);
-   if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q'))))
-     ginfo();
+  if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q'))))
+    ginfo();
 }
 
 /*void test(Char_t *option="W")
-{
+  {
   if((bool)(strchr(option,'q')))
-    printf("q is present\n");
+  printf("q is present\n");
   if((bool) (strchr(option,'Q')))
-    printf("Q is present\n");
+  printf("Q is present\n");
   if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q')))){
-    printf("neither!\n");
-    ginfo();
+  printf("neither!\n");
+  ginfo();
   }
   else
-    printf("either!\n");
+  printf("either!\n");
   return; 
   }*/
 
 void ginfo (void)
 {
   Float_t sigma=0, width=0, mean=0; 
- sigma=gaus->GetParameter(2);
- mean=gaus->GetParameter(1);
- width=sigma*2.35482;
- printf("Width of peak is %f or %f FWHM\n",sigma,width);
- printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
+  sigma=gaus->GetParameter(2);
+  mean=gaus->GetParameter(1);
+  width=sigma*2.35482;
+  printf("Width of peak is %f or %f FWHM\n",sigma,width);
+  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
   FILE * outfile;
@@ -2989,7 +3001,7 @@ void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
   hProf=(TH1F *) gROOT->FindObject(hname.Data());
   cFit->cd(2);
   hProf->GetXaxis()->UnZoom();\\added
-  hProf->GetYaxis()->UnZoom();
+				hProf->GetYaxis()->UnZoom();
   hProf->SetAxisRange(a,b,"Y");
   hProf->SetLineColor(2);
   hProf->Draw();
@@ -3032,7 +3044,7 @@ void fitpqpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Fl
     if(i==200){
       printf("Loop terminated.  Could not converge.\n");
       tol*=1.01;\\modified from add 0.01
-      maxfit=c;
+		  maxfit=c;
       hProf->Fit("pol2","Q","",minfit,maxfit);
       p1=hProf->GetFunction("pol2")->GetParameter(1);
       p2=hProf->GetFunction("pol2")->GetParameter(2);
