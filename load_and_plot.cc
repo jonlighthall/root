@@ -4277,3 +4277,36 @@ void getressum(Char_t *hsum, Char_t *hcorrelation, Float_t coef_x=1., Float_t co
   printf("The square of one half the calculated sum of the variances is %f (from Gaussian)\n",TMath::Power((var_sum-2*coef_x*coef_y*covar)/2.,0.5));
   printf("The square of one half the calculated sum of the variances is %f (full)\n",TMath::Power((TMath::Power(hist1->GetStdDev(),2)-2*coef_x*coef_y*covar)/2.,0.5));
 }
+
+void grantpolot()
+{
+  gStyle->SetOptDate(0);
+  gStyle->SetOptStat(0);
+  dr("hhitc0");
+  cFit->SetLogz();
+  hhitc0->Rebin2D();
+  //call shadowzc to set line span
+  shadowzc("hhitc0",z_A1);
+  //redraw histogram
+  dr("hhitc0");
+  //add lines
+  maskz(z_A1,1);
+  //change position lines
+  
+  shieldz(z_A1,1,4);
+  //set axes
+  TH2F * hOutput1=(TH2F *) gROOT->FindObject("hhitc0");
+  //  hOutput1->SetAxisRange(plot_minZ,plot_maxZ,"X");
+  // hOutput1->SetAxisRange(0,82,"X");
+  hOutput1->SetYTitle("Vertical Position (mm)");
+  hOutput1->GetYaxis()->CenterTitle(1);
+  //hOutput1->GetYaxis()->SetTitleOffset(1.23);
+  hOutput1->SetXTitle("Horizontal Position (mm)");
+  hOutput1->GetXaxis()->CenterTitle(1);
+  //hOutput1->SetStats(kFALSE);
+  //hOutput1->SetTitle();
+  //cFit->SetTopMargin(.02);
+  hOutput1->Draw("colz");
+  prop(1);
+   
+}
