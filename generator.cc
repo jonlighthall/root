@@ -886,7 +886,7 @@ void windowz(Float_t z_plane, Bool_t docal=kFALSE)
     plotvlines(0,x_shadow[i],0,0,4);
 }
 
-void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
+void shieldz(Float_t z_plane, Bool_t docal=kFALSE, Int_t setlinecolor=3)
 {
   Float_t z_feature=0;
   if(z_plane>z_A1)
@@ -907,7 +907,7 @@ void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
     y_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_y;
     printf("y_shadow = %7.2f (%7.2f)\n", y_shadow[i],y_shadow[i]+y_cal);
     if(docal)   
-      plothlines(0,0,y_shadow[i]+y_cal,range-span,range,3);   
+      plothlines(0,0,y_shadow[i]+y_cal,range-span,range,setlinecolor);   
     else
       plothlines(y_shadow[i],0,0,-range,range,6);   
   }
@@ -919,7 +919,7 @@ void shieldz(Float_t z_plane, Bool_t docal=kFALSE)
     x_shadow[i]=z_plane*(TMath::Tan(theta_proj[i]))+offset_x;
     printf("x_shadow = %7.2f (%7.2f)\n", x_shadow[i], x_shadow[i]+x_cal);
     if(docal)
-      plotvlines(0,0,x_shadow[i]+x_cal,0,3);
+      plotvlines(0,0,x_shadow[i]+x_cal,0,setlinecolor);
     else
       plotvlines(x_shadow[i],0,0,0,6);
   }
