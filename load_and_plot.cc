@@ -4320,3 +4320,12 @@ void grantplot()
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.pdf");
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.eps");
 }
+
+void resplot()
+{
+  setbeam();
+  setangles(0,4.48);
+  compX(0.43,0.608,1e5,50,1);
+  prop(16,9);
+  cFit->SaveAs("figures/run_430_compX2.pdf");
+}
