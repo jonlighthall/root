@@ -1037,7 +1037,7 @@ void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
   leg->AddEntry("hxgmr0","sim");
   leg->Draw();
 }
-void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
+void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1, Bool_t plot=kFALSE)
 {
   if((xres==set_res)&&(yres==set_res))
     {
@@ -1051,7 +1051,10 @@ void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
     setsim(set_res,set_beam,set_events,set_weight);  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
   cFit->Clear();
-  cFit->Divide(1,2);
+  if(plot)
+    cFit->Divide(2,1);
+  else
+    cFit->Divide(1,2);
   cFit->cd(1);
   hxc0->Draw();
   odr("hxgmr0");
