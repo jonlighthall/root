@@ -2145,6 +2145,38 @@ void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W
   }
 }
 
+void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option="W")
+{//fit a quadratic given a center and a width, automatically calculated about the mean
+  Bool_t set_center=kFALSE;
+  if(center==-1){
+    set_center=kTRUE;
+    if(!(gROOT->FindObject(histname))) {
+      printf("Histogram %s not found!\n",histname);
+      return;
+    }
+    TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+    center=hist1->GetMean();
+  }
+  gfit(histname,center-wide,center+wide,option);
+  if(set_center) {
+    center=gaus->GetParameter(1);
+    gfit(histname,center-wide,center+wide,option);
+    center=gaus->GetParameter(1);
+    gfit(histname,center-wide,center+wide,option);
+  }
+    
+  hname=histname;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString tempst="";
+    tempst=hname(i,hname.Length()-i);
+    if(tempst.IsFloat())
+      {
+	det=tempst.Atoi();
+	break;
+      }
+  }
+}
+
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
 {//copied form util.cc
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
