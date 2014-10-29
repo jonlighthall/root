@@ -2081,12 +2081,10 @@ void sum(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymi
 
 void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W")
 {//adapted from util.cc
-  //Float_t sigma=0, width=0; 
   if(!(gROOT->FindObject(histname))) {
     printf("Histogram %s not found!\n",histname);
     return;
   }
-
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   if (xmin==-999999. && xmax==999999.) {
     xmin=hist1->GetXaxis()->GetXmin();
@@ -2116,7 +2114,8 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
 
 void ginfo (void)
 {
-  Float_t sigma=0, width=0, mean=0; 
+  Float_t sigma=0, width=0, mean=0;
+  Float_t gxmin=0, gxmax=0, grange=0; 
   sigma=gaus->GetParameter(2);
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
@@ -2124,9 +2123,14 @@ void ginfo (void)
   printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
+  gxmin=gaus->GetCurrent()->GetXmin();
+  gxmax=gaus->GetCurrent()->GetXmax();
+  grange=gxmax-gxmin;
+  printf("The fit covers %f to %f, %f wide (%f sigma)\n",gxmin,gxmax,grange,grange/sigma);
+  
   FILE * outfile;
   outfile=fopen("temp.lst","w");
-  fprintf(outfile,"%g, %g, %g\n",mean,sigma,width/sigma);
+  fprintf(outfile,"%g, %g, %g\n",mean,sigma,grange/sigma);
   fclose(outfile);
 }
 
@@ -2145,16 +2149,18 @@ void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W
   }
 }
 
+//Float_t gfit_wide=0;
 void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option="W")
 {//fit a quadratic given a center and a width, automatically calculated about the mean
+  if(!(gROOT->FindObject(histname))) {
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
+  //gfit_wide=wide;
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   Bool_t set_center=kFALSE;
-  if(center==-1){
+  if(center==-1) {
     set_center=kTRUE;
-    if(!(gROOT->FindObject(histname))) {
-      printf("Histogram %s not found!\n",histname);
-      return;
-    }
-    TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
     center=hist1->GetMean();
   }
   gfit(histname,center-wide,center+wide,option);
@@ -2175,6 +2181,53 @@ void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
 	break;
       }
   }
+}
+Float_t gratio=0;
+void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option="W")
+{//fit a quadratic given a center and a width, automatically calculated about the mean
+  if(!(gROOT->FindObject(histname))) {
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
+ 
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+ 
+  if(center==-1) {
+    TSpectrum *spectrum=new TSpectrum();
+    Float_t *positions;//moved * before variable name
+    spectrum->Search(hist1);//,sigma,option,threshold);
+    positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+    center=positions[0];
+
+  }
+  gfit(histname,center-wide,center+wide,option);
+ 
+    center=gaus->GetParameter(1);
+    gfit(histname,center-wide,center+wide,option);
+     
+  hname=histname;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString tempst="";
+    tempst=hname(i,hname.Length()-i);
+    if(tempst.IsFloat())
+      {
+	det=tempst.Atoi();
+	break;
+      }
+  }
+  Float_t gxmin=0, gxmax=0;
+  gxmin=gaus->GetCurrent()->GetXmin();
+  gxmax=gaus->GetCurrent()->GetXmax();
+  hist1->GetXaxis()->SetRangeUser(gxmin,gxmax);
+  printf("peak spans %f to %f\n",gxmin,gxmax);
+ 
+  Float_t in_peak=0, in_full=0;
+  in_peak=hist1->GetEffectiveEntries();
+  in_full=hist1->GetEntries();
+  gratio=in_peak/in_full;
+  printf("Under peak %f, full %f, ratio %f\n",in_peak,in_full,gratio);
+
+
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
