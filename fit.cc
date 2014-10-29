@@ -2226,7 +2226,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
   in_full=hist1->GetEntries();
   gratio=in_peak/in_full;
   printf("Under peak %f, full %f, ratio %f\n",in_peak,in_full,gratio);
-
+  hist1->GetXaxis()->SetRangeUser(gxmin-wide,gxmax+wide);
 
 }
 
@@ -2577,6 +2577,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
 void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
 {//adapted from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  Float_t a=0,b=0,c=0,d=0; 
   Float_t p0=0,p1=0,p2=0;
   
   hname=histin;
@@ -3436,6 +3437,63 @@ void peakfit(Char_t *histin, Char_t *filename, Float_t resolution=2, Double_t si
   fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
   fclose(outfile);
 }
+
+void peakfind(Char_t *histin, Float_t resolution=2, Double_t sigma=3, 
+	     Double_t threshold=0.05, Char_t *option="")
+{//just show the peaks!
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+  hname=histin;
+  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+    TString temp="";
+    temp=hname(i,hname.Length()-i);
+    if(temp.IsFloat())
+      {
+	det=temp.Atoi();
+	break;
+      }
+  }
+
+  cFit->Clear();
+  
+  Float_t *positions;//moved * before variable name
+  
+  Float_t min_space=25;
+  Float_t slope,offset,width;
+  Float_t ein;
+ 
+  Int_t npeaks=0;
+  TSpectrum *spectrum=new TSpectrum();
+ 
+  TH1F *hProj=(TH1F *) gROOT->FindObject(histin);//hInput changed to hProj from here on.
+ 
+  spectrum->SetResolution(resolution);
+  spectrum->Search(hProj,sigma,option,threshold);
+  positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+  npeaks=spectrum->GetNPeaks();
+  cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
+  
+  Float_t sorted[100];
+  sorted[0]=positions[0];//initializes sorted array with a valid position
+  for(Int_t i=0;i<npeaks;i++){
+    if((positions[i])<(sorted[0])){
+      sorted[0]=positions[i];//locates minimum
+    }
+  }
+  for(Int_t i=1;i<npeaks;i++){
+    sorted[i]=hProj->GetXaxis()->GetXmax();//initializes array element with non-minimum
+    for(Int_t j=0;j<npeaks;j++){
+      if(((positions[j])<(sorted[i]))&&((positions[j])>(sorted[i-1])))
+	sorted[i]=positions[j];//locates next-smallest position
+    }
+  }
+  
+  
+  for (Int_t i=0; i<npeaks; i++){
+    printf("Peak %d found at position %f | %f | %f\n",i,positions[i],sorted[i],sorted[i]-sorted[0]);
+  }
+  hProj->Draw();
+   delete spectrum;
+ }
 
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
