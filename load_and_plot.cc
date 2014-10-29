@@ -4329,3 +4329,39 @@ void resplot()
   prop(16,9);
   cFit->SaveAs("figures/run_430_compX2.pdf");
 }
+
+void printruns(Int_t run_start=480)
+{
+  Float_t counts=0;
+  FILE * outfile;
+  outfile=fopen("runs.lst","w");
+  fprintf(outfile,"Run, Anode Coincidences, Time peak, X1, Y1, X2, Y2\n");
+  fclose(outfile);
+  for(Int_t i=run_start;i<481;i++) {
+    hname="output/emma_ana_00";
+    hname+=i;
+    hname+=".root";
+    printf("Input file is %s\n",hname.Data());
+    outfile=fopen("runs.lst","a");
+    TFile *_file0 = TFile::Open(hname.Data());
+    if(_file0) {
+      counts=  hcounts15->GetBinContent(2);
+      printf(" Total anode coincidences is %f\n",counts);
+      gfitcp("hdiffz1",-1,10,"q");
+      fprintf(outfile,"%d, %.1f, %f, ",i,counts,gratio);
+      gfitcp("hsumz3",-1,30,"q");
+      fprintf(outfile,"%f, ",gratio);
+      gfitcp("hsumz4",-1,30,"q");
+      fprintf(outfile,"%f, ",gratio);
+      gfitcp("hsumz5",-1,30,"q");
+      fprintf(outfile,"%f, ",gratio);
+      gfitcp("hsumz6",-1,30,"q");
+      fprintf(outfile,"%f\n",gratio);
+    }
+    else {
+      printf("File %s not found\n",hname.Data());
+      fprintf(outfile,"%d, %.1f, %f, 0, 0, 0, 0\n",i,0,0);
+    }
+    fclose(outfile);
+  }
+}
