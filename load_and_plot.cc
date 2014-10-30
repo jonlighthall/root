@@ -4278,16 +4278,19 @@ void getressum(Char_t *hsum, Char_t *hcorrelation, Float_t coef_x=1., Float_t co
   printf("The square of one half the calculated sum of the variances is %f (full)\n",TMath::Power((TMath::Power(hist1->GetStdDev(),2)-2*coef_x*coef_y*covar)/2.,0.5));
 }
 
-void grantplot()
+void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1)
 {
   //set canvas appearence
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   gStyle->SetOptDate(0);
   gStyle->SetOptStat(0);
-  cFit->SetLogz();
+  cFit->SetLogz(set_log);
  
   //set hitogram appearence
-  hhitc0->Rebin2D(4,4);
+  Float_t nbins=hhitc0->GetNbinsX();
+  Float_t set_bins=375;
+  Float_t rebin=nbins/set_bins;
+  hhitc0->Rebin2D(rebin,rebin);
   TH2F * hOutput1=(TH2F *) gROOT->FindObject("hhitc0");
   hOutput1->SetYTitle("Vertical Position (mm)");
   //hOutput1->GetYaxis()->CenterTitle(1);
@@ -4299,26 +4302,34 @@ void grantplot()
   shadowzc("hhitc0",z_A1); //set line spans
   dr("hhitc0"); //redraw histogram to clear lines
   maskz(z_A1,1);
-  y_cal=27-.85;  //change position lines
-  shieldz(z_A1,1,4);
-    
+  y_cal=27+shift;  //change position lines
+  if(set_log)
+    shieldz(z_A1,1,4);
+  else
+    shieldz(z_A1,1,2);
   prop(1);
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.pdf");
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.eps");
   
-  //log-scale plot
+  if(plots>1) {
+  //plot with scale
   cFit->SetRightMargin(0.15);
   hOutput1->SetZTitle("Counts per 0.032 mm^{2}");
+  hOutput1->SetZTitle("Counts per 0.128 mm^{2}");
   hOutput1->GetZaxis()->SetTitleOffset(1.25);
   //hOutput1->GetZaxis()->CenterTitle(1);
   hOutput1->Draw("col");
   hOutput1->Draw("colz");
   y_cal=27;  //change position lines
   maskz(z_A1,1);
-  y_cal=27-.85;  //change position lines
-  shieldz(z_A1,1,4);
+  y_cal=27+shift;  //change position lines
+  if(set_log)
+    shieldz(z_A1,1,4);
+  else 
+    shieldz(z_A1,1,2);
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.pdf");
   cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.eps");
+  }
 }
 
 void resplot()
