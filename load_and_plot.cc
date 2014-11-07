@@ -1611,6 +1611,15 @@ void plothlines(Float_t edge1=0., Float_t edge2=0., Float_t edge3=0.,
   }
 }
 
+void plotline(Float_t xmin=0,Float_t ymin=0,Float_t xmax=10,Float_t ymax=10,Int_t color=1)
+{
+  TLine *line = new TLine(xmin,ymin,xmax,ymax);
+  line->SetLineStyle(2);//dashed
+  line->SetLineWidth(2);
+  line->SetLineColor(color);
+  line->Draw();
+}
+
 void loadPSDsource()
 {//works with psd_analyze.cc
   _filename0=new TFile("PSD/run10.root");
@@ -4341,7 +4350,7 @@ void resplot()
   cFit->SaveAs("figures/run_430_compX2.pdf");
 }
 
-void printruns(Int_t run_start=480)
+void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
 {
   Float_t counts=0;
   FILE * outfile;
@@ -4368,6 +4377,23 @@ void printruns(Int_t run_start=480)
       fprintf(outfile,"%f, ",gratio);
       gfitcp("hsumz6",-1,30,"q");
       fprintf(outfile,"%f\n",gratio);
+      if(plots) {
+	plotall("hxx");
+	hname="figures/run_";
+	hname+=i;
+	hname+="_hxx.pdf";	
+	cFit->SaveAs(hname.Data());
+	plotall("hdiffz");
+	hname="figures/run_";
+	hname+=i;
+	hname+="_hdiffz.pdf";	
+	cFit->SaveAs(hname.Data());
+	plotall("htsum");
+	hname="figures/run_";
+	hname+=i;
+	hname+="_htsum.pdf";	
+	cFit->SaveAs(hname.Data());
+      }
     }
     else {
       printf("File %s not found\n",hname.Data());
