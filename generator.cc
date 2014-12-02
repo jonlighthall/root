@@ -424,6 +424,9 @@ void clearhists()
 }
 
 Float_t xres=0, yres=0;
+Float_t x_y_ratio=1.50;
+Float_t x2_x1_ratio=1.08;
+Float_t y2_y1_ratio=1.06;
 void setres(Float_t set_xres=0, Float_t set_yres=0)
 {
   xres=set_xres;
@@ -612,12 +615,12 @@ void source(Int_t nevents=5e4, Float_t weight=1, Bool_t set_doprint=kFALSE)
       hxgm[3]->Fill(Y+y_cal);
       hxgm[2]->Fill(X+x_cal);
       hyxgm[1]->Fill(X+x_cal,Y+y_cal);
-      //calculate measured positions with given detector resolution
-      Xr=rxres->Gaus(X,xres);
+      //calculate measured positions with given detector resolution at Det 2
+      Xr=rxres->Gaus(X,xres*x2_x1_ratio);
       hxgmr[2]->Fill(Xr+x_cal,weight);      
       if(((Y<yjunk2l+junk_width2/2)&&(Y>yjunk2l-junk_width2/2))||((Y<yjunk2r+junk_width2/2)&&(Y>yjunk2r-junk_width2/2))) {
        	for (Int_t j=0; j<2; j++) {
-	  Yr=ryres->Gaus(Y,junk_res);
+	  Yr=ryres->Gaus(Y,junk_res*y2_y1_ratio);
 	  hxgmr[3]->Fill(Yr+y_cal,weight);
 	  hyxgmr[1]->Fill(Xr+x_cal,Yr+y_cal);
 	}
@@ -682,7 +685,7 @@ void source(Int_t nevents=5e4, Float_t weight=1, Bool_t set_doprint=kFALSE)
       hxgm[1]->Fill(Y+y_cal);
       hxgm[0]->Fill(X+x_cal);
       hyxgm[0]->Fill(X+x_cal,Y+y_cal);
-      //calculate measured positions with given detector resolution
+      //calculate measured positions with given detector resolution at Det 1
       Xr=rxres->Gaus(X,xres);
       hxgmr[0]->Fill(Xr+x_cal,weight);     
       if(((Y<yjunk1l+junk_width1/2)&&(Y>yjunk1l-junk_width1/2))||((Y<yjunk1r+junk_width1/2)&&(Y>yjunk1r-junk_width1/2))) {
@@ -955,7 +958,7 @@ void shadowzc(Char_t *histin1,Float_t z_plane=0)
 
 void setsim(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
 {
-  setres(set_res,set_res);
+  setres(set_res*x_y_ratio*2/(1+x2_x1_ratio),set_res);
   setbeam(0,0,set_beam,set_beam);
   source(set_events,set_weight);
 }
@@ -1020,7 +1023,7 @@ void compY1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
 }
 void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5)
 {
-  if((xres==set_res)&&(yres==set_res))
+  /* if((xres==set_res)&&(yres==set_res))
     {
       printf("Resolutions match\n");
       if((sigma_x==set_beam)&&(sigma_y==set_beam))
@@ -1028,7 +1031,7 @@ void compX1(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=
       else
 	setsim(set_res,set_beam,set_events);  
     }
-  else
+    else*/
     setsim(set_res,set_beam,set_events);
   dr("hxc0");
   odr("hxgmr0");
@@ -1072,7 +1075,7 @@ void compX(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
 }
 void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1e5, Float_t set_weight=1)
 {
-  if((xres==set_res)&&(yres==set_res))
+  /* if((xres==set_res)&&(yres==set_res))
     {
       printf("Resolutions match\n");
       if((sigma_x==set_beam)&&(sigma_y==set_beam))
@@ -1080,7 +1083,7 @@ void compY(Float_t set_res=0, Float_t set_beam=0.607956845, Float_t set_events=1
       else
 	setsim(set_res,set_beam,set_events,set_weight);  
     }
-  else
+    else*/
     setsim(set_res,set_beam,set_events,set_weight);  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();      
   cFit->Clear();
