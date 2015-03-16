@@ -2189,7 +2189,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
     printf("Histogram %s not found!\n",histname);
     return;
   }
- 
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();   
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
  
   if(center==-1) {
@@ -2198,13 +2198,13 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
     spectrum->Search(hist1);//,sigma,option,threshold);
     positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
     center=positions[0];
-
   }
   gfit(histname,center-wide,center+wide,option);
- 
-    center=gaus->GetParameter(1);
-    gfit(histname,center-wide,center+wide,option);
-     
+  center=gaus->GetParameter(1);
+  wide=gaus->GetParameter(2)*2;
+  //hist1->GetXaxis()->SetRangeUser(center-wide,center+wide);
+  gfit(histname,center-wide,center+wide,option);
+  
   hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
@@ -2219,7 +2219,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
   gxmin=gaus->GetCurrent()->GetXmin();
   gxmax=gaus->GetCurrent()->GetXmax();
   hist1->GetXaxis()->SetRangeUser(gxmin,gxmax);
-  printf("peak spans %f to %f\n",gxmin,gxmax);
+  printf("The peak spans %f to %f\n",gxmin,gxmax);
  
   Float_t in_peak=0, in_full=0;
   in_peak=hist1->GetEffectiveEntries();
