@@ -3941,39 +3941,49 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
   hist1->GetFunction("pol2")->SetLineStyle(1);
   pol2->SetLineColor(2);
   pol2->SetLineStyle(1);
-  
-  
+    
   Float_t a=0,b=0,c=0;
   double temp[12]={};
-  for(int i=0;i<3;i++){
-    temp[i]=pol2->GetParameter(i);
-  }
-  c=temp[0];
-  b=temp[1];
-  a=temp[2];
-  double min[4]={};
-  min[0]=-b/(2*a);
-  printf("Fit range is %f to %f\n",xmin,xmax);
-  printf("Fit range center is %f\n",center1);
-  printf("     Fit minimum is %f\n",min[0]);
+  
+  for(int j=0;j<3;j++) {//iterate center-finding
+    //calcualte fit range based on center and width
+    xmin=center1-width;
+    xmax=center1+width;
+    hist1->Fit("pol2","q","",xmin,xmax);  
 
-  xmin=center2-width;
-  xmax=center2+width;
-  hist1->Fit("pol2","+q","",xmin,xmax);
- 
-  for(int i=0;i<3;i++){
-    temp[i+3]=pol2->GetParameter(i);
+    for(int i=0;i<3;i++){//read in fit parameters and calculate min
+      temp[i]=pol2->GetParameter(i);
+    }
+    c=temp[0];
+    b=temp[1];
+    a=temp[2];
+    double min[4]={};
+    min[0]=-b/(2*a);
+    printf("Fit range is %f to %f\n",xmin,xmax);
+    printf("Fit range center is %f\n",center1);
+    printf("     Fit minimum is %f (%f)\n",min[0],center1-min[0]);
+    
+    //calcualte fit range based on center and width
+    xmin=center2-width;
+    xmax=center2+width;
+    hist1->Fit("pol2","+q","",xmin,xmax);
+    
+    for(int i=0;i<3;i++){//read in fit parameters and calculate min
+      temp[i+3]=pol2->GetParameter(i);
+    }
+    c=temp[3];
+    b=temp[4];
+    a=temp[5];
+    min[1]=-b/(2*a);
+    printf("Fit range is %f to %f\n",xmin,xmax);
+    printf("Fit range center is %f\n",center2);
+    printf("     Fit minimum is %f      (%f)\n",min[1],center2-min[1]);
+    
+    center1=min[0];
+    center2=min[1];
   }
-  c=temp[3];
-  b=temp[4];
-  a=temp[5];
-  min[1]=-b/(2*a);
-  printf("Fit range is %f to %f\n",xmin,xmax);
-  printf("Fit range center is %f\n",center2);
-  printf("     Fit minimum is %f\n",min[1]);
 
   printf("Histogram is %s with title %s.\n",histname,hist1->GetTitle());
-  loadcalm(filename);
   hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
@@ -3985,6 +3995,26 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
       }
   }
   printf("Detector number is %d\n",det);
+ switch(det){
+  case 0:
+    filename="cal/X1.lst";
+    break;
+  case 1:
+    filename="cal/Y1.lst";
+    break;
+  case 2:
+    filename="cal/X2.lst";
+    break;
+  case 3:
+    filename="cal/Y1.lst";
+    break;
+  default:
+    printf("Detector %d not recognized!\n",det);
+    
+    break; 
+ }
+ //printf("Loading calibration file %s...\n",filename);
+ loadcalm(filename);  
   double slope=(mid[1]-mid[0])/(min[1]-min[0]);
   printf(" The difference in the measured minima is %f\n",min[1]-min[0]);
   printf(" slope is %f\n",slope);
@@ -4354,8 +4384,11 @@ void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
 {
   Float_t counts=0;
   FILE * outfile;
+  TPaveText *pt;
+  TText *text;  
+  TString rname="";
   outfile=fopen("runs.lst","w");
-  fprintf(outfile,"Run, Anode Coincidences, Time peak, X1, Y1, X2, Y2\n");
+  fprintf(outfile,"Run, Anode Coincidences, Time width, Time peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
   fclose(outfile);
   for(Int_t i=run_start;i<481;i++) {
     hname="output/emma_ana_00";
@@ -4368,30 +4401,47 @@ void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
       counts=  hcounts15->GetBinContent(2);
       printf(" Total anode coincidences is %f\n",counts);
       gfitcp("hdiffz1",-1,10,"q");
-      fprintf(outfile,"%d, %.1f, %f, ",i,counts,gratio);
+      fprintf(outfile,"%d, %.1f, %f, %f, ",i,counts,gaus->GetParameter(2),gratio);
       gfitcp("hsumz3",-1,30,"q");
-      fprintf(outfile,"%f, ",gratio);
+      fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
       gfitcp("hsumz4",-1,30,"q");
-      fprintf(outfile,"%f, ",gratio);
+      fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
       gfitcp("hsumz5",-1,30,"q");
-      fprintf(outfile,"%f, ",gratio);
+      fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
       gfitcp("hsumz6",-1,30,"q");
-      fprintf(outfile,"%f\n",gratio);
+      fprintf(outfile,"%f, %f\n",gaus->GetParameter(2),gratio);
       if(plots) {
+	rname="";
 	plotall("hxx");
+	prop(4,3);
+	pt = new TPaveText(0.937,0.008,0.988,0.072,"NDC");
+	pt->SetFillColor(0); 
+	pt->SetShadowColor(0);
+	rname+=i;
+	printf("%s",rname.Data());
+	text = pt->AddText(rname.Data());
+	pt->Draw();
 	hname="figures/run_";
 	hname+=i;
 	hname+="_hxx.pdf";	
 	cFit->SaveAs(hname.Data());
 	plotall("hdiffz");
+	pt->Draw();
 	hname="figures/run_";
 	hname+=i;
 	hname+="_hdiffz.pdf";	
 	cFit->SaveAs(hname.Data());
 	plotall("htsum");
+	pt->Draw();
 	hname="figures/run_";
 	hname+=i;
 	hname+="_htsum.pdf";	
+	cFit->SaveAs(hname.Data());
+	plotall("hang");
+	pt->Draw();
+	hname="figures/run_";
+	hname+=i;
+	hname+="_hang.pdf";	
 	cFit->SaveAs(hname.Data());
       }
     }
