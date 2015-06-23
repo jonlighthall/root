@@ -3411,7 +3411,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
     //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
     printf(" Peak %d found at channel %.2f",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.2f wide)\n",gaus->GetParameter(2));
+    printf(" (%.2g wide)\n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
   }
   printf("Average peak width is %f\n",sig_av/npeaks);
@@ -3439,14 +3439,14 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
     slope=hFit->GetFunction("pol1")->GetParameter(1);
     offset=hFit->GetFunction("pol1")->GetParameter(0);
     //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
-    gfitc(hname.Data(),positions[npeaks-1],min_space/2,"+q");
+    //gfitc(hname.Data(),positions[npeaks-1],min_space/2,"+q");
     width=hProj->GetFunction("gaus")->GetParameter(2);
-    cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+    //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
     printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
     printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
     hFit->SetMarkerStyle(2);
-    //hFit->SetMarkerColor(2);
+    hFit->SetMarkerColor(1);
     hFit->SetMarkerSize(3);
     cFit->cd(2);
     hFit->Draw("P");
