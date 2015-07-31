@@ -797,6 +797,8 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	      minY=hInput->GetYaxis()->GetXmin();
 	      maxY=hInput->GetYaxis()->GetXmax();
 	    } 
+	    if((minY==0)&&(log))
+	      minY=0.1;
 	    if(scale==1){
 	      hInput->SetAxisRange(minX,maxX,"X");
 	      hInput->SetAxisRange(minY,maxY,"Y");
@@ -820,11 +822,13 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	    if(maxX==minX){
 	      minX=hProj->GetXaxis()->GetXmin();
 	      maxX=hProj->GetXaxis()->GetXmax();
-	      scale=0;
+	      if(maxY==minY)
+		scale=0;
 	    }
 	   
 	    if(scale==1){
 	      hProj->SetAxisRange(minX,maxX,"X");
+	      hProj->SetAxisRange(minY,maxY,"Y");
 	    }
 	    else{
 	      hProj->SetAxisRange(-1,-1,"X");
@@ -1119,6 +1123,128 @@ void setscale(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_
   hInput->Draw("COL2");
 }
 
+void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_t maxX=0,
+	     Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)
+{//script to replace all of the macros in helios_plottools.cc
+  Int_t col=0,row=0;
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
+  Int_t no=0,no1=0, no2=0; //number of histograms with given name
+  Int_t no0=0;
+  printf("Searching for histograms named %s%s...\n",histin,suffix);
+  for(Int_t i=0;i<65;++i){
+    hname=histin;
+    hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
+    hname+=suffix;//updated to be compatible with poorly named histograms
+    if(gROOT->FindObject(hname.Data())) {
+      no++;
+      if((gROOT->FindObject(hname.Data())->InheritsFrom("TH1F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH1D"))) {
+	no1++;
+	hInput=(TH2F*)gROOT->FindObject(hname.Data());
+	if(hInput->GetEntries()==0){
+	  no0++;
+	  printf(" Histogram %s has no entries.\n",hname.Data());
+	}
+      }
+      if((gROOT->FindObject(hname.Data())->InheritsFrom("TH2F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH2D"))) {
+	no2++;
+	hProj=(TH1F*)gROOT->FindObject(hname.Data());
+	if(hProj->GetEntries()==0){
+	  no0++;
+	  printf(" Histogram %s has no entries.\n",hname.Data());
+	}
+      }
+    }
+  }
+  printf(" Histograms in memory with name %s%s: %d.  1D: %d.  2D: %d.\n",histin,suffix,no,no1,no2);
+  printf(" Histograms with zero entries: %d.\n",no0);
+  if(show_blank)
+    printf("Note: Blank spaces will be left for histograms with zero entries.\n");
+  else
+    no-=no0;
+  
+  if(no!=0){
+    cFit->Clear();
+    printf("Plotting %d histograms with name %s%s...\n",no,histin,suffix);  
+  
+    TPad *pOutput=0;
+    Int_t pno=0;
+    for(int i=0;i<((no1+no2)+1);++i){
+      TString pname="cFit";
+      //      pname+=pno+1;
+      pOutput=(TPad*)gROOT->FindObject(pname.Data());
+         
+      hname=histin;
+      hname+=i;
+      hname+=suffix;     
+ 
+      if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
+	if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) {//if histograms are 2D
+	  hInput=(TH2F*)gROOT->FindObject(hname.Data());
+
+	  if(hInput->GetEntries()>0) {
+	    pno++;
+	    //printf(" Plotting %s\n",hname.Data()); 
+	    if(maxX==minX){//show full range 
+	      minX=hInput->GetXaxis()->GetXmin();
+	      maxX=hInput->GetXaxis()->GetXmax();
+	      scale=0;//added, otherwise assumes all histograms same size
+	    }
+	   
+	    if(maxY==minY){
+	      minY=hInput->GetYaxis()->GetXmin();
+	      maxY=hInput->GetYaxis()->GetXmax();
+	    } 
+	    if(scale==1){
+	      hInput->SetAxisRange(minX,maxX,"X");
+	      hInput->SetAxisRange(minY,maxY,"Y");
+	    }
+	    else{
+	      hInput->SetAxisRange(-1,-1,"X");
+	      hInput->SetAxisRange(-1,-1,"Y");
+	      hInput->GetXaxis()->UnZoom();
+	      hInput->GetYaxis()->UnZoom();
+	    }
+	    if(log)
+	      pOutput->SetLogz();
+	    hInput->Draw("COL2");
+	  }else if(show_blank)pno++;
+	}
+	else{//if histograms are 1-D
+	  hProj=(TH1F*)gROOT->FindObject(hname.Data());
+	  if(hProj->GetEntries()>0) {
+	    pno++;
+	    if(maxX==minX){
+	      minX=hProj->GetXaxis()->GetXmin();
+	      maxX=hProj->GetXaxis()->GetXmax();
+	      if(maxY==minY)
+		scale=0;
+	    }
+	    if((minY==0)&&(log))
+	      minY=0.1;
+	    if(scale==1){
+	      hProj->SetAxisRange(minX,maxX,"X");
+	      hProj->SetAxisRange(minY,maxY,"Y");
+	    }
+	    else{
+	      hProj->SetAxisRange(-1,-1,"X");
+	      hProj->GetXaxis()->UnZoom();
+	    }
+	    if(log)
+	      pOutput->SetLogy();  
+	    hProj->SetLineColor(i+1);
+	    hProj->Draw("same");
+	  }else if(show_blank)pno++;
+	}
+      }
+    }
+  }
+  else{//if only one histogram
+    hname=histin;
+    dr(hname);   
+    //hInput=(TH2F*)gROOT->FindObject(hname.Data());
+    //hInput->Draw("COL2");
+  }
+}
 
 /* 2). Manipulation Utilities----------------------------------------------------------
  *     Utilities for copying, shifting, and scaling histograms.
@@ -2439,17 +2565,25 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     p0=hProf->GetFunction("pol1")->GetParameter(0);
     p1=hProf->GetFunction("pol1")->GetParameter(1);
     Float_t slope=p1;
+    Float_t offset=p0;
     printf("p1 = %7.3f\n",p1);  
     if(p1==0)
-      printf("Fit has no roots\n");
-    else
+      printf("Fit has no roots. Offset is %g.\n",offset);
+    else {
       printf("Fit has root %f\n",-p0/p1);
+      printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+      printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+    }
     if(fabs(p0)<hInput->GetYaxis()->GetBinWidth(1))
       printf("p0 = %7.3f is less than bin width.\n",p0);  
     if(slope<-1)
       printf("Scale XN (x) by %f with slopexy(\"%s\",%f)\n",-slope,histin,(-1/slope));
     else
       printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
+    FILE * outfile;    
+    outfile=fopen("temp_inv.lst","w");
+    fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
+    fclose(outfile);
     break;
   case 2:// adapted from linefit.cc
     //      copied from minfit(), used to find minimum (center) of hEX plots
