@@ -2246,7 +2246,7 @@ void ginfo (void)
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
   printf("Width of peak is %f or %f FWHM\n",sigma,width);
-  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns\n",sigma/5.,width/5.,mean/5.);
+  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./sqrt(2));
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
   gxmin=gaus->GetCurrent()->GetXmin();
@@ -2584,6 +2584,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     outfile=fopen("temp_inv.lst","w");
     fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
     fclose(outfile);
+    printf("y-mean is %f offset is %f\n",hInput->GetMean(2),20750-hInput->GetMean(2));
     break;
   case 2:// adapted from linefit.cc
     //      copied from minfit(), used to find minimum (center) of hEX plots
@@ -3504,6 +3505,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
     cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
     nlist++;
   }
+  printf(" Read in %d peaks from file.\n",nlist);
   if(nlist<=1){
     printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
   }
@@ -3645,9 +3647,10 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
       if(nlist==0)min=energies[nlist];
       if(energies[nlist]>max)max=energies[nlist];
       if(energies[nlist]<min)min=energies[nlist];
-      cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+      cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
       nlist++;
     }
+    printf(" Read in %d peaks from file.\n",nlist);
     if(nlist<=1){
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
     }
@@ -3706,10 +3709,12 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   Float_t sig_av=0;
   for (Int_t i=0; i<npeaks; i++) {
     //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    printf(" Peak %d found at channel %.2f",i,positions[i]);
+    printf(" Peak %2d found at channel %.3f",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.2f wide)\n",gaus->GetParameter(2));
+    printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
+    printf(" (%.5f wide)\n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
+    positions[i]=gaus->GetParameter(1);//is this better!?
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
  
@@ -3738,7 +3743,7 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
     hFit->Draw("P");
  printf("Testing fit:\n");
   for (Int_t i=0; i<npeaks; i++){
-    printf(" Peak %d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+    printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
   }  
   }
   delete spectrum;
@@ -3790,8 +3795,9 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
       if(nlist==0)min=energies[nlist];
       if(energies[nlist]>max)max=energies[nlist];
       if(energies[nlist]<min)min=energies[nlist];
-      cout << "Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+      cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
       nlist++;
+      printf(" Read in %d peaks from file.\n",nlist);
     }
     if(nlist<=1){
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
@@ -4316,6 +4322,88 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
   
 }
 
+void expandcal(Char_t *calfile="calibration.cal",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=4,Int_t start=0)
+{
+  Float_t param[dets][50]; 
+  Int_t errorline=-1;
+  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+  Bool_t fit=kFALSE;
+  for(Int_t i=0;i<dets;i++)
+    for(Int_t j=0;j<size;j++)
+      param[i][j]=0;//initializes all array elements to zero
+  
+  FILE * infile;
+  Int_t k=1;
+  
+  while(!fit&&k<=(size)){
+    infile = fopen (calfile,"r");
+    if(infile!=NULL){
+      for(Int_t i=0;i<dets;i++){
+	for(Int_t j=0;j<k;j++){
+	  fscanf(infile,"%f",&param[i][j]);
+	}
+      }
+      fclose(infile);
+    }
+    else{
+      printf("File is NULL!\n");
+    }
+      
+    if(showtest) printf("Testing array length %d:\n",k);
+      
+    if(param[0][0]==start)
+      fit=kTRUE;
+    else
+      fit=kFALSE;
+    
+    for(Int_t i=0;i<dets;i++){
+      fit=(fit&&(param[i][0]==(i+start)));	
+      if(fit){
+	if(showtest) printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<k;j++){
+	  if(showtest) printf("%7.2f ",param[i][j]);
+	}
+	if(showtest) printf("\n");
+	if((i+1)>errorline)errorline=i+1;
+      }
+    }
+           
+    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+     
+    k++;
+  }
+    
+  if(fit) {   
+    FILE * outfile;
+    if(overwrite)
+      outfile=fopen(calfile,"w");
+    else{
+      outfile=fopen("output.txt","w");
+      printf("Output file is \"output.txt\"\n");
+    }
+    printf("The contents of \"%s\" are approximately:\n",calfile);
+    for(Int_t i=0;i<dets;i++) {
+        for(Int_t l=0;l<3;l++) {
+      
+      fprintf(outfile,"%2.0f ",param[i][0]*3+l);
+      printf("%2.0f ",param[i][0]*3+l);
+      for(Int_t j=1;j<k-1;j++){
+	fprintf(outfile,"%g ",param[i][j]);
+	printf("%5.0f ",param[i][j]);
+      }
+      fprintf(outfile,"\n");
+      printf("\n");
+	}
+    }
+    fclose(outfile);
+  }
+
+  else
+    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  
+}
+
 void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
 {//re-writes calibration constants after testing fit.
   if(detno==-1)
@@ -4415,6 +4503,115 @@ void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *temp
       for(Int_t j=1;j<k-1;j++){
 	fprintf(outfile,"%g ",param[i][j]);
 	printf("%5.0f ",param[i][j]);
+      }
+      fprintf(outfile,"\n");
+      printf("\n");
+    }
+    fclose(outfile);
+  }
+  else
+    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+}
+
+void rewritetempa(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
+{//re-writes calibration constants after testing fit.
+  if(detno==-1)
+    detno=det;
+  printf("Input detector number is %d\n",det);
+  printf("Number of detectors = %d, ",dets);
+  Float_t param[dets][50]; 
+  Int_t errorline=-1;
+  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+  Bool_t fit=kFALSE;
+  for(Int_t i=0;i<dets;i++)
+    for(Int_t j=0;j<size;j++)
+      param[i][j]=0;//initializes all array elements to zero
+  
+  FILE * infile;
+  Int_t k=1;
+  
+  while(!fit&&k<=(size)){
+    infile = fopen (calfile,"r");
+    if(infile!=NULL){
+      for(Int_t i=0;i<dets;i++){
+	for(Int_t j=0;j<k;j++){
+	  fscanf(infile,"%f",&param[i][j]);
+	}
+      }
+      fclose(infile);
+    }
+    else{
+      printf("File is NULL!\n");
+      //for(Int_t l=0;l<size;l++){
+      //	Fit[l]=0;
+    }
+      
+    if(showtest) printf("Testing array length %d:\n",k);
+      
+    if(param[0][0]==start)
+      fit=kTRUE;
+    else
+      fit=kFALSE;
+      
+    for(Int_t i=0;i<dets;i++){
+      fit=(fit&&(param[i][0]==(i+start)));	
+      if(fit){
+	if(showtest) printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<k;j++){
+	  if(showtest) printf("%7.2f ",param[i][j]);
+	}
+	if(showtest) printf("\n");
+	if((i+1)>errorline)errorline=i+1;
+      }
+    }
+           
+    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+     
+    k++;
+  }
+  double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
+  printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
+  double change[2]={0,0};
+  
+  if(fit) {//readin successful   
+    Float_t Fit[10];
+    Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
+    infile = fopen (tempfile,"r");
+    if(infile!=NULL){
+      printf("     The contents of %s are ",tempfile);
+      for(Int_t l=0;l<size;l++) {
+	if(fscanf(infile,"%f, ",&Fit[l])==-1)
+	  Fit[l]=0;
+	if(Fit[l]){//added
+	  if(l<2) change[l]=Fit[l];
+	  param[detno-start][l+1+index]=Fit[l];//note use of index
+	  printf("%9.4f ",param[detno-start][l+1+index]);
+	}
+      }
+      printf("\n");
+      fclose(infile);
+    }
+    else
+      printf("File is NULL!\n");
+
+    double new[2]={old[0],old[1]+change[1]}; 
+    printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
+    param[detno-start][0+1+index]=new[0];
+    param[detno-start][1+1+index]=new[1];
+ 
+    FILE * outfile;
+    if(!overwrite)
+      calfile="output.txt";
+    outfile=fopen(calfile,"w");
+    printf(" Output file is \"%s\"\n",calfile);
+    printf("The contents of \"%s\" are approximately:\n",calfile);
+    for(Int_t i=0;i<dets;i++){
+      fprintf(outfile,"%2.0f ",param[i][0]);
+      printf("%2.0f ",param[i][0]);
+      for(Int_t j=1;j<k-1;j++){
+	fprintf(outfile,"%g ",param[i][j]);
+	printf("%5.5f ",param[i][j]);
       }
       fprintf(outfile,"\n");
       printf("\n");
