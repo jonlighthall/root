@@ -85,7 +85,7 @@ void settime(Bool_t bdisplay=kTRUE)
 void setdisplay()
 {
   setplain();
-  gStyle->SetOptStat("neMi"); //sets what info is displayed in histograms
+  gStyle->SetOptStat("neMiou"); //sets what info is displayed in histograms
   gStyle->SetOptFit(0111); //sets info is displayed in fits
   settime();
   printVer();
