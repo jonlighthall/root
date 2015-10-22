@@ -541,6 +541,17 @@ void tilt(Char_t * histin, Float_t tilt=0.000413, Int_t plot=1)
     cFit->cd(2);
   }
 
+if(plot==3){
+    cFit->Clear();
+    cFit->Divide(1,3);
+    cFit->cd(1);
+    hInput->Draw("col");
+    cFit->cd(2);
+    hOutput->Draw("col");
+    cFit->SetLogz();   
+    cFit->cd(3);
+  }
+
   if(plot>0) hProj->Draw();
   /*
     Float_t mu=12;
@@ -4317,7 +4328,7 @@ void getressum(Char_t *hsum, Char_t *hcorrelation, Float_t coef_x=1., Float_t co
   printf("The square of one half the calculated sum of the variances is %f (full)\n",TMath::Power((TMath::Power(hist1->GetStdDev(),2)-2*coef_x*coef_y*covar)/2.,0.5));
 }
 
-void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1)
+void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1, Int_t test=1)
 {
   //set canvas appearence
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
@@ -4340,15 +4351,23 @@ void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1)
   //draw overlays
   shadowzc("hhitc0",z_A1); //set line spans
   dr("hhitc0"); //redraw histogram to clear lines
-  maskz(z_A1,1);
+  //if(test==1)
+    maskz(z_A1,1);
   y_cal=27+shift;  //change position lines
   if(set_log)
     shieldz(z_A1,1,4);
   else
     shieldz(z_A1,1,2);
   prop(1);
-  cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.pdf");
-  cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.eps");
+  if(test==1) {
+    cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.pdf");
+    cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2.eps");
+  }
+  else {
+    cFit->SaveAs("figures/run_606_hhitc0_overlay_c_log2.pdf");
+    cFit->SaveAs("figures/run_606_hhitc0_overlay_c_log2.jpg");
+  }
+    
   
   if(plots>1) {
   //plot with scale
@@ -4380,7 +4399,7 @@ void resplot()
   cFit->SaveAs("figures/run_430_compX2.pdf");
 }
 
-void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
+void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
 {
   Float_t counts=0;
   FILE * outfile;
@@ -4388,20 +4407,46 @@ void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
   TText *text;  
   TString rname="";
   outfile=fopen("runs.lst","w");
+  fprintf(outfile,"generated with the command printruns(%d,%d,%s)\n",run_start,run_stop,plots ? "kTRUE" : "kFALSE");
   fprintf(outfile,"Run, Anode Coincidences, Time width, Time peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
+fprintf(outfile,"Run, Anode Coincidences, Time B width; Time B peak; Time M width; Time M peak; Time T width; Time T peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
   fclose(outfile);
-  for(Int_t i=run_start;i<481;i++) {
+  
+  FILE * outfile2;
+  outfile2=fopen("nevents.lst","w");
+  fprintf(outfile2,"generated with the command printruns(%d,%d,%s)\n",run_start,run_stop,plots ? "kTRUE" : "kFALSE");
+  if(run_start==397)
+    fprintf(outfile2,"const Int_t nevents[%d] = {",run_stop-run_start+1);
+  fclose(outfile2);
+  
+  for(Int_t i=run_start;i<(run_stop+1);i++) {
     hname="output/emma_ana_00";
     hname+=i;
     hname+=".root";
     printf("Input file is %s\n",hname.Data());
     outfile=fopen("runs.lst","a");
+    outfile2=fopen("nevents.lst","a");
     TFile *_file0 = TFile::Open(hname.Data());
     if(_file0) {
-      counts=  hcounts15->GetBinContent(2);
+      counts=  hcounts15->GetBinContent(1);//added for 2015 tests
+      counts+=  hcounts15->GetBinContent(2);
+      counts+=  hcounts15->GetBinContent(3);
       printf(" Total anode coincidences is %f\n",counts);
-      gfitcp("hdiffz1",-1,10,"q");
-      fprintf(outfile,"%d, %.1f, %f, %f, ",i,counts,gaus->GetParameter(2),gratio);
+      if(i<481) {
+	gfitcp("hdiffz1",-1,10,"q");
+	fprintf(outfile,"%d, %.1f, %f, %f, ",i,counts,gaus->GetParameter(2),gratio);
+	fprintf(outfile2,"%.0f",counts);
+      }
+      else {
+	fprintf(outfile,"%d, %.1f, ",i,counts);
+	fprintf(outfile2,"%.0f",counts);	
+	gfitcp("htimez0",-1,10,"q");
+	fprintf(outfile,"%f; %f; ",gaus->GetParameter(2),gratio);
+	gfitcp("htimez4",-1,10,"q");
+	fprintf(outfile,"%f; %f; ",gaus->GetParameter(2),gratio);
+	gfitcp("htimez8",-1,10,"q");
+	fprintf(outfile,"%f; %f, ",gaus->GetParameter(2),gratio);
+      }
       gfitcp("hsumz3",-1,30,"q");
       fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
       gfitcp("hsumz4",-1,30,"q");
@@ -4448,7 +4493,13 @@ void printruns(Int_t run_start=480, Bool_t plots=kFALSE)
     else {
       printf("File %s not found\n",hname.Data());
       fprintf(outfile,"%d, %.1f, %f, 0, 0, 0, 0\n",i,0,0);
+      fprintf(outfile2,"0");
     }
+    if(i==run_stop)
+      fprintf(outfile2,"};");
+    else
+      fprintf(outfile2,", ");
     fclose(outfile);
+    fclose(outfile2);
   }
 }
