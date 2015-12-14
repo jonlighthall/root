@@ -4503,3 +4503,49 @@ fprintf(outfile,"Run, Anode Coincidences, Time B width; Time B peak; Time M widt
     fclose(outfile2);
   }
 }
+
+//-----------------------------------------------------------------------------------------------
+//macros for the EMMA IC-------------------------------------------------------------------------
+
+void Gaus(double mean1, double sigma1, double mean2, double sigma2)
+{//creates a 2D histogram of a gaussian distribution with given means and widths
+            gROOT->SetStyle("Plain");
+            gStyle->SetPalette(1);
+            gStyle->SetOptStat(0);
+            gStyle->SetOptTitle(0);
+
+            gRandom = new TRandom3();
+
+            TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+
+            for (int i = 0; i < 10000; ++i)
+              hist->Fill(gRandom->Gaus(mean1, sigma1),gRandom->Gaus(mean2, sigma2));
+
+            TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+
+            // hist->Fit("gauss");
+            hist->Draw();
+            hist->SaveAs("fit.eps");
+}
+
+void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, double smear) {
+  
+            gROOT->SetStyle("Plain");
+            gStyle->SetPalette(1);
+            gStyle->SetOptStat(0);
+            gStyle->SetOptTitle(0);
+
+            gRandom = new TRandom3();
+
+            TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+
+            for (int i = 0; i < 10000; ++i)
+              hist->Fill(gRandom->Gaus(mean1, sigma1)+gRandom->Gaus(0,2.3548*smear),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,2.3548*smear));
+
+
+            TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+
+            // hist->Fit("gauss");
+            hist->Draw();
+            hist->SaveAs("fit.eps");
+}
