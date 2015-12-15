@@ -198,6 +198,30 @@ void mkhist2(Char_t *histin="h", Int_t bins=3, Float_t size=10)
   h->Draw("colz");
 }
 
+void mkhist2d(Char_t *histin="h", Int_t x_bins=3, Float_t x_low=0, Float_t x_high=10, Int_t y_bins=3, Float_t y_low=0, Float_t y_high=10,Bool_t fill_test=kTRUE)
+{//creates a generic 2D histogram 
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  hname=histin;
+  if ((TH2F *) gROOT->FindObject(hname.Data())) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  } 
+
+  h = new TH2F(hname.Data(),"Generic Histogram",x_bins,x_low,x_high,y_bins,y_low,y_high);
+  if(fill_test) {
+    Float_t x_size=x_high-x_low;
+    Float_t y_size=y_high-y_low;
+    h->Fill(3,3,1);
+    h->Fill(8,8,2);
+    h->Fill(-x_bins,0.5*y_size,1);//underfill
+    h->Fill(1.2*x_size,0.8*y_size,1);//overfill
+    h->Fill(8,8,1);//second entry in same bin
+    h->Fill((x_size/x_bins)/2+(x_size/x_bins)*(x_bins-1),(y_size/y_bins)/2,10);
+  h->Fill((x_size/y_bins)/2,(y_size/y_bins)/2+(y_size/y_bins)*(y_bins-1),5);  
+  }
+  h->Draw("colz");
+}
+
 //-------------------------------------------------------------------------------------
 // 1d). Histogram Information----------------------------------------------------------
 void listall(Int_t option=0)
@@ -2245,7 +2269,7 @@ void ginfo (void)
   sigma=gaus->GetParameter(2);
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
-  printf("Width of peak is %f or %f FWHM\n",sigma,width);
+  printf("Width of peak is %f or %f FWHM (%f%%)\n",sigma,width,width/mean*100);
   printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./sqrt(2));
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
