@@ -4597,7 +4597,7 @@ void plotgaus(Int_t bins=1000, Float_t x_low=48, Float_t x_high=72, Float_t y_lo
    Int_t steps=10000;
    mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1); //Rb
   mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2); //Sr
-  mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,3); //Y
+  mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4); //Y
 
   hist1->SetTitle("EMMA IC");
   hist1->GetXaxis()->SetTitle("E (MeV)");
