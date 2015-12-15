@@ -4434,27 +4434,27 @@ void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
       counts+=  hcounts15->GetBinContent(3);
       printf(" Total anode coincidences is %f\n",counts);
       if(i<481) {
-	gfitcp("hdiffz1",-1,10,"q");
+	gfitcp("hdiffz1",-1,10,2,0.05,"q");
 	fprintf(outfile,"%d, %.1f, %f, %f, ",i,counts,gaus->GetParameter(2),gratio);
 	fprintf(outfile2,"%.0f",counts);
       }
       else {
 	fprintf(outfile,"%d, %.1f, ",i,counts);
 	fprintf(outfile2,"%.0f",counts);	
-	gfitcp("htimez0",-1,10,"q");
+	gfitcp("htimez0",-1,10,2,0.05,"q");
 	fprintf(outfile,"%f; %f; ",gaus->GetParameter(2),gratio);
-	gfitcp("htimez4",-1,10,"q");
+	gfitcp("htimez4",-1,10,2,0.05,"q");
 	fprintf(outfile,"%f; %f; ",gaus->GetParameter(2),gratio);
-	gfitcp("htimez8",-1,10,"q");
+	gfitcp("htimez8",-1,10,2,0.05,"q");
 	fprintf(outfile,"%f; %f, ",gaus->GetParameter(2),gratio);
       }
-      gfitcp("hsumz3",-1,30,"q");
+      gfitcp("hsumz3",-1,30,2,0.05,"q");
       fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
-      gfitcp("hsumz4",-1,30,"q");
+      gfitcp("hsumz4",-1,30,2,0.05,"q");
       fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
-      gfitcp("hsumz5",-1,30,"q");
+      gfitcp("hsumz5",-1,30,2,0.05,"q");
       fprintf(outfile,"%f, %f, ",gaus->GetParameter(2),gratio);
-      gfitcp("hsumz6",-1,30,"q");
+      gfitcp("hsumz6",-1,30,2,0.05,"q");
       fprintf(outfile,"%f, %f\n",gaus->GetParameter(2),gratio);
       if(plots) {
 	rname="";
@@ -4602,9 +4602,12 @@ void plotgaus(Int_t bins=100, Float_t x_low=48, Float_t x_high=72, Float_t y_low
   hist3->SetMarkerSize(0.3);
 
    Int_t steps=10000;
-   mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,0,bins); //Rb
-   mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,0,bins); //Sr
-   mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4,0,bins); //Y
+   //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,0,bins); //Rb
+   //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,0,bins); //Sr
+   //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4,0,bins); //Y
+   mkgaus2d("hist1",steps/10, 64.120, 0, 39.585, 0,1,0.036,bins); //Rb
+   mkgaus2d("hist2",steps,58.211, 0, 41.763, 0,2,0.036,bins); //Sr
+   mkgaus2d("hist3",steps/10,57.472, 0, 41.526, 0,4,0.036,bins); //Y
 
   hist1->SetTitle("EMMA IC");
   hist1->GetXaxis()->SetTitle("E (MeV)");
