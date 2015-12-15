@@ -2280,6 +2280,7 @@ void ginfo (void)
   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
+  printf("file contents: %g, %g, %g\n",mean,sigma,grange/sigma);
   fprintf(outfile,"%g, %g, %g\n",mean,sigma,grange/sigma);
   fclose(outfile);
 }
@@ -2333,7 +2334,7 @@ void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
   }
 }
 Float_t gratio=0;
-void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option="W")
+void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2, Float_t threshold=0.05, Char_t *fit_option="W")
 {//fit a quadratic given a center and a width, automatically calculated about the mean
   if(!(gROOT->FindObject(histname))) {
     printf("Histogram %s not found!\n",histname);
@@ -2345,15 +2346,15 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
   if(center==-1) {
     TSpectrum *spectrum=new TSpectrum();
     Float_t *positions;//moved * before variable name
-    spectrum->Search(hist1);//,sigma,option,threshold);
+    spectrum->Search(hist1,sigma);//,sigma,option,threshold);
     positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
     center=positions[0];
   }
-  gfit(histname,center-wide,center+wide,option);
+  gfit(histname,center-wide,center+wide,fit_option);
   center=gaus->GetParameter(1);
   wide=gaus->GetParameter(2)*2;
   //hist1->GetXaxis()->SetRangeUser(center-wide,center+wide);
-  gfit(histname,center-wide,center+wide,option);
+  gfit(histname,center-wide,center+wide,fit_option);
   
   hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
