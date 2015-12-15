@@ -4529,7 +4529,7 @@ void Gaus(double mean1, double sigma1, double mean2, double sigma2)
   hist->SaveAs("fit.eps");
 }
 
-void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0)
+void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0,Int_t bins=1000)
 {//creates a 2D histogram of a gaussian distribution with given means and widths
 
   gRandom = new TRandom3();
@@ -4540,7 +4540,7 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
   else {
-  Int_t bins=1000;
+  
   TH2F * hist = new TH2F(hname.Data(),hname.Data(),bins,mean1-(5*sigma1),mean1+(5*sigma1),bins,mean2-(5*sigma2),mean2+(5*sigma2));
   //TH2F * hist = new TH2F(hname.Data(), hname.Data(), bins, 0.,100.,bins,0.,100.);
   }
@@ -4588,16 +4588,23 @@ void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, doubl
   hist->SaveAs("fit.eps");
 }
 
-void plotgaus(Int_t bins=1000, Float_t x_low=48, Float_t x_high=72, Float_t y_low=36, Float_t y_high=46)
+void plotgaus(Int_t bins=100, Float_t x_low=48, Float_t x_high=72, Float_t y_low=36, Float_t y_high=46)
 {
   mkhist2d("hist1", bins,x_low,x_high,bins,y_low,y_high,kFALSE);
   hist1->Clone("hist2");
   hist1->Clone("hist3");
 
+  hist1->SetMarkerStyle(20);
+  hist2->SetMarkerStyle(20);
+  hist3->SetMarkerStyle(20);
+  hist1->SetMarkerSize(0.3);  
+  hist2->SetMarkerSize(0.3);
+  hist3->SetMarkerSize(0.3);
+
    Int_t steps=10000;
-   mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1); //Rb
-  mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2); //Sr
-  mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4); //Y
+   mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,0,bins); //Rb
+   mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,0,bins); //Sr
+   mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4,0,bins); //Y
 
   hist1->SetTitle("EMMA IC");
   hist1->GetXaxis()->SetTitle("E (MeV)");
