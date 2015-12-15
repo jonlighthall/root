@@ -541,7 +541,7 @@ void tilt(Char_t * histin, Float_t tilt=0.000413, Int_t plot=1)
     cFit->cd(2);
   }
 
-if(plot==3){
+  if(plot==3){
     cFit->Clear();
     cFit->Divide(1,3);
     cFit->cd(1);
@@ -4006,7 +4006,7 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
       }
   }
   printf("Detector number is %d\n",det);
- switch(det){
+  switch(det){
   case 0:
     filename="cal/X1.lst";
     break;
@@ -4023,9 +4023,9 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
     printf("Detector %d not recognized!\n",det);
     
     break; 
- }
- //printf("Loading calibration file %s...\n",filename);
- loadcalm(filename);  
+  }
+  //printf("Loading calibration file %s...\n",filename);
+  loadcalm(filename);  
   double slope=(mid[1]-mid[0])/(min[1]-min[0]);
   printf(" The difference in the measured minima is %f\n",min[1]-min[0]);
   printf(" slope is %f\n",slope);
@@ -4259,7 +4259,8 @@ void qfitc2mls(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t wid
   if ((TH1F *) gROOT->FindObject(hname)) {
     gROOT->FindObject(hname)->Delete();  
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }hist1->Clone(hname.Data());
+  }
+  hist1->Clone(hname.Data());
 
   TH1F *hist2=(TH1F*) gROOT->FindObject(hname.Data());
   printf("Hisogram is %s with title %s.\n",histname,hist1->GetTitle());
@@ -4352,7 +4353,7 @@ void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1, Int_t test=
   shadowzc("hhitc0",z_A1); //set line spans
   dr("hhitc0"); //redraw histogram to clear lines
   //if(test==1)
-    maskz(z_A1,1);
+  maskz(z_A1,1);
   y_cal=27+shift;  //change position lines
   if(set_log)
     shieldz(z_A1,1,4);
@@ -4370,23 +4371,23 @@ void grantplot(Float_t shift=-0.85, Bool_t set_log=1, Int_t plots=1, Int_t test=
     
   
   if(plots>1) {
-  //plot with scale
-  cFit->SetRightMargin(0.15);
-  hOutput1->SetZTitle("Counts per 0.032 mm^{2}");
-  hOutput1->SetZTitle("Counts per 0.128 mm^{2}");
-  hOutput1->GetZaxis()->SetTitleOffset(1.25);
-  //hOutput1->GetZaxis()->CenterTitle(1);
-  hOutput1->Draw("col");
-  hOutput1->Draw("colz");
-  y_cal=27;  //change position lines
-  maskz(z_A1,1);
-  y_cal=27+shift;  //change position lines
-  if(set_log)
-    shieldz(z_A1,1,4);
-  else 
-    shieldz(z_A1,1,2);
-  cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.pdf");
-  cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.eps");
+    //plot with scale
+    cFit->SetRightMargin(0.15);
+    hOutput1->SetZTitle("Counts per 0.032 mm^{2}");
+    hOutput1->SetZTitle("Counts per 0.128 mm^{2}");
+    hOutput1->GetZaxis()->SetTitleOffset(1.25);
+    //hOutput1->GetZaxis()->CenterTitle(1);
+    hOutput1->Draw("col");
+    hOutput1->Draw("colz");
+    y_cal=27;  //change position lines
+    maskz(z_A1,1);
+    y_cal=27+shift;  //change position lines
+    if(set_log)
+      shieldz(z_A1,1,4);
+    else 
+      shieldz(z_A1,1,2);
+    cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.pdf");
+    cFit->SaveAs("figures/run_430_hhitc0_overlay_c_log2z.eps");
   }
 }
 
@@ -4409,7 +4410,7 @@ void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
   outfile=fopen("runs.lst","w");
   fprintf(outfile,"generated with the command printruns(%d,%d,%s)\n",run_start,run_stop,plots ? "kTRUE" : "kFALSE");
   fprintf(outfile,"Run, Anode Coincidences, Time width, Time peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
-fprintf(outfile,"Run, Anode Coincidences, Time B width; Time B peak; Time M width; Time M peak; Time T width; Time T peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
+  fprintf(outfile,"Run, Anode Coincidences, Time B width; Time B peak; Time M width; Time M peak; Time T width; Time T peak, X1 width, X1, Y1 width, Y1, X2 width, X2, Y2 width, Y2\n");
   fclose(outfile);
   
   FILE * outfile2;
@@ -4509,43 +4510,99 @@ fprintf(outfile,"Run, Anode Coincidences, Time B width; Time B peak; Time M widt
 
 void Gaus(double mean1, double sigma1, double mean2, double sigma2)
 {//creates a 2D histogram of a gaussian distribution with given means and widths
-            gROOT->SetStyle("Plain");
-            gStyle->SetPalette(1);
-            gStyle->SetOptStat(0);
-            gStyle->SetOptTitle(0);
+  gROOT->SetStyle("Plain");
+  gStyle->SetPalette(1);
+  gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
 
-            gRandom = new TRandom3();
+  gRandom = new TRandom3();
 
-            TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+  TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
 
-            for (int i = 0; i < 10000; ++i)
-              hist->Fill(gRandom->Gaus(mean1, sigma1),gRandom->Gaus(mean2, sigma2));
+  for (int i = 0; i < 10000; ++i)
+    hist->Fill(gRandom->Gaus(mean1, sigma1),gRandom->Gaus(mean2, sigma2));
 
-            TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
-            // hist->Fit("gauss");
-            hist->Draw();
-            hist->SaveAs("fit.eps");
+  // hist->Fit("gauss");
+  hist->Draw();
+  hist->SaveAs("fit.eps");
+}
+
+void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0)
+{//creates a 2D histogram of a gaussian distribution with given means and widths
+
+  gRandom = new TRandom3();
+
+  hname=histin; 
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    //gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+  else {
+  Int_t bins=1000;
+  TH2F * hist = new TH2F(hname.Data(),hname.Data(),bins,mean1-(5*sigma1),mean1+(5*sigma1),bins,mean2-(5*sigma2),mean2+(5*sigma2));
+  //TH2F * hist = new TH2F(hname.Data(), hname.Data(), bins, 0.,100.,bins,0.,100.);
+  }
+   hInput=(TH2F*)gROOT->FindObject(hname.Data());
+   hInput->SetMarkerColor(color);
+
+   if(blur==0) 
+     printf("No blurring applied.\n");
+   else
+     printf("%f%% blurring applied.\n",blur*100);
+   blur/=2.354820045;
+   for (int i = 0; i < points; ++i) {
+     if(blur==0) 
+       hInput->Fill(gRandom->Gaus(mean1,sigma1),gRandom->Gaus(mean2,sigma2));
+     else 
+       hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+   }
+
+   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+   //  // hist->Fit("gauss");
+   //if(bins<1000)
+    hInput->Draw();
+  //  // hist->SaveAs("fit.eps");
 }
 
 void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, double smear) {
   
-            gROOT->SetStyle("Plain");
-            gStyle->SetPalette(1);
-            gStyle->SetOptStat(0);
-            gStyle->SetOptTitle(0);
+  gROOT->SetStyle("Plain");
+  gStyle->SetPalette(1);
+  gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
 
-            gRandom = new TRandom3();
+  gRandom = new TRandom3();
 
-            TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+  TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
 
-            for (int i = 0; i < 10000; ++i)
-              hist->Fill(gRandom->Gaus(mean1, sigma1)+gRandom->Gaus(0,2.3548*smear),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,2.3548*smear));
+  for (int i = 0; i < 10000; ++i)
+    hist->Fill(gRandom->Gaus(mean1, sigma1)+gRandom->Gaus(0,2.3548*smear),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,2.3548*smear));
 
 
-            TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
-            // hist->Fit("gauss");
-            hist->Draw();
-            hist->SaveAs("fit.eps");
+  // hist->Fit("gauss");
+  hist->Draw();
+  hist->SaveAs("fit.eps");
+}
+
+void plotgaus(Int_t bins=1000, Float_t x_low=48, Float_t x_high=72, Float_t y_low=36, Float_t y_high=46)
+{
+  mkhist2d("hist1", bins,x_low,x_high,bins,y_low,y_high,kFALSE);
+  hist1->Clone("hist2");
+  hist1->Clone("hist3");
+
+   Int_t steps=10000;
+   mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1); //Rb
+  mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2); //Sr
+  mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,3); //Y
+
+  hist1->SetTitle("EMMA IC");
+  hist1->GetXaxis()->SetTitle("E (MeV)");
+  hist1->GetYaxis()->SetTitle("#\DeltaE (MeV)");
+  hist1->Draw();
+  hist2->Draw("same");
+  hist3->Draw("same");
 }
