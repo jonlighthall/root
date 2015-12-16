@@ -2263,7 +2263,7 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
   }*/
 
 void ginfo (void)
-{
+{//prints generic information about a gaussian fit and saves it to a file
   Float_t sigma=0, width=0, mean=0;
   Float_t gxmin=0, gxmax=0, grange=0; 
   sigma=gaus->GetParameter(2);
