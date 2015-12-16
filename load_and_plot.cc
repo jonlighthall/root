@@ -4555,8 +4555,24 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
    for (int i = 0; i < points; ++i) {
      if(blur==0) 
        hInput->Fill(gRandom->Gaus(mean1,sigma1),gRandom->Gaus(mean2,sigma2));
-     else 
-       hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+     else { 
+       if(sigma1==0) {
+	 if(sigma2==0) //both 0
+	   hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
+			gRandom->Gaus(mean2,mean2*blur));
+	 else //only sigma1=0
+	   hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
+			gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+       }
+       else {//sigma1 non-zero
+	 if(sigma2==0)//only sigma2=0
+	   hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
+			gRandom->Gaus(mean2, mean2*blur));
+	 else //neither
+	   hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
+			gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+       }
+     }
    }
 
    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
@@ -4594,14 +4610,16 @@ void plotgaus(Int_t bins=100, Float_t x_low=48, Float_t x_high=72, Float_t y_low
   hist1->Clone("hist2");
   hist1->Clone("hist3");
 
-  hist1->SetMarkerStyle(20);
-  hist2->SetMarkerStyle(20);
-  hist3->SetMarkerStyle(20);
-  hist1->SetMarkerSize(0.3);  
-  hist2->SetMarkerSize(0.3);
-  hist3->SetMarkerSize(0.3);
+  Int_t mark_style=20;
+  hist1->SetMarkerStyle(mark_style);
+  hist2->SetMarkerStyle(mark_style);
+  hist3->SetMarkerStyle(mark_style);
+  Float_t mark_size=0.4;
+  hist1->SetMarkerSize(mark_size);  
+  hist2->SetMarkerSize(mark_size);
+  hist3->SetMarkerSize(mark_size);
 
-   Int_t steps=10000;
+   Int_t steps=100000;
    //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,0,bins); //Rb
    //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,0,bins); //Sr
    //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4,0,bins); //Y
