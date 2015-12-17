@@ -4536,8 +4536,7 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
 
   hname=histin; 
   if ((TH1F *) gROOT->FindObject(hname)) {
-    //gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    printf("Histogram \"%s\" exists. ",hname.Data());
   }
   else {
   
@@ -4547,6 +4546,7 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
    hInput=(TH2F*)gROOT->FindObject(hname.Data());
    hInput->SetMarkerColor(color);
 
+   printf("Distribution is %f wide (x) and %f wide (y)",sigma1/mean1,sigma2/mean2);
    if(blur==0) 
      printf("No blurring applied.\n");
    else
@@ -4604,12 +4604,13 @@ void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, doubl
   hist->SaveAs("fit.eps");
 }
 
-void plotgaus(Int_t bins=100, Float_t x_low=48, Float_t x_high=72, Float_t y_low=36, Float_t y_high=46)
+void plotgaus(Int_t bins=100, Int_t counts=10000, Bool_t set_strag=kTRUE, Float_t det_res=0.036, Float_t x_low=50, Float_t x_high=72, Float_t y_low=35, Float_t y_high=48)
 {
   mkhist2d("hist1", bins,x_low,x_high,bins,y_low,y_high,kFALSE);
-  hist1->Clone("hist2");
-  hist1->Clone("hist3");
-
+  mkhist2d("hist2", bins,x_low,x_high,bins,y_low,y_high,kFALSE);
+  mkhist2d("hist3", bins,x_low,x_high,bins,y_low,y_high,kFALSE);
+  printf("Axis proportion scale is %f\n",(x_high-x_low)/(y_high-y_low));
+  
   Int_t mark_style=20;
   hist1->SetMarkerStyle(mark_style);
   hist2->SetMarkerStyle(mark_style);
@@ -4619,18 +4620,58 @@ void plotgaus(Int_t bins=100, Float_t x_low=48, Float_t x_high=72, Float_t y_low
   hist2->SetMarkerSize(mark_size);
   hist3->SetMarkerSize(mark_size);
 
-   Int_t steps=100000;
-   //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,0,bins); //Rb
-   //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,0,bins); //Sr
-   //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880,4,0,bins); //Y
-   mkgaus2d("hist1",steps/10, 64.120, 0, 39.585, 0,1,0.036,bins); //Rb
-   mkgaus2d("hist2",steps,58.211, 0, 41.763, 0,2,0.036,bins); //Sr
-   mkgaus2d("hist3",steps/10,57.472, 0, 41.526, 0,4,0.036,bins); //Y
+   Int_t steps=counts;
 
+   Int_t strag=0;
+   if(set_strag)
+     strag=1;
+   //   Int_t blur=0;
+   //if(det_res)
+   //  blur=0.036;
+
+   //no straggling
+   //mkgaus2d("hist1",steps/10, 64.120, 0, 39.585, 0,1,det_res,bins); //Rb
+   //mkgaus2d("hist2",steps,58.211, 0, 41.763, 0,2,det_res,bins); //Sr
+   //mkgaus2d("hist3",steps/10,57.472, 0, 41.526, 0,4,det_res,bins); //Y
+
+   //calculated straggling (supposed to be 3.6%)
+   //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,det_res,bins); //Rb
+   //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,det_res,bins); //Sr
+   //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880 ,4,det_res,bins); //Y
+   
+   //real straggling, parameterized
+   //mkgaus2d("hist1",steps/10, 64.120, strag*1.186, 39.585, strag*0.903,1,det_res,bins); //Rb
+   //mkgaus2d("hist2",steps,58.211, strag*1.020, 41.763, strag*1.154,2,det_res,bins); //Sr
+   //mkgaus2d("hist3",steps/10,57.472, strag*0.616, 41.526, strag*0.670,4,det_res,bins); //Y
+
+   //updated energies, symmetric straggling
+   //mkgaus2d("hist1",steps/10, 64.117, strag*1.065, 39.562, strag*1.065,1,det_res,bins); //Rb
+   //mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300,2,det_res,bins); //Sr
+   //mkgaus2d("hist3",steps/10,57.308, strag*0.588, 41.473, strag*0.588,4,det_res,bins); //Y
+   
+   //Butane only, from SRIM
+   //mkgaus2d("hist1",steps/10,69.919, strag*0.896, 33.794, strag*0.896 ,1,det_res,bins); //Rb
+   //mkgaus2d("hist2",steps,64.186, strag*0.997, 35.670, strag*0.997 ,2,det_res,bins); //Sr
+   //mkgaus2d("hist3",steps/10,63.246, strag*0.597, 35.502, strag*0.597 ,4,det_res,bins); //Y
+
+   //updated energies, symmetric straggling, scaled energy loses
+   mkgaus2d("hist1",steps/10, 56.624, strag*1.269, 40.830, strag*1.269
+	    ,1,det_res,bins); //Rb
+   mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300
+	    ,2,det_res,bins); //Sr
+   mkgaus2d("hist3",steps/10,59.413, strag*1.331, 42.841, strag*1.331
+	    ,4,det_res,bins); //Y
+   
   hist1->SetTitle("EMMA IC");
-  hist1->GetXaxis()->SetTitle("E (MeV)");
+  hist1->GetXaxis()->SetTitle("E_{res} (MeV)");
   hist1->GetYaxis()->SetTitle("#\DeltaE (MeV)");
   hist1->Draw();
   hist2->Draw("same");
   hist3->Draw("same");
+  
+ leg = new TLegend(0.1,0.75,0.2,0.9);
+ leg->AddEntry(hist1,"^{84}Rb","p");   
+ leg->AddEntry(hist2,"^{84}Sr","p");
+ leg->AddEntry(hist3,"^{84}Y","p");
+ leg->Draw();
 }
