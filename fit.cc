@@ -2304,7 +2304,12 @@ void ginfo (void)
 void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W")
 {//fit a quadratic given a center and a width
   gfit(histname,center-wide,center+wide,option);
-  hname=histname;
+  getdet(histname);
+}
+
+void getdet(Char_t *histname)
+{
+hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
     tempst=hname(i,hname.Length()-i);
@@ -2314,6 +2319,7 @@ void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W
 	break;
       }
   }
+  //printf("Detector number is %d from histogram title\n",det);
 }
 
 //Float_t gfit_wide=0;
@@ -2323,6 +2329,7 @@ void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
     printf("Histogram %s not found!\n",histname);
     return;
   }
+  getdet(histname); 
   //gfit_wide=wide;
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   Bool_t set_center=kFALSE;
@@ -2337,18 +2344,8 @@ void gfitcm(Char_t *histname, Float_t center=-1, Float_t wide=1, Char_t *option=
     center=gaus->GetParameter(1);
     gfit(histname,center-wide,center+wide,option);
   }
-    
-  hname=histname;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString tempst="";
-    tempst=hname(i,hname.Length()-i);
-    if(tempst.IsFloat())
-      {
-	det=tempst.Atoi();
-	break;
-      }
-  }
 }
+
 Float_t gratio=0;
 void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2, Float_t threshold=0.05, Char_t *fit_option="W")
 {//fit a quadratic given a center and a width, automatically calculated about the mean
@@ -2357,6 +2354,8 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
     return;
   }
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();   
+  getdet(histname);  
+
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
  
   if(center==-1) {
@@ -2371,17 +2370,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   wide=gaus->GetParameter(2)*2;
   //hist1->GetXaxis()->SetRangeUser(center-wide,center+wide);
   gfit(histname,center-wide,center+wide,fit_option);
-  
-  hname=histname;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString tempst="";
-    tempst=hname(i,hname.Length()-i);
-    if(tempst.IsFloat())
-      {
-	det=tempst.Atoi();
-	break;
-      }
-  }
+    
   Float_t gxmin=0, gxmax=0;
   gxmin=gaus->GetCurrent()->GetXmin();
   gxmax=gaus->GetCurrent()->GetXmax();
@@ -2519,23 +2508,15 @@ void sum2(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ym
 void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1,Float_t minz=0, Float_t maxz=-1)
 {//adapted from linefit.cc
  //same first three parameters as pfx(), next three same as pfit() (developed independently)
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+  getdet(histin);
+  printf("Detector number %d is being read.\n",det);
+
   Float_t cp=0 ;  
   Float_t a=0,b=0,c=0,d=0;  
   Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
   Float_t fits[10];
-  hname=histin;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString temp="";
-    temp=hname(i,hname.Length()-i);
-    if(temp.IsFloat())
-      {
-	det=temp.Atoi();
-	break;
-      }
-  }
-
-  printf("Detector number %d is being read.\n",det);
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();  
+    
   cFit->Clear();
   cFit->SetWindowPosition(0,0);
   cFit->Divide(1,2);
@@ -2753,19 +2734,10 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
 void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
 {//adapted from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  getdet(histin);
+
   Float_t a=0,b=0,c=0,d=0; 
   Float_t p0=0,p1=0,p2=0;
-  
-  hname=histin;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString temp="";
-    temp=hname(i,hname.Length()-i);
-    if(temp.IsFloat())
-      {
-	det=temp.Atoi();
-	break;
-      }
-  }
 
   cFit->Clear();
   cFit->Divide(1,2);
@@ -3506,16 +3478,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 	     Double_t threshold=0.05, Char_t *option="")
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-  hname=histin;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString temp="";
-    temp=hname(i,hname.Length()-i);
-    if(temp.IsFloat())
-      {
-	det=temp.Atoi();
-	break;
-      }
-  }
+  getdet(histin);
 
   cFit->Clear();
   
@@ -3652,16 +3615,7 @@ printf("                         by height | by pos   | diff\n");
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  hname=histin;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString temp="";
-    temp=hname(i,hname.Length()-i);
-    if(temp.IsFloat())
-      {
-	det=temp.Atoi();
-	break;
-      }
-  }
+  getdet(histin);
 
   cFit->Clear();
   Float_t * positions;
@@ -3918,16 +3872,7 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
 void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  hname=histin;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
-    TString temp="";
-    temp=hname(i,hname.Length()-i);
-    if(temp.IsFloat())
-      {
-	det=temp.Atoi();
-	break;
-      }
-  }
+  getdet("histin");
 
   cFit->Clear();
   Float_t * positions;
