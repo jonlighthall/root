@@ -4675,3 +4675,14 @@ void plotgaus(Int_t bins=100, Int_t counts=10000, Bool_t set_strag=kTRUE, Float_
  leg->AddEntry(hist3,"^{84}Y","p");
  leg->Draw();
 }
+
+//-----------------------------------------------------------------------------------------------
+//macros for EMMA tree analysis -----------------------------------------------------------------
+void treecomp()
+{
+  if (!((TF1 *) gROOT->FindObject("hdata0_copy"))) {
+    hdata0->Clone("hdata0_copy");
+  }
+    hdata0_copy->Reset();
+    
+  }
