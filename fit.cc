@@ -2360,10 +2360,10 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
  
   if(center==-1) {
     TSpectrum *spectrum=new TSpectrum();
-    Float_t *positions;//moved * before variable name
+    Float_t *gpositions;//moved * before variable name
     spectrum->Search(hist1,sigma);//,sigma,option,threshold);
-    positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
-    center=positions[0];
+    gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+    center=gpositions[0];
   }
   gfit(histname,center-wide,center+wide,fit_option);
   center=gaus->GetParameter(1);
@@ -3474,6 +3474,10 @@ void getline(void)
  */
 //-------------------------------------------------------------------------------------
 // 4a). 1D Peak Search-----------------------------------------------------------------
+
+Float_t *positions;//moved * before variable name
+Float_t gparameters[300];
+
 void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
 	     Double_t threshold=0.05, Char_t *option="")
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
@@ -3481,8 +3485,6 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   getdet(histin);
 
   cFit->Clear();
-  Float_t *positions;//moved * before variable name
-  Float_t gparameters[300];
   Float_t energies[100];
   Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
   Float_t slope,offset,width;
@@ -3515,7 +3517,8 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   }
 
   cFit->cd(1);
-  TH1F *hProj=(TH1F *) gROOT->FindObject(histin);//hInput changed to hProj from here on.  
+  hname=histin;
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());//hInput changed to hProj from here on.  
   hProj->Draw();
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
@@ -3564,125 +3567,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   }
   printf("Average peak width is %f\n",sig_av/npeaks);
   
-  const int npar=npeaks*3;
-  Double_t par[npar];
-  Bool_t docon=kTRUE;
-  Float_t gfitwide=min_space;
-  Float_t gfitmin=positions[0]-gfitwide;
-  Float_t gfitmax=positions[npeaks-1]+gfitwide;
-  switch(npeaks){
-  case 0:
-    printf(" No peaks found!\n");
-    docon=kFALSE;
-    break;
-  case 1:
-    printf(" Only one peak found. No convolution necessary.\n");
-    TF1 *total = new TF1("total","gaus(0)",gfitmin,gfitmax);
-    break;
-  case 2:
-    printf(" Two peaks found! Attempting convolution...\n");
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)",gfitmin,gfitmax);
-    break;
-  case 3:
-    printf(" Three peaks found! Attempting convolution...\n");
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)",gfitmin,gfitmax);
-    break;
-  case 4:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)",gfitmin,gfitmax);
-    break;
-  case 5:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)",gfitmin,gfitmax);
-    break;
-  case 6:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)",gfitmin,gfitmax);
-    break;
-  case 7:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)",gfitmin,gfitmax);
-    break;
-  case 8:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)",gfitmin,gfitmax);
-    break;
-  case 9:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)",gfitmin,gfitmax);
-    break;
-  case 10:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)",gfitmin,gfitmax);
-    break;
-  case 11:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)",gfitmin,gfitmax);
-    break;
-  case 12:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)",gfitmin,gfitmax);
-    break;
-  case 13:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)",gfitmin,gfitmax);
-    break;
-  case 14:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)",gfitmin,gfitmax);
-    break;
-  case 15:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)",gfitmin,gfitmax);
-    break;
-  case 16:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)",gfitmin,gfitmax);
-    break;
-  case 17:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)",gfitmin,gfitmax);
-    break;
-  case 18:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)",gfitmin,gfitmax);
-    break;
-  case 19:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)",gfitmin,gfitmax);
-    break;
-  case 20:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)+gaus(57)",gfitmin,gfitmax);
-    break;
-  default:
-    printf(" Too many peaks found! Convoluted fit not available.\n");
-    docon=kFALSE;
-    break;  
-  }
-  if(docon) {
-    printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
-    total->SetLineColor(3);
-    for (Int_t i=0; i<(npar); i++) {
-      par[i]=gparameters[i];
-    }
-    total->SetParameters(par);
-    hProj->Fit(total,"Mq+");
-    TF1 **functions = new TF1*[npeaks];
-    for (Int_t i=0;i<npeaks;i++) {
-      char fname[20];
-      sprintf(fname,"f%d",i);
-      functions[i] = new TF1(fname,"gaus",gfitmin,gfitmax);
-      par[0+3*i]=total->GetParameter(0+3*i);
-      par[1+3*i]=total->GetParameter(1+3*i);
-      par[2+3*i]=total->GetParameter(2+3*i);
-      
-      functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
-      functions[i]->SetLineColor(1);
-      functions[i]->SetLineStyle(2);
-      functions[i]->Draw("same");
-   }  
-  }
+  decon(npeaks,min_space);
     
   if(!(filefail))  {
     if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
@@ -3741,8 +3626,6 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   getdet(histin);
 
   cFit->Clear();
-  Float_t * positions;
-  Float_t gparameters[300];
   Float_t energies[100];
   Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
   Float_t slope,offset,width;
@@ -3775,12 +3658,6 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     }
   }
 
-if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
- hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
-  if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
-  //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
-  hFit->Reset();
-
   cFit->cd(1);
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
   hInput->Draw("COL");
@@ -3797,8 +3674,7 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();
-  //for(Int_t i=0;i<15;i++) //wtf!?
-    npeaks=spectrum->GetNPeaks();
+  npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
   if(gROOT->GetVersionInt()<52400)
     printf("Deprecated (online) ROOT version.\n");
@@ -3846,145 +3722,14 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
   
-  const int npar=npeaks*3;
-  Double_t par[npar];
-  Bool_t docon=kTRUE;
-  Float_t gfitwide=min_space;
-  Float_t gfitmin=positions[0]-gfitwide;
-  Float_t gfitmax=positions[npeaks-1]+gfitwide;
-  switch(npeaks){
-  case 0:
-    printf(" No peaks found!\n");
-    docon=kFALSE;
-    break;
-  case 1:
-    printf(" Only one peak found. No convolution necessary.\n");
-    TF1 *total = new TF1("total","gaus(0)",gfitmin,gfitmax);
-    break;
-  case 2:
-    printf(" Two peaks found! Attempting convolution...\n");
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)",gfitmin,gfitmax);
-    break;
-  case 3:
-    printf(" Three peaks found! Attempting convolution...\n");
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)",gfitmin,gfitmax);
-    break;
-  case 4:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)",gfitmin,gfitmax);
-    break;
-  case 5:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)",gfitmin,gfitmax);
-    break;
-  case 6:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)",gfitmin,gfitmax);
-    break;
-  case 7:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)",gfitmin,gfitmax);
-    break;
-  case 8:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)",gfitmin,gfitmax);
-    break;
-  case 9:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)",gfitmin,gfitmax);
-    break;
-  case 10:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)",gfitmin,gfitmax);
-    break;
-  case 11:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)",gfitmin,gfitmax);
-    break;
-  case 12:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)",gfitmin,gfitmax);
-    break;
-  case 13:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)",gfitmin,gfitmax);
-    break;
-  case 14:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)",gfitmin,gfitmax);
-    break;
-  case 15:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)",gfitmin,gfitmax);
-    break;
-  case 16:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)",gfitmin,gfitmax);
-    break;
-  case 17:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)",gfitmin,gfitmax);
-    break;
-  case 18:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)",gfitmin,gfitmax);
-    break;
-  case 19:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)",gfitmin,gfitmax);
-    break;
-  case 20:
-    printf(" %d peaks found! Attempting convolution...\n",npeaks);
-    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)+gaus(57)",gfitmin,gfitmax);
-    break;
-  default:
-    printf(" Too many peaks found! Convoluted fit not available.\n");
-    docon=kFALSE;
-    break;  
-  }
-  if(docon) {
-    printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
-    total->SetLineColor(3);
-    for (Int_t i=0; i<(npar); i++) {
-      par[i]=gparameters[i];
-    }
-    total->SetParameters(par);
-    hProj->Fit(total,"Mq+");
-
-    if(!((TCanvas *) gROOT->FindObject("cFit2"))) mkCanvas2("cFit2","cFit2");
-    hProj->Clone("hFit2");
-    hFit2->Reset();
-    hFit2->SetXTitle("Peak position (#mu)");
-    hFit2->SetYTitle("Peak width (#sigma)");
-    cFit->cd(2);
-
-    TF1 **functions = new TF1*[npeaks];
-    for (Int_t i=0;i<npeaks;i++) {
-      char fname[20];
-      sprintf(fname,"f%d",i);
-      functions[i] = new TF1(fname,"gaus",gfitmin,gfitmax);
-      par[0+3*i]=total->GetParameter(0+3*i);
-      par[1+3*i]=total->GetParameter(1+3*i);
-      par[2+3*i]=total->GetParameter(2+3*i);
-      
-      hFit2->Fill(par[1+3*i],par[2+3*i]);
-
-      functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
-      functions[i]->SetLineColor(1);
-      functions[i]->SetLineStyle(2);
-      cFit->cd(2);
-      functions[i]->Draw("same");
-   }  
-  }
-  cFit2->cd();
-  hFit2->SetMarkerStyle(2);
-  hFit2->SetMarkerColor(1);
-  hFit2->SetMarkerSize(3);
-  hFit2->Draw("P");
+  decon(npeaks,min_space);
   
-
-
   if(!filefail) {
+    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
+    hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
+    if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
+    //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
+    hFit->Reset();
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
     }
@@ -4022,13 +3767,177 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   fclose(outfile);
 }
 
+void decon(Float_t npeaks=0, Float_t min_space=25)
+{
+const int npar=npeaks*3;
+  Double_t par[npar];
+  Bool_t docon=kTRUE;
+  Float_t gfitwide=min_space;
+  Float_t gfitmin=positions[0]-gfitwide;
+  Float_t gfitmax=positions[npeaks-1]+gfitwide;
+  switch(npeaks){
+  case 0:
+    printf(" No peaks found!\n");
+    docon=kFALSE;
+    break;
+  case 1:
+    printf(" Only one peak found. No deconvolution necessary.\n");
+    TF1 *total = new TF1("total","gaus(0)",gfitmin,gfitmax);
+    break;
+  case 2:
+    printf(" Two peaks found! Attempting deconvolution...\n");
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)",gfitmin,gfitmax);
+    break;
+  case 3:
+    printf(" Three peaks found! Attempting deconvolution...\n");
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)",gfitmin,gfitmax);
+    break;
+  case 4:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)",gfitmin,gfitmax);
+    break;
+  case 5:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)",gfitmin,gfitmax);
+    break;
+  case 6:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)",gfitmin,gfitmax);
+    break;
+  case 7:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)",gfitmin,gfitmax);
+    break;
+  case 8:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)",gfitmin,gfitmax);
+    break;
+  case 9:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)",gfitmin,gfitmax);
+    break;
+  case 10:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)",gfitmin,gfitmax);
+    break;
+  case 11:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)",gfitmin,gfitmax);
+    break;
+  case 12:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)",gfitmin,gfitmax);
+    break;
+  case 13:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)",gfitmin,gfitmax);
+    break;
+  case 14:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)",gfitmin,gfitmax);
+    break;
+  case 15:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)",gfitmin,gfitmax);
+    break;
+  case 16:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)",gfitmin,gfitmax);
+    break;
+  case 17:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)",gfitmin,gfitmax);
+    break;
+  case 18:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)",gfitmin,gfitmax);
+    break;
+  case 19:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)",gfitmin,gfitmax);
+    break;
+  case 20:
+    printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+    TF1 *total = new TF1("total","gaus(0)+gaus(3)+gaus(6)+gaus(9)+gaus(12)+gaus(15)+gaus(18)+gaus(21)+gaus(24)+gaus(27)+gaus(30)+gaus(33)+gaus(36)+gaus(39)+gaus(42)+gaus(45)+gaus(48)+gaus(51)+gaus(54)+gaus(57)",gfitmin,gfitmax);
+    break;
+  default:
+    printf(" Too many peaks found! Write more code! Deconvoluted fit not available.\n");
+    docon=kFALSE;
+    break;  
+  }
+  if(docon) {
+    printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
+    total->SetLineColor(3);
+    for (Int_t i=0; i<(npar); i++) {
+      par[i]=gparameters[i];
+    }
+    total->SetParameters(par);
+    hProj->Fit(total,"Mq+");
+
+    if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
+      mkCanvas2("cFit2","cFit2");
+      cFit2->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);      
+    }
+    cFit2->Clear();
+    cFit2->Divide(1,2);
+
+    if(gROOT->FindObject("hFit2"))hFit2->Delete();//added
+    hProj->Clone("hFit2");
+    hFit2->Reset();
+    hFit2->SetXTitle("Peak position (#mu)");
+    hFit2->SetYTitle("Peak width (#sigma)");
+
+    if(gROOT->FindObject("hFit3"))hFit3->Delete();//added
+    hProj->Clone("hFit3");
+    hFit3->Reset();
+    hFit3->SetXTitle("Peak position (#mu)");
+    hFit3->SetYTitle("Calculated area under Gaussian");
+
+    //cFit->cd(2);
+    cFit->cd();
+
+    TF1 **functions = new TF1*[npeaks];
+    for (Int_t i=0;i<npeaks;i++) {
+      char fname[20];
+      sprintf(fname,"f%d",i);
+      functions[i] = new TF1(fname,"gaus",gfitmin,gfitmax);
+      for (Int_t j=0;j<3;j++) {
+	par[j+3*i]=total->GetParameter(j+3*i);
+	functions[i]->SetParameter(j,par[j+3*i]);
+      }
+      
+      hFit2->Fill(par[1+3*i],par[2+3*i]);
+      hFit3->Fill(par[1+3*i],par[0+3*i]*par[2+3*i]*TMath::Sqrt(TMath::TwoPi()));
+      // Area under a Gaussian = sqrt(2*pi)*sigma*amplitude
+
+      //      functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
+      functions[i]->SetLineColor(1);
+      functions[i]->SetLineStyle(2);
+      //cFit->cd(2);
+      functions[i]->Draw("same");
+   }  
+  }
+  cFit2->cd(1);
+  hFit2->SetMarkerStyle(2);
+  hFit2->SetMarkerColor(1);
+  hFit2->SetMarkerSize(3);
+  hFit2->Draw("P");
+
+  cFit2->cd(2);
+  hFit3->SetMarkerStyle(2);
+  hFit3->SetMarkerColor(1);
+  hFit3->SetMarkerSize(3);
+  hFit3->Draw("P");
+}
+
 void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   getdet("histin");
 
   cFit->Clear();
-  Float_t * positions;
+  //Float_t *positions;
+
   Float_t energies[100];
   Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
   Float_t slope,offset,width;
@@ -4060,14 +3969,6 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
     }
   }
-  
-if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
-  hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
-  if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
-  //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
-  //hFit =(TH1F *) gROOT->FindObject("hPeakFit");
-  hFit->Reset();  
-
 
   cFit->cd(1);
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
@@ -4082,17 +3983,15 @@ if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-
-
-spectrum->SetResolution(resolution);
+  spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
   if(gROOT->GetVersionInt()<52400)
-    printf("Deprecated (online) ROOT version.\n");
+    printf(" Deprecated (online) ROOT version.\n");
   else{
-    printf("Modern ROOT version.\n");
+    printf(" Modern ROOT version.\n");
     Float_t sorted[100];
     sorted[0]=positions[0];//initializes sorted array with a valid position
     for(Int_t i=0;i<npeaks;i++){
@@ -4113,18 +4012,30 @@ spectrum->SetResolution(resolution);
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
   }
-  printf("The minimum spacing between adjacent peaks is %f\n",min_space);
+  printf(" The minimum spacing between adjacent peaks is %f\n",min_space);
   Float_t sig_av=0;
+  printf("Fitting individual peaks...");
   for (Int_t i=0; i<npeaks; i++) {
     //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
     printf(" Peak %d found at channel %.2f",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" (%.2f wide)\n",gaus->GetParameter(2));
-    sig_av+=gaus->GetParameter(2);
+    sig_av+=gaus->GetParameter(2);positions[i]=gaus->GetParameter(1);//is this better!?
+    for (Int_t j=0; j<3; j++) {
+      gparameters[(3*i)+j]=gaus->GetParameter(j);
+    }
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
+
+  decon(npeaks,min_space);
  
   if(!filefail) {
+if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
+  hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
+  if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
+  //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
+  hFit->Reset();  
+
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
     }
@@ -4170,7 +4081,7 @@ void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t th
   cFit->Clear();//cFitCanvas renamed to CFit
   cFit->Divide(1,2);
   
-  Float_t *positions;//* moved to start to avoid automatic variable warning
+  //  Float_t *positions;//* moved to start to avoid automatic variable warning
   Float_t energies[10];
   Float_t slope,offset,width;
   Float_t ein;
