@@ -2265,6 +2265,20 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
   return; 
   }*/
 
+void findX () {
+/* Float_t x_pos=0;
+  Float_t y_pos=27;
+  Float_t z_pos=717.9;
+  y_pos-=27;*/
+
+for (Int_t i=0; i<npeaks; i++) {
+       //x_pos=positions[i]-118;
+    //printf("\n     Positions %f %f Angles are: %f %f \n",x_pos,y_pos,findTheta(x_pos,y_pos,z_pos),findPhi(x_pos,y_pos,z_pos));
+   
+  }
+}
+
+
 double findPhi (double x, double y, double z) {
   // define phi from x, y z
   double phi = TMath::ASin( y / ((TMath::Sqrt(TMath::Power(x,2) + TMath::Power(y,2) + TMath::Power(z,2)) * TMath::Sin (TMath::ACos(( x+(TMath::Sqrt(3))*z )/ 2*TMath::Sqrt(TMath::Power(z,2) + TMath::Power(x, 2) + TMath::Power(y,2)))))));
@@ -3477,6 +3491,8 @@ void getline(void)
 
 Float_t *positions;//moved * before variable name
 Float_t gparameters[300];
+Int_t npeaks;
+Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
 
 void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
 	     Double_t threshold=0.05, Char_t *option="")
@@ -3486,13 +3502,13 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 
   cFit->Clear();
   Float_t energies[100];
-  Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
+  
   Float_t slope,offset,width;
   Float_t ein;
   Float_t max=0,min=0;//added
   Float_t a=0,b=0;//added
-  Int_t npeaks,nlist=0;
-  TSpectrum *spectrum=new TSpectrum();
+  Int_t nlist=0;
+  
   Bool_t filefail=false;
   ifstream listfile(filename);
   if(!(listfile))  {//just show the peaks!
@@ -3523,31 +3539,8 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-  spectrum->SetResolution(resolution);
-  spectrum->Search(hProj,sigma,option,threshold);
-  positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
-  npeaks=spectrum->GetNPeaks();
-  cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
-  if(gROOT->GetVersionInt()<52400)
-    printf("Deprecated (online) ROOT version.\n");
-  else{
-    printf("Modern ROOT version.\n");
-    Float_t sorted[100];
-    sorted[0]=positions[0];//initializes sorted array with a valid position
-    for(Int_t i=0;i<npeaks;i++){
-      if((positions[i])<(sorted[0])){
-	sorted[0]=positions[i];//locates minimum
-      }
-    }
-    for(Int_t i=1;i<npeaks;i++){
-      sorted[i]=hProj->GetXaxis()->GetXmax();//initializes array element with non-minimum
-      for(Int_t j=0;j<npeaks;j++){
-	if(((positions[j])<(sorted[i]))&&((positions[j])>(sorted[i-1])))
-	  sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-    positions=sorted;  
-  }//end version IF 
+  findpeaks(resolution,sigma,threshold,option);
+   
   for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
@@ -3567,10 +3560,13 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   }
   printf("Average peak width is %f\n",sig_av/npeaks);
   
-  decon(npeaks,min_space);
-    
-  if(!(filefail))  {
-    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
+  if((filefail)) 
+    decon(0);
+  else
+ {
+     decon(1);
+     cFit->cd(2);
+   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
     hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
     if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
     //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");//needed?
@@ -3581,21 +3577,22 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
     }
     hFit->SetAxisRange(min,max);//added to set fit range to peak range
     //hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);
-    hFit->Fit("pol1","Q");
+    
     hFit->GetXaxis()->UnZoom();
     hFit->SetStats(kFALSE);//
+    //hFit->SetMarkerStyle(2);
+    //hFit->SetMarkerColor(1);
+    //hFit->SetMarkerSize(3);
+    hFit->Fit("pol1","Q");    
     slope=hFit->GetFunction("pol1")->GetParameter(1);
     offset=hFit->GetFunction("pol1")->GetParameter(0);
     //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
-    //gfitc(hname.Data(),positions[npeaks-1],min_space/2,"+q");
-    //    width=hProj->GetFunction("gaus")->GetParameter(2);
+    //width=hProj->GetFunction("gaus")->GetParameter(2);
     //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
     printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
     printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
-    //hFit->SetMarkerStyle(2);
-    //hFit->SetMarkerColor(1);
-    //hFit->SetMarkerSize(3);
+
     cFit->cd(2);
     hFit->Draw("P");
     printf("Testing fit:\n");
@@ -3603,14 +3600,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
       printf(" Peak %d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
     }  
   }
-  else {
-printf("                         by height | by pos   | diff\n");
-  for (Int_t i=0; i<npeaks; i++){
-    printf("Peak %2d found at position %f | %f | %f\n",i,positions[i],sorted[i],sorted[i]-sorted[0]);
-  }
-  }
-
-  delete spectrum;
+   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
@@ -3620,6 +3610,50 @@ printf("                         by height | by pos   | diff\n");
   fclose(outfile);
 }
 
+void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+{//assumes hProj is defined, npeaks
+  TSpectrum *spectrum=new TSpectrum();
+  spectrum->SetResolution(resolution);
+  spectrum->Search(hProj,sigma,option,threshold);
+  positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+  npeaks=spectrum->GetNPeaks();
+  cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
+  if(gROOT->GetVersionInt()<52400)
+    printf("Deprecated ROOT version. No sorting necessary.\n");
+  else{
+    printf("Modern ROOT version. Sorting peaks by position...\n");
+    Float_t sorted[100];
+    sorted[0]=positions[0];//initializes sorted array with a valid position
+    for(Int_t i=0;i<npeaks;i++){
+      if((positions[i])<(sorted[0])){
+	sorted[0]=positions[i];//locates minimum
+      }
+    }
+    for(Int_t i=1;i<npeaks;i++){
+      sorted[i]=hProj->GetXaxis()->GetXmax();//initializes array element with non-minimum
+      for(Int_t j=0;j<npeaks;j++){
+	if(((positions[j])<(sorted[i]))&&((positions[j])>(sorted[i-1])))
+	  sorted[i]=positions[j];//locates next-smallest position
+      }
+    }
+   for(Int_t i=0;i<npeaks;i++){
+     positions[i]=sorted[i];  
+   }
+  }//end version IF 
+  /*
+ delete spectrum;
+ Bool_t showp=kTRUE;
+ if(showp) {
+printf("Peak positions:\n");
+printf("                         by height | by pos   | diff\n");
+  for (Int_t i=0; i<npeaks; i++){
+    printf("Peak %2d found at position %f | %f | %f\n",i,positions[i],sorted[i],sorted[i]-sorted[0]);
+  }
+  }
+  */
+}
+
+
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
@@ -3627,13 +3661,13 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
 
   cFit->Clear();
   Float_t energies[100];
-  Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
+
   Float_t slope,offset,width;
   Float_t ein; 
   Float_t max=0,min=0;
   Float_t a=0,b=0;
-  Int_t npeaks,nlist=0;
-  TSpectrum *spectrum=new TSpectrum();
+  Int_t nlist=0;
+
   Bool_t filefail=false;
   ifstream listfile(filename);
   if(!(listfile)) {
@@ -3671,58 +3705,29 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-  spectrum->SetResolution(resolution);
-  spectrum->Search(hProj,sigma,option,threshold);
-  positions=spectrum->GetPositionX();
-  npeaks=spectrum->GetNPeaks();
-  cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
-  if(gROOT->GetVersionInt()<52400)
-    printf("Deprecated (online) ROOT version.\n");
-  else{
-    printf("Modern ROOT version.\n");
-    Float_t sorted[100];
-    sorted[0]=positions[0];//initializes sorted array with a valid position
-    for(Int_t i=0;i<npeaks;i++){
-      if((positions[i])<(sorted[0])){
-	sorted[0]=positions[i];//locates minimum
-      }
-    }
-    for(Int_t i=1;i<npeaks;i++){
-      sorted[i]=hProj->GetXaxis()->GetXmax();//initializes array element with non-minimum
-      for(Int_t j=0;j<npeaks;j++){
-	if(((positions[j])<(sorted[i]))&&((positions[j])>(sorted[i-1])))
-	  sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-    positions=sorted;  
-  }//end version IF 
+  findpeaks(resolution,sigma,threshold,option);
+  
   for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
   }
   printf("The minimum spacing between adjacent peaks is %f\n",min_space);
   Float_t sig_av=0;
-  /* Float_t x_pos=0;
-  Float_t y_pos=27;
-  Float_t z_pos=717.9;
-  y_pos-=27;*/
   for (Int_t i=0; i<npeaks; i++) {
     //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
     printf(" Peak %2d found at channel %.3f",i,positions[i]);
-    //x_pos=positions[i]-118;
-    //printf("\n     Positions %f %f Angles are: %f %f \n",x_pos,y_pos,findTheta(x_pos,y_pos,z_pos),findPhi(x_pos,y_pos,z_pos));
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
     printf(" (%.5f wide)\n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
-    positions[i]=gaus->GetParameter(1);//is this better!?
+    positions[i]=gaus->GetParameter(1);
     for (Int_t j=0; j<3; j++) {
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
   
-  decon(npeaks,min_space);
+  decon(2);
   
   if(!filefail) {
     if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
@@ -3730,13 +3735,13 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
     //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
     hFit->Reset();
+    
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
     }
-    
-    cFit->cd(3);
     hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);//set x-axis range
     printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-(max-min)/2,max+(max-min)/2,min,max); 
+    
     hFit->SetAxisRange(a,b);//set x-axis range
     hFit->SetStats(kFALSE);//
     hFit->SetMarkerStyle(2);
@@ -3749,15 +3754,16 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     //width=hProj->GetFunction("gaus")->GetParameter(2);
     cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
     printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
- printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
        
+    cFit->cd(3);
     hFit->Draw("P");
- printf("Testing fit:\n");
-  for (Int_t i=0; i<npeaks; i++){
-    printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
-  }  
+    printf("Testing fit:\n");
+    for (Int_t i=0; i<npeaks; i++){
+      printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+    }  
   }
-  delete spectrum;
+  
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
@@ -3767,8 +3773,8 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   fclose(outfile);
 }
 
-void decon(Float_t npeaks=0, Float_t min_space=25)
-{
+void decon(Int_t padno=1)
+{//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
 const int npar=npeaks*3;
   Double_t par[npar];
   Bool_t docon=kTRUE;
@@ -3893,8 +3899,7 @@ const int npar=npeaks*3;
     hFit3->SetXTitle("Peak position (#mu)");
     hFit3->SetYTitle("Calculated area under Gaussian");
 
-    //cFit->cd(2);
-    cFit->cd();
+    cFit->cd(padno);
 
     TF1 **functions = new TF1*[npeaks];
     for (Int_t i=0;i<npeaks;i++) {
@@ -3936,16 +3941,14 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   getdet("histin");
 
   cFit->Clear();
-  //Float_t *positions;
-
+  
   Float_t energies[100];
-  Float_t min_space=25; //minimum space between adjacent peaks (note: no deconvolution is used)
+
   Float_t slope,offset,width;
   Float_t ein; 
   Float_t max=0,min=0;
   Float_t a=0,b=0;
-  Int_t npeaks,nlist=0;
-  TSpectrum *spectrum=new TSpectrum();
+  Int_t nlist=0;
   Bool_t filefail=false;
   ifstream listfile(filename);
   if(!(listfile)) {
@@ -3983,31 +3986,6 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-  spectrum->SetResolution(resolution);
-  spectrum->Search(hProj,sigma,option,threshold);
-  positions=spectrum->GetPositionX();
-  npeaks=spectrum->GetNPeaks();
-  cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
-  if(gROOT->GetVersionInt()<52400)
-    printf(" Deprecated (online) ROOT version.\n");
-  else{
-    printf(" Modern ROOT version.\n");
-    Float_t sorted[100];
-    sorted[0]=positions[0];//initializes sorted array with a valid position
-    for(Int_t i=0;i<npeaks;i++){
-      if((positions[i])<(sorted[0])){
-	sorted[0]=positions[i];//locates minimum
-      }
-    }
-    for(Int_t i=1;i<npeaks;i++){
-      sorted[i]=hProj->GetXaxis()->GetXmax();//initializes array element with non-minimum
-      for(Int_t j=0;j<npeaks;j++){
-	if(((positions[j])<(sorted[i]))&&((positions[j])>(sorted[i-1])))
-	  sorted[i]=positions[j];//locates next-smallest position
-      }
-    }
-    positions=sorted;  
-  }//end version IF 
   for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
@@ -4027,15 +4005,15 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
 
-  decon(npeaks,min_space);
+  decon(2);
  
   if(!filefail) {
-if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
-  hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
-  if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
-  //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
-  hFit->Reset();  
-
+    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
+    hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
+    if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
+    //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
+    hFit->Reset();  
+    
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
     }
@@ -4060,12 +4038,11 @@ printf("Testing fit:\n");
     printf(" Peak %d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
   }  
   }
-  delete spectrum;
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
   fclose(outfile);
- outfile=fopen("temp_inv.lst","w");
+  outfile=fopen("temp_inv.lst","w");
   fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
   fclose(outfile);
 }
@@ -4085,7 +4062,7 @@ void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t th
   Float_t energies[10];
   Float_t slope,offset,width;
   Float_t ein;
-  Int_t npeaks,nlist=0;
+  Int_t nlist=0;
   float result[2048];
   Int_t nbins;
   TSpectrum *spectrum=new TSpectrum();
