@@ -3432,9 +3432,9 @@ void showY2y(float xmin=55,float xmax=180,float ymin=-100,float ymax=100)
   showX2(ymin,ymax);
 }
 
-static const int npeaks=6;  
-Float_t positions[npeaks]={};
-Float_t sorted[npeaks]={};
+static const int cpeaks=6;  
+Float_t cpositions[cpeaks]={};
+Float_t sorted[cpeaks]={};
 
 void loadcal(Char_t *filename="cal/X1.lst")
 {
@@ -3442,34 +3442,34 @@ void loadcal(Char_t *filename="cal/X1.lst")
   Float_t max=0;
   ifstream infile(filename);
   int i =0;  
-  while (infile >> positions[i]) {
-    printf(" %13.6f ",positions[i]);
+  while (infile >> cpositions[i]) {
+    printf(" %13.6f ",cpositions[i]);
     i++;
   }
   printf("\n");
     
   printf("Sorting points... ");
-  sorted[0]=positions[0];//initializes sorted array with a valid position
-  for(Int_t i=0;i<npeaks;i++){
-    if((positions[i])<(sorted[0])){
-      sorted[0]=positions[i];//locates minimum
+  sorted[0]=cpositions[0];//initializes sorted array with a valid position
+  for(Int_t i=0;i<cpeaks;i++){
+    if((cpositions[i])<(sorted[0])){
+      sorted[0]=cpositions[i];//locates minimum
     }
-    if((positions[i])>max){
-      max=positions[i];//locates maximum
+    if((cpositions[i])>max){
+      max=cpositions[i];//locates maximum
     }
   }
-  for(Int_t i=1;i<npeaks;i++){
+  for(Int_t i=1;i<cpeaks;i++){
     sorted[i]=max;    
-    for(Int_t j=0;j<npeaks;j++){
-      if(((positions[j])<=(sorted[i]))&&((positions[j])>(sorted[i-1]))){
-	sorted[i]=positions[j];//locates next-smallest position
+    for(Int_t j=0;j<cpeaks;j++){
+      if(((cpositions[j])<=(sorted[i]))&&((cpositions[j])>(sorted[i-1]))){
+	sorted[i]=cpositions[j];//locates next-smallest position
       }
     }
   }
   printf("sort complete.\n");
-  for(int i=0;i<npeaks;i++){
-    positions[i]=sorted[i];
-    printf(" %13.6f ",positions[i]);
+  for(int i=0;i<cpeaks;i++){
+    cpositions[i]=sorted[i];
+    printf(" %13.6f ",cpositions[i]);
   }
   printf("\n");
 }
@@ -3482,10 +3482,10 @@ void funcload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   
   loadcal(filename);
 
-  ls1 = new TF1("ls1","pol3",(positions[0]-offset)/slope,(positions[1]-offset)/slope);
-  ls2 = new TF1("ls2","pol3",(positions[2]-offset)/slope,(positions[3]-offset)/slope);
-  ls3 = new TF1("ls3","pol3",(positions[4]-offset)/slope,(positions[5]-offset)/slope);
-  lstotal = new TF1("lstotal","pol3(0)+pol3(4)+pol3(7)",(positions[0]-offset)/slope,(positions[5]-offset)/slope);
+  ls1 = new TF1("ls1","pol3",(cpositions[0]-offset)/slope,(cpositions[1]-offset)/slope);
+  ls2 = new TF1("ls2","pol3",(cpositions[2]-offset)/slope,(cpositions[3]-offset)/slope);
+  ls3 = new TF1("ls3","pol3",(cpositions[4]-offset)/slope,(cpositions[5]-offset)/slope);
+  lstotal = new TF1("lstotal","pol3(0)+pol3(4)+pol3(7)",(cpositions[0]-offset)/slope,(cpositions[5]-offset)/slope);
 
   lstotal->SetLineColor(2);
 
@@ -3626,10 +3626,10 @@ void ruthload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   loadcal(filename);
   ruthset();
   
-  ls1 = new TF1("ls1","ruth",(positions[0]-offset)/slope,(positions[1]-offset)/slope);
-  ls2 = new TF1("ls2","ruth",(positions[2]-offset)/slope,(positions[3]-offset)/slope);
-  ls3 = new TF1("ls3","ruth",(positions[4]-offset)/slope,(positions[5]-offset)/slope);
-  lstotal = new TF1("lstotal","ruth",(positions[0]-offset)/slope,(positions[5]-offset)/slope);
+  ls1 = new TF1("ls1","ruth",(cpositions[0]-offset)/slope,(cpositions[1]-offset)/slope);
+  ls2 = new TF1("ls2","ruth",(cpositions[2]-offset)/slope,(cpositions[3]-offset)/slope);
+  ls3 = new TF1("ls3","ruth",(cpositions[4]-offset)/slope,(cpositions[5]-offset)/slope);
+  lstotal = new TF1("lstotal","ruth",(cpositions[0]-offset)/slope,(cpositions[5]-offset)/slope);
 
   lstotal->SetLineColor(2);
 
@@ -3708,8 +3708,8 @@ void ruthload2(int pos=0, Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t
   ls1->SetParLimits(off+2,0,1e+05);
 
   for(int i=0;i<2;i++){
-    ls1->FixParameter(i,positions[i+pos*2]);
-    printf("i=%d positions[%d]=%f parameter[%d]=%f\n",i,i,positions[i],i,ls1->GetParameter(i));
+    ls1->FixParameter(i,cpositions[i+pos*2]);
+    printf("i=%d cpositions[%d]=%f parameter[%d]=%f\n",i,i,cpositions[i],i,ls1->GetParameter(i));
   }
 }
 
@@ -3725,8 +3725,8 @@ void lsload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   ls1->SetParName(10,"p10 quadratic");
   printf("Fixing parameters to match positions from %s...\n",filename);
   for(int i=0;i<6;i++){
-    ls1->FixParameter(i,positions[i]);
-    printf(" positions[%d]=%5.1f => parameter[%d]=%5.1f\n",i,positions[i],i,ls1->GetParameter(i));
+    ls1->FixParameter(i,cpositions[i]);
+    printf(" cpositions[%d]=%5.1f => parameter[%d]=%5.1f\n",i,cpositions[i],i,ls1->GetParameter(i));
   }
   ls1->SetParameter(6,slope);
   ls1->SetParameter(7,offset);
@@ -3744,8 +3744,8 @@ void ls2load(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   ls2->SetParName(10,"p10 quadratic");
 
   for(int i=0;i<6;i++){
-    ls2->FixParameter(i,positions[i]);
-    printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
+    ls2->FixParameter(i,cpositions[i]);
+    printf("i=%d cpositions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,cpositions[i],i,ls1->GetParameter(i));
   }
   ls2->SetParameter(6,slope);
   ls2->SetParameter(7,offset);
@@ -3844,8 +3844,8 @@ void ruthload3(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
   ls1->SetParName(11,"fit x-offset");
 
   for(int i=0;i<6;i++){
-    ls1->FixParameter(i,positions[i]);
-    printf("i=%d positions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,positions[i],i,ls1->GetParameter(i));
+    ls1->FixParameter(i,cpositions[i]);
+    printf("i=%d cpositions[%d]=%5.1f parameter[%d]=%5.1f\n",i,i,cpositions[i],i,ls1->GetParameter(i));
   }
 }
 
@@ -3932,9 +3932,9 @@ void loadcalm(Char_t *filename="cal/X1.lst")
 
   printf("The midpoint of the mask projections are:\n"); 
   for(int i=0;i<2;i++){
-    mid[i]=(positions[(i+1)*2]-positions[(i+1)*2-1])/2.;
-    printf(" The midpoint of %13.6f and %13.6f is (%13.6f wide)",positions[(i+1)*2-1],positions[(i+1)*2],mid[i]);
-    mid[i]+=positions[(i+1)*2-1];
+    mid[i]=(cpositions[(i+1)*2]-cpositions[(i+1)*2-1])/2.;
+    printf(" The midpoint of %13.6f and %13.6f is (%13.6f wide)",cpositions[(i+1)*2-1],cpositions[(i+1)*2],mid[i]);
+    mid[i]+=cpositions[(i+1)*2-1];
     printf(" at %13.6f\n",mid[i]);
   }
   printf(" The difference in the midpoints is       %f\n",mid[1]-mid[0]);
@@ -4042,7 +4042,7 @@ void qfitc2m(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t width
 
   double edge[6]={};
   for(int i=0;i<6;i++){
-    edge[i]=(positions[i]-offset)/slope;
+    edge[i]=(cpositions[i]-offset)/slope;
     //printf("Edge %d estimated location is %f\n",i,edge[i]);
   }
   // printf("estimated edges are located at %f, %f\n",(edge[1]+edge[2])/2,(edge[3]+edge[4])/2);
@@ -4121,7 +4121,7 @@ void qfitc2mr(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t widt
 
   double edge[6]={};
   for(int i=0;i<6;i++){
-    edge[i]=(positions[i]-offset)/slope;
+    edge[i]=(cpositions[i]-offset)/slope;
   }
   
   gaus->SetLineColor(1);
@@ -4225,8 +4225,8 @@ void qfitc2mls(Char_t *histname,Float_t center1=0, Float_t center2=0,Float_t wid
   double offset=slope*-min[0]+mid[0];
   printf(" offset is %f\n",offset);
   double edge[2]={};
-  edge[0]=(positions[0]-offset)/slope;
-  edge[1]=(positions[5]-offset)/slope;
+  edge[0]=(cpositions[0]-offset)/slope;
+  edge[1]=(cpositions[5]-offset)/slope;
 
   pol2->SetLineStyle(2);
   hist1->Fit("gaus","+q","",edge[0]-width,edge[0]+width);
