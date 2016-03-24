@@ -3501,14 +3501,11 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   getdet(histin);
   cFit->Clear();
  
-  Int_t setpad=0;
-  if(filename=="") {
-    printf("Proceeding with peak search...");
-  }
-  else {
+  Int_t setpad=0;//set target canvas pad for peak search
+  if(filename!="") 
     setpad++;
-    cFit->Divide(1,setpad+1);
-  }
+  cFit->Divide(1,setpad+1);  
+  printf("setpad = %d\n",setpad);
 
   cFit->cd(1);
   hname=histin;
@@ -3517,13 +3514,15 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 
   findpeaks(resolution,sigma,threshold,option);
   gfindpeaks(); 
-  decon(setpad);
+  decon(1);
   readandfit(filename,setpad);
 }
 
 void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//assumes hProj is defined, npeaks
   TSpectrum *spectrum=new TSpectrum();
+  
+  printf("Proceeding with peak search...");
   spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
@@ -3843,15 +3842,10 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   cFit->Clear();
 
   Int_t setpad=1;//set target canvas pad for peak search
-  if(filename=="") {
-    printf("Proceeding with peak search...");
-    cFit->Divide(1,2);
-  }
-  else {
+  if(filename!="") 
     setpad++;
-    cFit->Divide(1,setpad+1);
-  }
-    
+  cFit->Divide(1,setpad+1);  
+  
   cFit->cd(1);
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
   hInput->Draw("COL");
@@ -3876,14 +3870,9 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   cFit->Clear();
   
   Int_t setpad=1;//set target canvas pad for peak search
-  if(filename=="") {
-    printf("Proceeding with peak search...");
-    cFit->Divide(1,2);
-  }
-  else {
+  if(filename!="") 
     setpad++;
-    cFit->Divide(1,setpad+1);
-  }
+  cFit->Divide(1,setpad+1);  
 
   cFit->cd(1);
   TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
