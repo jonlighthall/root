@@ -3888,6 +3888,8 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
     }
+    
+    cFit->cd(3);
     hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);//set x-axis range
     printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-(max-min)/2,max+(max-min)/2,min,max); 
     
@@ -3925,8 +3927,8 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
 void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  getdet("histin");
-
+  getdet(histin);
+  
   cFit->Clear();
   
   Float_t energies[100];
@@ -3952,8 +3954,8 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
       if(energies[nlist]<min)min=energies[nlist];
       cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
       nlist++;
-      printf(" Read in %d peaks from file.\n",nlist);
     }
+    printf(" Read in %d peaks from file.\n",nlist);
     if(nlist<=1){
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
     }
@@ -3998,15 +4000,16 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
     //     hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);  
     //width=hProj->GetFunction("gaus")->GetParameter(2);
 
-cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+    cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
     printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
- printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
- //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
-printf("Testing fit:\n");
-  for (Int_t i=0; i<npeaks; i++){
+    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+    
+ printf("Testing fit:\n");
+ for (Int_t i=0; i<npeaks; i++){
     printf(" Peak %d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
   }  
   }
+
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
