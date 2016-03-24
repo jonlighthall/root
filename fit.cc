@@ -3506,8 +3506,8 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   Float_t ein;
   Float_t max=0,min=0;//added
   Float_t a=0,b=0;//added
-  Int_t nlist=0;
-  
+  Int_t setpad=0;  
+  Int_t nlist=0;  
   Bool_t filefail=false;
   ifstream listfile(filename);
   if(!(listfile))  {//just show the peaks!
@@ -3516,6 +3516,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   }
   else {
     cFit->Divide(1,2);
+    setpad++;
     printf("Reading file %s\n",filename);
     while(listfile>>ein) {
       energies[nlist]=ein;
@@ -3540,18 +3541,17 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 
   findpeaks(resolution,sigma,threshold,option);
   gfindpeaks(); 
+  decon(setpad);
   
-  if((filefail)) 
-    decon(0);
-  else
- {
-     decon(1);
-     cFit->cd(2);
-   if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
+  if(!(filefail)) {
+    cFit->cd(2);
+    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
     hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
     if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
     //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");//needed?
     hFit->Reset();  
+    hFit->SetXTitle("Positions from calibration file");
+    hFit->SetYTitle("Positions from peaks");
 
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
@@ -3561,9 +3561,9 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
     
     hFit->GetXaxis()->UnZoom();
     hFit->SetStats(kFALSE);//
-    //hFit->SetMarkerStyle(2);
-    //hFit->SetMarkerColor(1);
-    //hFit->SetMarkerSize(3);
+    hFit->SetMarkerStyle(2);
+    hFit->SetMarkerColor(1);
+    hFit->SetMarkerSize(3);
     hFit->Fit("pol1","Q");    
     slope=hFit->GetFunction("pol1")->GetParameter(1);
     offset=hFit->GetFunction("pol1")->GetParameter(0);
@@ -3654,105 +3654,6 @@ for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
     }
   }
   printf("Average peak width is %f\n",sig_av/npeaks);
-}
-
-
-void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
-{//extension of peakfit() - takes a 2D histogram as input
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  getdet(histin);
-
-  cFit->Clear();
-  Float_t energies[100];
-  Float_t slope,offset,width;
-  Float_t ein; 
-  Float_t max=0,min=0;
-  Float_t a=0,b=0;
-  Int_t nlist=0;
-
-  Bool_t filefail=false;
-  ifstream listfile(filename);
-  if(!(listfile)) {
-    printf("No such file! Proceeding with peak find (without fit).\n");
-    filefail=true;
-    cFit->Divide(1,2);
-  }
-  else {
-    cFit->Divide(1,3);
-    printf("Reading file %s\n",filename);    
-    while(listfile>>ein) {
-      energies[nlist]=ein;
-      if(nlist==0)min=energies[nlist];
-      if(energies[nlist]>max)max=energies[nlist];
-      if(energies[nlist]<min)min=energies[nlist];
-      cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
-      nlist++;
-    }
-    printf(" Read in %d peaks from file.\n",nlist);
-    if(nlist<=1){
-      printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
-    }
-  }
-
-  cFit->cd(1);
-  TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
-  hInput->Draw("COL");
- 
-  cFit->cd(2);
-  hname=histin;
-  hname+="_px";
-  hInput->ProjectionX(hname);
-  hProj=(TH1F *) gROOT->FindObject(hname.Data());
-  hProj->Draw(); 
-  a=hProj->GetXaxis()->GetXmin();
-  b=hProj->GetXaxis()->GetXmax();
-
-  findpeaks(resolution,sigma,threshold,option);
-  gfindpeaks();  
-  decon(2);
-  
-  if(!filefail) {
-    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
-    hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
-    if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
-    //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
-    hFit->Reset();
-    
-    for (Int_t i=0; i<npeaks; i++) {
-      hFit->Fill(energies[i],positions[i]);
-    }
-    hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);//set x-axis range
-    printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-(max-min)/2,max+(max-min)/2,min,max); 
-    
-    hFit->SetAxisRange(a,b);//set x-axis range
-    hFit->SetStats(kFALSE);//
-    hFit->SetMarkerStyle(2);
-    //hFit->SetMarkerColor(2);
-    hFit->SetMarkerSize(3);
-    hFit->Fit("pol1","Q");
-    slope=hFit->GetFunction("pol1")->GetParameter(1);
-    offset=hFit->GetFunction("pol1")->GetParameter(0);
-    //    hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
-    //width=hProj->GetFunction("gaus")->GetParameter(2);
-    cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
-       
-    cFit->cd(3);
-    hFit->Draw("P");
-    printf("Testing fit:\n");
-    for (Int_t i=0; i<npeaks; i++){
-      printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
-    }  
-  }
-  
-  FILE * outfile;
-  outfile=fopen("temp.lst","w");
-  fprintf(outfile,"%g, %g\n",slope,offset);
-  fclose(outfile);
- outfile=fopen("temp_inv.lst","w");
-  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
-  fclose(outfile);
 }
 
 void decon(Int_t padno=1)
@@ -3917,6 +3818,110 @@ const int npar=npeaks*3;
   hFit3->Draw("P");
 }
 
+void readandfit(Char_t *filename="")
+{
+
+}
+
+
+void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+{//extension of peakfit() - takes a 2D histogram as input
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  getdet(histin);
+
+  cFit->Clear();
+  Float_t energies[100];
+  Float_t slope,offset,width;
+  Float_t ein; 
+  Float_t max=0,min=0;
+  Float_t a=0,b=0;
+  Int_t nlist=0;
+
+  Bool_t filefail=false;
+  ifstream listfile(filename);
+  if(!(listfile)) {
+    printf("No such file! Proceeding with peak find (without fit).\n");
+    filefail=true;
+    cFit->Divide(1,2);
+  }
+  else {
+    cFit->Divide(1,3);
+    printf("Reading file %s\n",filename);    
+    while(listfile>>ein) {
+      energies[nlist]=ein;
+      if(nlist==0)min=energies[nlist];
+      if(energies[nlist]>max)max=energies[nlist];
+      if(energies[nlist]<min)min=energies[nlist];
+      cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+      nlist++;
+    }
+    printf(" Read in %d peaks from file.\n",nlist);
+    if(nlist<=1){
+      printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
+    }
+  }
+
+  cFit->cd(1);
+  TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
+  hInput->Draw("COL");
+ 
+  cFit->cd(2);
+  hname=histin;
+  hname+="_px";
+  hInput->ProjectionX(hname);
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  hProj->Draw(); 
+  a=hProj->GetXaxis()->GetXmin();
+  b=hProj->GetXaxis()->GetXmax();
+
+  findpeaks(resolution,sigma,threshold,option);
+  gfindpeaks();  
+  decon(2);
+  
+  if(!filefail) {
+    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added
+    hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
+    if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
+    //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");  //needed?
+    hFit->Reset();
+    
+    for (Int_t i=0; i<npeaks; i++) {
+      hFit->Fill(energies[i],positions[i]);
+    }
+    hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);//set x-axis range
+    printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-(max-min)/2,max+(max-min)/2,min,max); 
+    
+    hFit->SetAxisRange(a,b);//set x-axis range
+    hFit->SetStats(kFALSE);//
+    hFit->SetMarkerStyle(2);
+    //hFit->SetMarkerColor(2);
+    hFit->SetMarkerSize(3);
+    hFit->Fit("pol1","Q");
+    slope=hFit->GetFunction("pol1")->GetParameter(1);
+    offset=hFit->GetFunction("pol1")->GetParameter(0);
+    //    hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
+    //width=hProj->GetFunction("gaus")->GetParameter(2);
+    cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+       
+    cFit->cd(3);
+    hFit->Draw("P");
+    printf("Testing fit:\n");
+    for (Int_t i=0; i<npeaks; i++){
+      printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+    }  
+  }
+  
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
+  fprintf(outfile,"%g, %g\n",slope,offset);
+  fclose(outfile);
+ outfile=fopen("temp_inv.lst","w");
+  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
+  fclose(outfile);
+}
+
 void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
@@ -3925,7 +3930,6 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   cFit->Clear();
   
   Float_t energies[100];
-
   Float_t slope,offset,width;
   Float_t ein; 
   Float_t max=0,min=0;
