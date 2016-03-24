@@ -3502,7 +3502,6 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 
   cFit->Clear();
   Float_t energies[100];
-  
   Float_t slope,offset,width;
   Float_t ein;
   Float_t max=0,min=0;//added
@@ -3540,25 +3539,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   b=hProj->GetXaxis()->GetXmax();
 
   findpeaks(resolution,sigma,threshold,option);
-   
-  for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
-    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
-      min_space=positions[i+1]-positions[i];
-  }
-  printf("The minimum spacing between adjacent peaks is %f\n",min_space);
-  Float_t sig_av=0;
-  for (Int_t i=0; i<npeaks; i++){
-    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    printf(" Peak %d found at channel %.3f",i,positions[i]);
-    gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
-    printf(" (%.2g wide)\n",gaus->GetParameter(2));
-    sig_av+=gaus->GetParameter(2);
-    for (Int_t j=0; j<3; j++) {
-      gparameters[(3*i)+j]=gaus->GetParameter(j);
-    }
-  }
-  printf("Average peak width is %f\n",sig_av/npeaks);
+  gfindpeaks(); 
   
   if((filefail)) 
     decon(0);
@@ -3653,6 +3634,28 @@ printf("                         by height | by pos   | diff\n");
   */
 }
 
+void gfindpeaks()
+{
+for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
+    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
+      min_space=positions[i+1]-positions[i];
+  }
+  printf("The minimum spacing between adjacent peaks is %f\n",min_space);
+  Float_t sig_av=0;
+  for (Int_t i=0; i<npeaks; i++){
+    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    printf(" Peak %d found at channel %.3f",i,positions[i]);
+    gfitc(hname.Data(),positions[i],min_space/2,"+q");
+    printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
+    printf(" (%.2g wide)\n",gaus->GetParameter(2));
+    sig_av+=gaus->GetParameter(2);
+    for (Int_t j=0; j<3; j++) {
+      gparameters[(3*i)+j]=gaus->GetParameter(j);
+    }
+  }
+  printf("Average peak width is %f\n",sig_av/npeaks);
+}
+
 
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
@@ -3661,7 +3664,6 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
 
   cFit->Clear();
   Float_t energies[100];
-
   Float_t slope,offset,width;
   Float_t ein; 
   Float_t max=0,min=0;
@@ -3706,27 +3708,7 @@ void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   b=hProj->GetXaxis()->GetXmax();
 
   findpeaks(resolution,sigma,threshold,option);
-  
-  for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
-    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
-      min_space=positions[i+1]-positions[i];
-  }
-  printf("The minimum spacing between adjacent peaks is %f\n",min_space);
-  Float_t sig_av=0;
-  for (Int_t i=0; i<npeaks; i++) {
-    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    printf(" Peak %2d found at channel %.3f",i,positions[i]);
-    gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
-    printf(" (%.5f wide)\n",gaus->GetParameter(2));
-    sig_av+=gaus->GetParameter(2);
-    positions[i]=gaus->GetParameter(1);
-    for (Int_t j=0; j<3; j++) {
-      gparameters[(3*i)+j]=gaus->GetParameter(j);
-    }
-  }
-  printf(" Average peak width is %f\n",sig_av/npeaks);
-  
+  gfindpeaks();  
   decon(2);
   
   if(!filefail) {
@@ -3986,25 +3968,8 @@ void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-  for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
-    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
-      min_space=positions[i+1]-positions[i];
-  }
-  printf(" The minimum spacing between adjacent peaks is %f\n",min_space);
-  Float_t sig_av=0;
-  printf("Fitting individual peaks...");
-  for (Int_t i=0; i<npeaks; i++) {
-    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    printf(" Peak %d found at channel %.2f",i,positions[i]);
-    gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.2f wide)\n",gaus->GetParameter(2));
-    sig_av+=gaus->GetParameter(2);positions[i]=gaus->GetParameter(1);//is this better!?
-    for (Int_t j=0; j<3; j++) {
-      gparameters[(3*i)+j]=gaus->GetParameter(j);
-    }
-  }
-  printf(" Average peak width is %f\n",sig_av/npeaks);
-
+  findpeaks(resolution,sigma,threshold,option);
+  gfindpeaks();
   decon(2);
  
   if(!filefail) {
