@@ -217,7 +217,7 @@ void mkhist2d(Char_t *histin="h", Int_t x_bins=3, Float_t x_low=0, Float_t x_hig
     h->Fill(1.2*x_size,0.8*y_size,1);//overfill
     h->Fill(8,8,1);//second entry in same bin
     h->Fill((x_size/x_bins)/2+(x_size/x_bins)*(x_bins-1),(y_size/y_bins)/2,10);
-  h->Fill((x_size/y_bins)/2,(y_size/y_bins)/2+(y_size/y_bins)*(y_bins-1),5);  
+    h->Fill((x_size/y_bins)/2,(y_size/y_bins)/2+(y_size/y_bins)*(y_bins-1),5);  
   }
   h->Draw("colz");
 }
@@ -1148,7 +1148,7 @@ void setscale(Char_t *histin,Float_t minX=0,Float_t maxX=0,Float_t minY=0,Float_
 }
 
 void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_t maxX=0,
-	     Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)
+	      Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
@@ -1573,7 +1573,7 @@ void shiftx2(Char_t *histin, Float_t shift_x=0, Bool_t move_x_axis=kFALSE, Float
   }
  
   Float_t set_xmin=xmin, set_xmax=xmax, set_ymin=ymin, set_ymax=ymax;
-   if(move_x_axis) {
+  if(move_x_axis) {
     set_xmin+=shift_x;
     set_xmax+=shift_x;
   }
@@ -2243,9 +2243,7 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
     xmax=xmin;
   } 
   hist1->Fit("gaus",option,"",xmin,xmax);
-  Int_t gint=0;
-  gint= hist1->Integral(hist1->GetXaxis()->FindBin(xmin),hist1->GetXaxis()->FindBin(xmax));
-  printf(" integral is %d ",gint);
+  
   if(!((bool)(strchr(option,'q'))||(bool)(strchr(option,'Q'))))
     ginfo();
 }
@@ -2266,13 +2264,13 @@ void gfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *
   }*/
 
 void findX () {
-/* Float_t x_pos=0;
-  Float_t y_pos=27;
-  Float_t z_pos=717.9;
-  y_pos-=27;*/
+  /* Float_t x_pos=0;
+     Float_t y_pos=27;
+     Float_t z_pos=717.9;
+     y_pos-=27;*/
 
-for (Int_t i=0; i<npeaks; i++) {
-       //x_pos=positions[i]-118;
+  for (Int_t i=0; i<npeaks; i++) {
+    //x_pos=positions[i]-118;
     //printf("\n     Positions %f %f Angles are: %f %f \n",x_pos,y_pos,findTheta(x_pos,y_pos,z_pos),findPhi(x_pos,y_pos,z_pos));
    
   }
@@ -2323,7 +2321,7 @@ void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W
 
 void getdet(Char_t *histname)
 {
-hname=histname;
+  hname=histname;
   for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
     TString tempst="";
     tempst=hname(i,hname.Length()-i);
@@ -3505,7 +3503,6 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   if(filename!="") 
     setpad++;
   cFit->Divide(1,setpad+1);  
-  printf("setpad = %d\n",setpad);
 
   cFit->cd(1);
   hname=histin;
@@ -3521,17 +3518,16 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//assumes hProj is defined, npeaks
   TSpectrum *spectrum=new TSpectrum();
-  
-  printf("Proceeding with peak search...");
+  printf("Step 1: Searching for peaks... ");
   spectrum->SetResolution(resolution);
   spectrum->Search(hProj,sigma,option,threshold);
   positions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
   npeaks=spectrum->GetNPeaks();
   cout << "Found "<<npeaks<<" peaks in spectrum from "<<hname.Data()<<"."<<endl;
   if(gROOT->GetVersionInt()<52400)
-    printf("Deprecated ROOT version. No sorting necessary.\n");
+    printf(" Deprecated ROOT version. No sorting necessary.\n");
   else{
-    printf("Modern ROOT version. Sorting peaks by position...\n");
+    printf(" Modern ROOT version. Sorting peaks by position...\n");
     Float_t sorted[100];
     sorted[0]=positions[0];//initializes sorted array with a valid position
     for(Int_t i=0;i<npeaks;i++){
@@ -3546,53 +3542,60 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
 	  sorted[i]=positions[j];//locates next-smallest position
       }
     }
-   for(Int_t i=0;i<npeaks;i++){
-     positions[i]=sorted[i];  
-   }
+    Bool_t showp=kTRUE;
+    if(showp) {
+      printf(" Peak positions:\n");
+      printf("                          by height | by pos \n");
+      for (Int_t i=0; i<npeaks; i++){
+	printf("  Peak %2d found at position %7.3f | %7.3f \n",i,positions[i],sorted[i]);
+      }
+    } 
+
+    for(Int_t i=0;i<npeaks;i++){
+      positions[i]=sorted[i];  
+    }
   }//end version IF 
-  /*
- delete spectrum;
- Bool_t showp=kTRUE;
- if(showp) {
-printf("Peak positions:\n");
-printf("                         by height | by pos   | diff\n");
-  for (Int_t i=0; i<npeaks; i++){
-    printf("Peak %2d found at position %f | %f | %f\n",i,positions[i],sorted[i],sorted[i]-sorted[0]);
+  for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
+    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
+      min_space=positions[i+1]-positions[i];
   }
-  }
-  */
+  printf(" The minimum spacing between adjacent peaks is %f\n",min_space);
+  
+  //delete spectrum;
+ 
+  
 }
 
 void gfindpeaks()
 {
-for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
-    if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
-      min_space=positions[i+1]-positions[i];
-  }
-  printf("The minimum spacing between adjacent peaks is %f\n",min_space);
   Float_t sig_av=0;
+  printf("Step 2: Fitting each peak with a gaussian...\n");
+  printf("                         peak  | gaus    | diff    | int   | width \n");
   for (Int_t i=0; i<npeaks; i++){
-    //cout<<" Peak " <<i<<" found at channel "<<positions[i]<<endl;
-    printf(" Peak %d found at channel %.3f",i,positions[i]);
+    printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" (%.3f gaus center %.5f off )",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
-    printf(" (%.2g wide)\n",gaus->GetParameter(2));
+    printf(" %7.3f | %.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
+    Int_t gint=0;
+    gint= hProj->Integral(positions[i]-min_space/2,positions[i]+min_space/2);
+    printf(" %d |",gint);
+    printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
     for (Int_t j=0; j<3; j++) {
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
   }
-  printf("Average peak width is %f\n",sig_av/npeaks);
+  printf(" Average peak width is %f\n",sig_av/npeaks);
 }
 
 void decon(Int_t padno=1)
 {//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
-const int npar=npeaks*3;
+  const int npar=npeaks*3;
   Double_t par[npar];
   Bool_t docon=kTRUE;
   Float_t gfitwide=min_space;
   Float_t gfitmin=positions[0]-gfitwide;
   Float_t gfitmax=positions[npeaks-1]+gfitwide;
+  printf("Step 3: Calculating global fit...");
   switch(npeaks){
   case 0:
     printf(" No peaks found!\n");
@@ -3732,7 +3735,7 @@ const int npar=npeaks*3;
       functions[i]->SetLineStyle(2);
       //cFit->cd(2);
       functions[i]->Draw("same");
-   }  
+    }  
   }
   cFit2->cd(1);
   hFit2->SetMarkerStyle(2);
@@ -3749,27 +3752,28 @@ const int npar=npeaks*3;
 
 void readandfit(Char_t *filename="",Int_t setpad=0)
 {
- Float_t energies[100];
+  Float_t energies[100];
   Float_t slope,offset,width;
   Float_t ein;
   Float_t max=0,min=0;//added
   Float_t a=0,b=0;//added
-
-Int_t nlist=0;  
+  Int_t nlist=0;  
   Bool_t filefail=false;
   ifstream listfile(filename);
+  
+  printf("Step 4: Calculating linear calibration... ");
   if(!(listfile))  {//just show the peaks!
-    printf("No such file! Terminating without fit!\n");
+    printf("No calibration file found! Terminating without fit!\n");
     filefail=true;
   }
   else {
-    printf("Reading file %s\n",filename);
+    printf(" Reading file %s\n",filename);
     while(listfile>>ein) {
       energies[nlist]=ein;
       if(nlist==0)min=energies[nlist];//added
       if(energies[nlist]>max)max=energies[nlist];//added
       if(energies[nlist]<min)min=energies[nlist];//added
-      cout << " Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+      cout << "  Energy "<<nlist<< "= "<<energies[nlist]<<endl;
       nlist++;
     }
     printf(" Read in %d peaks from file.\n",nlist);
@@ -3781,7 +3785,7 @@ Int_t nlist=0;
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
 
-if(!(filefail)) {
+  if(!(filefail)) {
     cFit->cd(setpad+1);
     if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
     hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
@@ -3812,15 +3816,15 @@ if(!(filefail)) {
     //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
     //width=hProj->GetFunction("gaus")->GetParameter(2);
     //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+    printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+    printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
 
     cFit->cd(setpad+1);
     hFit->Draw("P");
-    printf("Testing fit:\n");
+    printf(" Testing fit:\n");
     for (Int_t i=0; i<npeaks; i++){
-      printf(" Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+      printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
     }  
   }
    
@@ -4373,17 +4377,17 @@ void expandcal(Char_t *calfile="calibration.cal",Int_t index=0,Bool_t overwrite=
     }
     printf("The contents of \"%s\" are approximately:\n",calfile);
     for(Int_t i=0;i<dets;i++) {
-        for(Int_t l=0;l<3;l++) {
+      for(Int_t l=0;l<3;l++) {
       
-      fprintf(outfile,"%2.0f ",param[i][0]*3+l);
-      printf("%2.0f ",param[i][0]*3+l);
-      for(Int_t j=1;j<k-1;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%5.0f ",param[i][j]);
-      }
-      fprintf(outfile,"\n");
-      printf("\n");
+	fprintf(outfile,"%2.0f ",param[i][0]*3+l);
+	printf("%2.0f ",param[i][0]*3+l);
+	for(Int_t j=1;j<k-1;j++){
+	  fprintf(outfile,"%g ",param[i][j]);
+	  printf("%5.0f ",param[i][j]);
 	}
+	fprintf(outfile,"\n");
+	printf("\n");
+      }
     }
     fclose(outfile);
   }
