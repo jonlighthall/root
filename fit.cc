@@ -2276,6 +2276,22 @@ void findX () {
   }
 }
 
+Float_t x_posp=0;
+Float_t y_posp=0;
+Float_t z_posp=0;
+
+void rotateY(Float_t theta=30)
+{//rotates x.y,z positions by a given angle about the y-axis
+  theta=(theta/180)*TMath::Pi();
+  x_posp=x_pos*TMath::Cos(theta)-z_pos*TMath::Sin(theta);
+  y_posp=y_pos;
+  z_posp=x_pos*TMath::Sin(theta)+z_pos*TMath::Cos(theta);
+  printf("x goes from %3.1f to %3.1f, ",x_pos,x_posp);
+  printf("y %3.1f to %3.1f ",y_pos,y_posp);
+  printf("z %3.1f to %3.1f ",z_pos,z_posp);
+  printf("r %3.1f to %3.1f \n",TMath::Sqrt(TMath::Power(x_pos,2) + TMath::Power(y_pos,2) + TMath::Power(z_pos,2))
+	 ,TMath::Sqrt(TMath::Power(x_posp,2) + TMath::Power(y_posp,2) + TMath::Power(z_posp,2)));
+}
 
 double findPhi (double x, double y, double z) {
   // define phi from x, y z
@@ -2285,9 +2301,9 @@ double findPhi (double x, double y, double z) {
 
 double findTheta (double x, double y, double z) {
   // define theta from x, y, z
-  double theta = TMath::ACos(( x+(TMath::Sqrt(3))*z )/ 2*TMath::Sqrt(TMath::Power(z,2) + TMath::Power(x, 2) + TMath::Power(y,2)));
+  double r = TMath::Sqrt(TMath::Power(x,2) + TMath::Power(y,2) + TMath::Power(z,2));
+  double theta = TMath::ACos(z/r)*TMath::RadToDeg();
   return theta;
-
 }
 
 void ginfo (void)
@@ -3562,8 +3578,6 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
   printf(" The minimum spacing between adjacent peaks is %f\n",min_space);
   
   //delete spectrum;
- 
-  
 }
 
 void gfindpeaks()
@@ -3748,6 +3762,85 @@ void decon(Int_t padno=1)
   hFit3->SetMarkerColor(1);
   hFit3->SetMarkerSize(3);
   hFit3->Draw("P");
+}
+
+Float_t x_pos=0;
+Float_t y_pos=0;
+Float_t z_pos=0;
+
+void readandruth(Int_t detno=0, Int_t colno=0)
+{
+  Float_t energies[100];
+  Float_t ein;
+  Float_t max=0,min=0;
+  Int_t nlist=0;  
+  Float_t z=0;
+
+  switch(detno) {
+  case 0:
+    z_pos=717.9;
+    ifstream listfile("cal/Y1_grid.lst");  
+    while(listfile>>ein) {
+      energies[nlist]=ein;
+     
+      cout << "  Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+      nlist++;
+    }
+    printf(" Read in %d peaks from file.\n",nlist);
+    y_pos = energies[colno];
+    printf("y position is %f\n",y_pos);
+    hhitc0->GetYaxis()->SetRangeUser(y_pos-2,y_pos+2);
+    peakfitx("hhitc0","cal/X1_grid.lst");//,2,3,0.01);
+    if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
+      mkCanvas2("cFit3","cFit3");
+      cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit->GetWindowTopY()-22);      
+    }
+    cFit3->Clear();
+    if(gROOT->FindObject("hFit4"))hFit4->Delete();//added
+    h1("hFit4","Scattering angle",1000,1,180);
+    hFit4->SetXTitle("Scattering angle (#theta)");
+    hFit4->SetYTitle("Calculated area under Gaussian");
+    
+    Float_t theta=0;
+    y_pos-=27;
+    for (Int_t i=0;i<npeaks;i++) {
+      x_pos=positions[i];
+      x_pos-=118;
+      rotateY(-30);
+      theta=findTheta(x_posp,y_posp,z_posp);
+      if(i==0)min=theta;
+      if(theta>max)max=theta;
+      if(theta<min)min=theta;
+      Float_t int=gparameters[0+3*i]*gparameters[2+3*i]*TMath::Sqrt(TMath::TwoPi());
+      hFit4->Fill(theta,int);
+      printf(" theta = %f, int = %f\n",theta,int);
+	     }
+	cFit3->cd();
+      hFit4->SetMarkerStyle(2);
+      hFit4->SetMarkerColor(1);
+      hFit4->SetMarkerSize(3);
+      ruthdef();
+      //cFit3->SetLogy();
+      Float_t umin=0,umax=0,umar=0;
+      umar=(max-min)/5;
+      umin=min-umar;
+      umax=max+umar;
+      //printf("min is %f max is %f umar is %f umin is %f umax is %f\n",min, max,umar,umin,umax);
+      hFit4->GetXaxis()->SetRangeUser(umin,umax);//set x-axis range
+      hFit4->Fit("ruth","m","",umin,umax);
+      hFit4->Draw("P");
+    
+      break;
+    case 1:
+      z_pos=682.9;
+      ifstream listfile("cal/Y2_grid.lst");  
+      peakfitx("hhitc1");
+      break;
+    case 2:
+    printf("wrong number");
+    break;
+  default:break;  
+}
 }
 
 void readandfit(Char_t *filename="",Int_t setpad=0)
