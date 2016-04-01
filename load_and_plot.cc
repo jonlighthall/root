@@ -3550,13 +3550,30 @@ void funcfit(Char_t *histin="hposc0", Char_t *filename="cal/X1.lst",Float_t slop
 TF1 *ruth;
 void ruthdef()
 {//Rutherford scattering cross section function with offsets and scale
-  ruth =new TF1("ruth","[0]+[1]*TMath::Power(sin([2]*x-[3]),-4)");
-  ruth->SetParLimits(1,0,1e+05);
-  ruth->SetParLimits(2,-1e-01,1e-01);
-  ruth->SetParName(0,"y offset");  
-  ruth->SetParName(1,"y scale");  
-  ruth->SetParName(2,"x scale");  
-  ruth->SetParName(3,"x offset");  
+  //  ruth =new TF1("ruth","[0]+[1]*TMath::Power(TMath::Sin([2]*(x*TMath::DegToRad()/2)-[3]),-4)");
+  ruth =new TF1("ruth","[0]*TMath::Power(TMath::Sin(((x+[1])*TMath::DegToRad())/2),-4)");
+  //ruth->SetParLimits(1,0,1e+06);
+  //ruth->SetParLimits(2,-1e-01,1e-01);
+  ruth->SetParName(0,"y scale");  
+  //ruth->SetParName(1,"y offset");//physical meaning?
+  //ruth->SetParName(2,"x scale");//does't work  
+  ruth->SetParName(1,"x offset");  
+  //  ruth->SetParameters(1,1);
+}
+
+void ruthtest()
+{
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
+  if(gROOT->FindObject("hruth"))hruth->Delete();
+  h1("hruth","Rutherford Scattering Data",1000,1,180);
+  fillhist("ruth.lst","hruth",0);
+  ruthdef();
+  hruth->Fit("ruth","m","",10,160);
+  cFit->SetLogy();
+  hruth->SetMarkerStyle(2);
+  hruth->SetMarkerColor(1);
+  hruth->SetMarkerSize(2);
+  hruth->Draw("P");
 }
 
 TF1 *ruther;
@@ -3610,7 +3627,7 @@ void ruthset()
   }
 }
 
-void ruthfitsimp(Char_t *histin="hposc0")
+void ruthfitsimp(Char_t *histin="hposc0",Float_t min=101,Float_t max=148)
 {
   ruthset();
   hname=histin;
@@ -3618,7 +3635,7 @@ void ruthfitsimp(Char_t *histin="hposc0")
   cFit->Clear();
   hProj=(TH1F *) gROOT->FindObject(histin); 
   hProj->Draw("COL");
-  hProj->Fit("ruth","","",101,148);
+  hProj->Fit("ruth","","",min,max);
 }
 
 void ruthload(Char_t *filename="cal/X1.lst",Float_t slope=1, Float_t offset=0)
