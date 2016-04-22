@@ -4526,7 +4526,8 @@ void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
 //macros for the EMMA IC-------------------------------------------------------------------------
 
 void Gaus(double mean1, double sigma1, double mean2, double sigma2)
-{//creates a 2D histogram of a gaussian distribution with given means and widths
+{//developed by Lily
+ //creates a 2D histogram of a gaussian distribution with given means and widths
   gROOT->SetStyle("Plain");
   gStyle->SetPalette(1);
   gStyle->SetOptStat(0);
@@ -4599,8 +4600,8 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
   //  // hist->SaveAs("fit.eps");
 }
 
-void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, double smear) {
-  
+void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, double smear) 
+{//developed by Lily 
   gROOT->SetStyle("Plain");
   gStyle->SetPalette(1);
   gStyle->SetOptStat(0);
