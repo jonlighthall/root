@@ -3551,13 +3551,13 @@ TF1 *ruth;
 void ruthdef()
 {//Rutherford scattering cross section function with offsets and scale
   //  ruth =new TF1("ruth","[0]+[1]*TMath::Power(TMath::Sin([2]*(x*TMath::DegToRad()/2)-[3]),-4)");
-  ruth =new TF1("ruth","[0]*TMath::Power(TMath::Sin(((x+[1])*TMath::DegToRad())/2),-4)");
+  ruth =new TF1("ruth","[0]*TMath::Power(TMath::Sin(((x)*TMath::DegToRad())/2),-4)");
   //ruth->SetParLimits(1,0,1e+06);
   //ruth->SetParLimits(2,-1e-01,1e-01);
   ruth->SetParName(0,"y scale");  
   //ruth->SetParName(1,"y offset");//physical meaning?
   //ruth->SetParName(2,"x scale");//does't work  
-  ruth->SetParName(1,"x offset");  
+  //ruth->SetParName(1,"x offset");  
   //  ruth->SetParameters(1,1);
 }
 
@@ -4696,11 +4696,105 @@ void plotgaus(Int_t bins=100, Int_t counts=10000, Bool_t set_strag=kTRUE, Float_
 
 //-----------------------------------------------------------------------------------------------
 //macros for EMMA tree analysis -----------------------------------------------------------------
-void treecomp()
+void treecomp(Int_t detno=0)
 {
-  if (!((TF1 *) gROOT->FindObject("hdata0_copy"))) {
-    hdata0->Clone("hdata0_copy");
+  TString names[7]={ "ab","am","at","xf","xn","yn","yf"};//please note that here the order of signals matches the readout and now the tree order
+  //  gEnv->SetValue("Hist.Binning.1D.x",100);
+  hname="hdata";
+  hname+=detno;
+  printf(" Input histogram name is %s\n",hname.Data());
+  dr(hname.Data());
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
+  //Int_t set_bins=hProj->GetXaxis()->GetNbins();
+  //gEnv->SetValue("Hist.Binning.1D.x",set_bins);
+  hname="hdata0_copy";
+  if(!(TH1F*)gROOT->FindObject(hname.Data())){
+    hProj->Clone(hname.Data());
   }
-    hdata0_copy->Reset();
-    
+  hFit=(TH1F *) gROOT->FindObject(hname.Data());
+  hFit->Reset();
+  cFit->SetLogy();
+  hFit->SetLineColor(2);
+  hFit->SetLineStyle(2);
+  Int_t signo=0;
+  Bool_t pgac1=kTRUE;
+  if(detno<6) {//anode data
+    if(detno<3) //detector 1
+      signo=detno;
+    else {//detector 2
+      signo=detno-3;
+      pgac1=kFALSE;
   }
+  }
+  else {//cathode data 
+    if(detno<10)//detector 1
+      signo=detno-3;
+    else {
+      signo=detno-7;
+      pgac1=kFALSE;
+    }
+  }
+  
+  printf("signal number is %d on detector %d\n",signo,pgac1+1);
+  //TString tname;
+  if(pgac1)
+    hname="PGAC1.";
+  else
+    hname="PGAC2.";  
+
+  hname+=names[signo];
+  // hname+=" \x003E\x003E hdata0_copy";
+  hname+=">";
+  hname+=">";
+  hname+="hdata0_copy";
+  printf("Target branch is %s\n",hname.Data());
+  TString cname=names[signo];
+  cname+=">0";
+  TCut c1 = cname.Data();
+  printf("Cut is %s\n",cname.Data());
+
+  t1->Draw(hname.Data(),c1,"same");
+}
+
+
+void anode (Int detno=0)
+{
+  TString names[7]={ "ab","am","at","xf","xn","yn","yf"};//please note that here the order of signals matches the readout and now the tree order
+  Int_t signo=0;
+  Bool_t pgac1=kTRUE;
+  if(detno<6) {//anode data
+    if(detno<3) //detector 1
+      signo=detno;
+    else {//detector 2
+      signo=detno-3;
+      pgac1=kFALSE;
+    }
+  }
+  else {//cathode data 
+    if(detno<10)//detector 1
+      signo=detno-3;
+    else {
+      signo=detno-7;
+      pgac1=kFALSE;
+    }
+  }
+  
+  printf("signal number is %d on detector %d\n",signo,pgac1+1);
+  //TString tname;
+  if(pgac1)
+    hname="PGAC1.";
+  else
+    hname="PGAC2.";  
+
+  hname+=names[signo];
+  hname+=">";
+  hname+=">";
+  hname+="hdata0_copy";
+  printf("Target branch is %s\n",hname.Data());
+  TString cname=names[signo];
+  cname+=">0";
+  TCut c1 = cname.Data();
+  printf("Cut is %s\n",cname.Data());
+
+  t1->Draw(hname.Data(),c1,"same");
+}
