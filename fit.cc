@@ -3584,14 +3584,14 @@ void gfindpeaks()
 {
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a gaussian...\n");
-  printf("                         peak  | gaus     | diff    | int   | width \n");
+  printf("                         peak  | gaus     | diff     | int   | width \n");
   for (Int_t i=0; i<npeaks; i++){
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" %7.3f | %8.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
     Int_t gint=0;
     gint= hProj->Integral(positions[i]-min_space/2,positions[i]+min_space/2);
-    printf(" %d |",gint);
+    printf(" %5d |",gint);
     printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
     for (Int_t j=0; j<3; j++) {
