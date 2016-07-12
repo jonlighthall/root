@@ -2313,7 +2313,7 @@ void ginfo (void)
   sigma=gaus->GetParameter(2);
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
-  printf("Width of peak is %f or %f FWHM (%f%%)\n",sigma,width,width/mean*100);
+  printf("Width of peak is %f or %f FWHM (%.2f%%)\n",sigma,width,width/mean*100);
   printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
   printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
@@ -3584,11 +3584,11 @@ void gfindpeaks()
 {
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a gaussian...\n");
-  printf("                         peak  | gaus    | diff    | int   | width \n");
+  printf("                         peak  | gaus     | diff    | int   | width \n");
   for (Int_t i=0; i<npeaks; i++){
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
-    printf(" %7.3f | %.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
+    printf(" %7.3f | %8.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
     Int_t gint=0;
     gint= hProj->Integral(positions[i]-min_space/2,positions[i]+min_space/2);
     printf(" %d |",gint);
