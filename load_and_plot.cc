@@ -8,8 +8,8 @@
  *          + 12B(d,p) experiment
  *       ...and plots figures for the HELIOS NIM paper and the Lighthall doctoral thesis.
  * Requires:
- *       fit.cc
- *       psd_analyze.cc
+ *       fit.cc (most)
+ *       psd_analyze.cc (some)
  */
 Bool_t bOrig=0;//Turn on/off settings for 1.91T
 Bool_t bw=0;//Turn on/off black and white figures
@@ -4757,7 +4757,7 @@ void treecomp(Int_t detno=0)
 }
 
 
-void anode (Int detno=0)
+void anode (Int_t detno=0)
 {
   TString names[7]={ "ab","am","at","xf","xn","yn","yf"};//please note that here the order of signals matches the readout and now the tree order
   Int_t signo=0;
