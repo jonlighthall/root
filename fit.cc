@@ -3571,7 +3571,9 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
       positions[i]=sorted[i];  
     }
   }//end version IF 
-  for (Int_t i=0; i<npeaks; i++){//find min. peak spacing
+  min_space=sorted[npeaks-1]-sorted[0];
+  for (Int_t i=0; i<(npeaks-1); i++){//find min. peak spacing
+    //printf("%f - %f = %f, min %f\n",positions[i+1], positions[i],positions[i+1]-positions[i],min_space);
     if(((positions[i+1]-positions[i])<min_space)&&((i+1)<npeaks))
       min_space=positions[i+1]-positions[i];
   }
@@ -3584,14 +3586,14 @@ void gfindpeaks()
 {
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a gaussian...\n");
-  printf("                         peak  | gaus     | diff     | int   | width \n");
+  printf("                         peak  | gaus     | diff     | 1D int | width \n");
   for (Int_t i=0; i<npeaks; i++){
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" %7.3f | %8.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
     Int_t gint=0;
-    gint= hProj->Integral(positions[i]-min_space/2,positions[i]+min_space/2);
-    printf(" %5d |",gint);
+    gint= hProj->Integral(hProj->FindBin(positions[i]-min_space/2),hProj->FindBin(positions[i]+min_space/2));
+    printf(" %6d |",gint);
     printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
     for (Int_t j=0; j<3; j++) {
@@ -3874,29 +3876,33 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
     }
   }
-
+  
+  Float_t mwidth=0.1;
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
+  Float_t  margin2=(b-a)*mwidth;
 
   if(!(filefail)) {
     cFit->cd(setpad+1);
     if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
-    hFit=new TH1F("hPeakFit","hPeakFit",1024,a,b);//added
+    Float_t margin = (max-min)*mwidth;
+    hFit=new TH1F("hPeakFit","hPeakFit",1024,min-margin,max+margin);//added
     if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
     //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");//needed?
     hFit->Reset();  
     hFit->SetXTitle("Positions from calibration file");
     hFit->SetYTitle("Positions from peaks");
-
+    //printf("filling points...\n");
     for (Int_t i=0; i<npeaks; i++) {
       hFit->Fill(energies[i],positions[i]);
+      //printf("  %f, %f \n",energies[i],positions[i]);
     }
-    //Set axis range here--- which one to use!?
-    hFit->SetAxisRange(min,max);//added to set fit range to peak range
-    hFit->SetAxisRange(min-(max-min)/2,max+(max-min)/2);//set x-axis range
-    hFit->SetAxisRange(a,b);//set x-axis range
+    //hFit->Draw();
+    //Set axis range here--- 
+    //hFit->SetAxisRangeUser(min-margin,max+margin);//set x-axis range
     hFit->GetXaxis()->UnZoom();
-    printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-(max-min)/2,max+(max-min)/2,min,max); 
+    hFit->GetYaxis()->SetRangeUser(a-margin2,b+margin2);//set y-axis range
+    printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-margin,max+margin,min,max); 
 
     hFit->SetStats(kFALSE);//
     hFit->SetMarkerStyle(2);
@@ -3930,7 +3936,6 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
   fclose(outfile);
 
 }
-
 
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
 {//extension of peakfit() - takes a 2D histogram as input
