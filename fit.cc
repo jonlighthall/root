@@ -3733,6 +3733,10 @@ void decon(Int_t padno=1)
     cFit->cd(padno);
 
     TF1 **functions = new TF1*[npeaks];
+    Float_t area=0;
+    Float_t sig_av=0;
+    printf("Calculated fit parameters after deconvolution:\n");
+    printf("                        center | int     | width \n");
     for (Int_t i=0;i<npeaks;i++) {
       char fname[20];
       sprintf(fname,"f%d",i);
@@ -3741,17 +3745,22 @@ void decon(Int_t padno=1)
 	par[j+3*i]=total->GetParameter(j+3*i);
 	functions[i]->SetParameter(j,par[j+3*i]);
       }
-      
-      hFit2->Fill(par[1+3*i],par[2+3*i]);
-      hFit3->Fill(par[1+3*i],par[0+3*i]*par[2+3*i]*TMath::Sqrt(TMath::TwoPi()));
-      // Area under a Gaussian = sqrt(2*pi)*sigma*amplitude
 
+      printf("  Peak %2d  centered at %7.3f | ",i,par[1+3*i]);
+      // Area under a Gaussian = sqrt(2*pi)*sigma*amplitude
+      area=par[0+3*i]*par[2+3*i]*TMath::Sqrt(TMath::TwoPi());
+      printf(" %6.0f | %7.3g \n",area,par[2+3*i]);
+      sig_av+=par[2+3*i];
+      hFit2->Fill(par[1+3*i],par[2+3*i]);
+      hFit3->Fill(par[1+3*i],area);
+     
       //      functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
       functions[i]->SetLineColor(1);
       functions[i]->SetLineStyle(2);
       //cFit->cd(2);
       functions[i]->Draw("same");
-    }  
+    }
+    printf(" Average peak width is %f\n",sig_av/npeaks);  
   }
   cFit2->cd(1);
   hFit2->SetMarkerStyle(2);
