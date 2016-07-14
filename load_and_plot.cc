@@ -332,7 +332,6 @@ void func(Float_t r0=0.895*2.54/100./2.)
     return f9(Zoff(x));
   }
 
-
   TF1 *f11 = new TF1("f11","Zpara(x)",min,max);//-834
   
   for(int i=min;i<max;i++){
@@ -577,7 +576,6 @@ void findtilt(Char_t * histin="hEZg", Int_t steps=1)
   }
 }
 
-
 //Macros for generating figures the HELIOS NIM paper and Lighthall thesis.--------------
 
 void paperplots()
@@ -811,7 +809,6 @@ void paperplots()
     plotlines("_lineB.txt",6,7);
     plotlabangle(ang_fan,0,0,1.007,1,B0);
   }
-
 
   if(!bOrig){
     // f3->SetLineStyle(9);//set line style to match plotlabangle (upper bound)
@@ -1135,7 +1132,6 @@ void paperplots()
     cEx_100->SetCanvasSize(width,(UInt_t)(width*ratio2));
     hOutput7->Draw();
     cEx_100->SaveAs("cExcite_100_6det.eps");
-
 
     //9). Single-detector excitation spectrum
     slopex("hEcX19_py",-0.978476,11.7848);
@@ -2260,7 +2256,6 @@ void bigPSDpaperplots()
   cFit->Close();
 }
 
-
 void loadtimePSD()
 {//works with psd_analyze.cc
   _filename1=new TFile("PSD/time/run01.root");//garbage
@@ -2835,7 +2830,6 @@ void algor3()
   cET_pfy->SetTopMargin(.02);
   cET_pfy->SetRightMargin(.02);
   cET_pfy->SetCanvasSize(width,(UInt_t)(width*ratio2));
-
 
   Float_t  p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
   Float_t  p1=hProf->GetFunction("pol2")->GetParameter(1);//"b"
@@ -4614,7 +4608,6 @@ void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, doubl
   for (int i = 0; i < 10000; ++i)
     hist->Fill(gRandom->Gaus(mean1, sigma1)+gRandom->Gaus(0,2.3548*smear),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,2.3548*smear));
 
-
   TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
   // hist->Fit("gauss");
@@ -4755,7 +4748,6 @@ void treecomp(Int_t detno=0)
 
   t1->Draw(hname.Data(),c1,"same");
 }
-
 
 void anode (Int_t detno=0)
 {
