@@ -287,6 +287,14 @@ Int_t whatis(Char_t *hname,Int_t verbose=1)
     if (verbose==1) cout << "histogram "<<hname<<" is a TProfile"<<endl;
     returnvalue=6;
   }
+  if (gROOT->FindObject(hname)->InheritsFrom("TH1I")) {
+    if (verbose==1) cout << "histogram " <<hname<<" is a TH1D"<<endl;
+    returnvalue=7;
+  }
+  if (gROOT->FindObject(hname)->InheritsFrom("TH2I")) {
+    if (verbose==1) cout << "histogram "<< hname <<" is a TH2F"<<endl;
+    returnvalue=8;
+  }
   return returnvalue;
 }
 
@@ -408,10 +416,10 @@ void dr(Char_t *histname,Float_t xmin=-999999.,Float_t xmax=999999.,Float_t ymin
   if(gROOT->FindObject(histname)) {//take no action if histogram not found.
     if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();    
     if(clear) cFit->Clear();  
-    if(whatis(histname,0)==1||whatis(histname,0)==2){
+    if(whatis(histname,0)==1||whatis(histname,0)==2||whatis(histname,0)==7){
       draw(histname,"",xmin,xmax);//draw() takes the draw option as the second argument.
     }
-    if(whatis(histname,0)==3||whatis(histname,0)==4)
+    if(whatis(histname,0)==3||whatis(histname,0)==4||whatis(histname,0)==8)
       draw2(histname,xmin,xmax,ymin,ymax);
     if(whatis(histname,0)==5)
       gROOT->FindObject(histname)->Draw();
@@ -3587,7 +3595,7 @@ void gfindpeaks()
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a gaussian...\n");
   printf("                         peak  | gaus     | diff     | 1D int | width \n");
-  for (Int_t i=0; i<npeaks; i++){
+  for (Int_t i=0; i<npeaks; i++) {
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" %7.3f | %8.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
@@ -3612,6 +3620,25 @@ void decon(Int_t padno=1)
   Float_t gfitmin=positions[0]-gfitwide;
   Float_t gfitmax=positions[npeaks-1]+gfitwide;
   printf("Step 3: Calculating global fit...");
+
+  if(npeaks==0) {
+    printf(" No peaks found!\n");
+    docon=kFALSE;
+  }
+  else {
+    TString fform;
+    fform="gaus(0)";
+    for (Int_t i=1; i<npeaks; i++) {
+      fform+=Form("+gaus(%d)",3*i);
+    }
+  }
+
+  printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
+  printf(" fuction name is %s\n",fform.Data());
+  TF1 *total = new TF1("total",fform,gfitmin,gfitmax);
+
+  /*
+  
   switch(npeaks){
   case 0:
     printf(" No peaks found!\n");
@@ -3702,6 +3729,9 @@ void decon(Int_t padno=1)
     docon=kFALSE;
     break;  
   }
+
+*/
+  
   if(docon) {
     printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
     total->SetLineColor(3);
@@ -3721,6 +3751,9 @@ void decon(Int_t padno=1)
     if(gROOT->FindObject("hFit2"))hFit2->Delete();//added
     hProj->Clone("hFit2");
     hFit2->Reset();
+    TString title=hFit2->GetTitle();
+    title+=" Peak Width";
+    hFit2->SetTitle(title);
     hFit2->SetXTitle("Peak position (#mu)");
     hFit2->SetYTitle("Peak width (#sigma)");
 
@@ -4341,7 +4374,7 @@ void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfi
   FILE * infile;
   Int_t k=1;
   
-  while(!fit&&k<=(size)){
+  while(!fit&&k<=(size)) {
     infile = fopen (calfile,"r");
     if(infile!=NULL){
       for(Int_t i=0;i<dets;i++){
