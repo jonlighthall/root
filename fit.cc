@@ -51,6 +51,7 @@ Int_t det=0;
 TString hname;
 
 TCutG *cWindow;
+TPolyMarker *pm;
 
 /* 1). Display Utilities-------------------------------------------------------------------------
  *
@@ -62,6 +63,8 @@ void setplain(void)
   //gROOT->SetStyle("Plain");
   //gStyle->SetPalette(1,0);
   printf("Default style being used.\n");
+  gStyle->SetHistFillColor(19);
+  gStyle->SetHistFillStyle(3001);
 }
 
 void printVer()
@@ -920,7 +923,7 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<(no+no0);++i) {
+    for(int i=0;i<((no+no0)+1);++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
@@ -992,7 +995,7 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<(no+no0);++i) {
+    for(int i=0;i<((no+no0)+1);++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
@@ -2322,8 +2325,8 @@ void ginfo (void)
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
   printf("Width of peak is %f or %f FWHM (%.2f%%)\n",sigma,width,width/mean*100);
-  printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
-  printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
+//printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
+//printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
   gxmin=gaus->GetCurrent()->GetXmin();
   gxmax=gaus->GetCurrent()->GetXmax();
@@ -2332,7 +2335,7 @@ void ginfo (void)
   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
-  printf("file contents: %g, %g, %g\n",mean,sigma,grange/sigma);
+//printf("file contents: %g, %g, %g\n",mean,sigma,grange/sigma);
   fprintf(outfile,"%g, %g, %g\n",mean,sigma,grange/sigma);
   fclose(outfile);
 }
@@ -2420,6 +2423,12 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   printf("Under peak %f, full %f, ratio %f\n",in_peak,in_full,gratio);
   hist1->GetXaxis()->SetRangeUser(gxmin-wide,gxmax+wide);
 
+  pm=new TPolyMarker(1);
+  pm->SetMarkerStyle(23);
+  pm->SetMarkerSize(1.3);
+  pm->SetMarkerColor(4);
+  pm->SetPoint(1,gaus->GetParameter(1),gaus->GetParameter(0));
+  pm->Draw("same");
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
@@ -3591,10 +3600,15 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
 }
 
 void gfindpeaks()
-{
+{//assumes hname, positions[], npeaks, hProj are set
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a non-overlapping gaussian...\n");
   printf("                         peak  | gaus     | diff     | 1D int | width \n");
+  pm=new TPolyMarker(npeaks);
+  //hProj->GetListOfFunctions()->Add(pm);
+  pm->SetMarkerStyle(23);
+  pm->SetMarkerSize(2);
+  pm->SetMarkerColor(4);
   for (Int_t i=0; i<npeaks; i++) {
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
@@ -3604,11 +3618,13 @@ void gfindpeaks()
     printf(" %6d |",gint);
     printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
+    pm->SetPoint(i+1,gaus->GetParameter(1),gaus->GetParameter(0));
     for (Int_t j=0; j<3; j++) {
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
   }
   printf(" Average peak width is %f\n",sig_av/npeaks);
+  pm->Draw("same");
 }
 
 void decon(Int_t padno=1)
