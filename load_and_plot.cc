@@ -4521,7 +4521,7 @@ void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
 
 void Gaus(double mean1, double sigma1, double mean2, double sigma2)
 {//developed by Lily
- //creates a 2D histogram of a gaussian distribution with given means and widths
+ //creates a 2D histogram of a Gaussian distribution with given means and widths
   gROOT->SetStyle("Plain");
   gStyle->SetPalette(1);
   gStyle->SetOptStat(0);
@@ -4536,13 +4536,114 @@ void Gaus(double mean1, double sigma1, double mean2, double sigma2)
 
   TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
-  // hist->Fit("gauss");
+  // hist->Fit("gaus");
   hist->Draw();
   hist->SaveAs("fit.eps");
 }
 
+void Gaus1(double mean1, double sigma1)
+{//developed by Lily
+ //creates a 2D histogram of a Gaussian distribution with given means and widths
+  gROOT->SetStyle("Plain");
+  gStyle->SetPalette(1);
+  gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
+
+  gRandom = new TRandom3();
+
+  TH1F * hist = new TH1F("data", "hist", 100, 0.0, 100.0);
+
+  for (int i = 0; i < 10000; ++i)
+    hist->Fill(gRandom->Gaus(mean1, sigma1));
+
+  TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+
+  hist->Draw();
+}
+
+void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
+{//creates a Gaussian distribution with a certain mean, number of bins
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+  bins=(2*bins)+1;
+  Float_t xmin=mean1-width*sigma1;
+  Float_t xmax=mean1+width*sigma1;
+  Float_t bwid=(xmax-xmin)/bins;
+  printf("bin width is %f\n",bwid);
+
+  hname="data"; 
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+  
+  TH1F * hist = new TH1F("data", "hist", bins, xmin, xmax);
+
+  printf("bin width is %f\n",hist->GetBinWidth(1));
+  
+  for (int i = 0; i < counts; ++i)
+    hist->Fill(gRandom->Gaus(mean1, sigma1));
+  if(!((TCanvas *) gROOT->FindObject("c1"))) 
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  
+  hist->Draw();
+  gfitc("data",mean1,width*sigma1);
+
+  Float_t center=0;
+  Float_t cont=0;
+  Float_t inte=0;
+  for (int i = 1; i < bins+1; ++i) {
+    center=hist->GetBinCenter(i);
+    cont=hist->GetBinContent(i);
+    inte+=cont;
+    printf("Bin %9.4f has %4.0f counts\n",center,cont);
+  }
+  printf("  Total counts is %4.0f counts\n",inte);
+}
+
+void Gaus1c(double mean1, double sigma1, double bwid, int width=5,int counts=1000)
+{//creates a Gaussian distribution with a certain mean, number of bins
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+  //bins=(2*bins)+1;
+  Float_t xmin=mean1-width*sigma1;
+  Float_t xmax=mean1+width*sigma1;
+  Float_t bins=(Int_t)((xmax-xmin)/bwid);
+  xmax=xmin+bins*bwid;
+  printf("bin width is %f\n",bwid);
+
+  hname="data"; 
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+  
+  TH1F * hist = new TH1F("data", "hist", bins, xmin, xmax);
+
+  printf("bin width is %f\n",hist->GetBinWidth(1));
+  
+  for (int i = 0; i < counts; ++i)
+    hist->Fill(gRandom->Gaus(mean1, sigma1));
+  if(!((TCanvas *) gROOT->FindObject("c1"))) 
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  
+  hist->Draw();
+  gfitc("data",mean1,width*sigma1);
+
+  Float_t center=0;
+  Float_t cont=0;
+  Float_t inte=0;
+  for (int i = 1; i < bins+1; ++i) {
+    center=hist->GetBinCenter(i);
+    cont=hist->GetBinContent(i);
+    inte+=cont;
+    printf("Bin %9.4f has %4.0f counts\n",center,cont);
+  }
+  printf("  Total counts is %4.0f counts\n",inte);
+}
+
 void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0,Int_t bins=1000)
-{//creates a 2D histogram of a gaussian distribution with given means and widths
+{//creates a 2D histogram of a Gaussian distribution with given means and widths
 
   gRandom = new TRandom3();
 
@@ -4588,7 +4689,7 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
    }
 
    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-   //  // hist->Fit("gauss");
+   //  // hist->Fit("gaus");
    //if(bins<1000)
     hInput->Draw();
   //  // hist->SaveAs("fit.eps");
@@ -4610,7 +4711,7 @@ void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, doubl
 
   TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
-  // hist->Fit("gauss");
+  // hist->Fit("gaus");
   hist->Draw();
   hist->SaveAs("fit.eps");
 }
@@ -4789,4 +4890,9 @@ void anode (Int_t detno=0)
   printf("Cut is %s\n",cname.Data());
 
   t1->Draw(hname.Data(),c1,"same");
+}
+
+void mca2root2()
+{
+
 }
