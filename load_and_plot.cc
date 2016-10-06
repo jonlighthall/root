@@ -5000,12 +5000,9 @@ mca2root(TString fname="output.mca")
   
   h4->Draw("col");
   h4->Fit("pol2","m");
-  /*
-  a=pol2->GetParameter(2);
-  b=pol2->GetParameter(1);
-  c=pol2->GetParameter(0);
-  */
+  
   Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
+  Float_t mean=h4->GetMean(2);
     
   cFit->cd(2);
   h2->Clone("h2c");
@@ -5013,13 +5010,14 @@ mca2root(TString fname="output.mca")
   //t->Draw(TString::Format("t-%f*theta*theta-%f*theta:x>>h2c",a,b),"","col");
   //t->Draw("t-0.00442252*theta*theta+9.13593*theta:e>>h2c","","col");
   // t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h2c","","col");
+  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:x>>h2c",c-mean,a,b),"","col");
     
   cFit->cd(4);
   h4->Clone("h4c");
   //t->Draw("t-4.42252e-003*theta*theta+9.13593*theta:e>>h4","","col");
   //t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h4c","","col");
   //t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>h4c",a,b),"","col");
-  t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:e>>h4c",a,b),"","col");
+  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>h4c",c-mean,a,b),"","col");
   
   //h2->Clone("h2cc");
   //h2c->ProfileX();
@@ -5068,8 +5066,6 @@ for(int i=1;i<5;i++){
     hInput->Draw();
   }
 
-
- 
 //t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
  t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
  t2->Write("");
