@@ -4793,10 +4793,27 @@ void anode (Int_t detno=0)
 
 //-----------------------------------------------------------------------------------------------
 //macros for SE-SPS GFM calculations (September 2016)--------------------------------------------
-void Gaus1(double mean1, double sigma1)
+void fpplot()
+{//from June 2016
+  mkhist2d("h",3200,-30,100,100,-1,1);
+  fill2("18O_He_1e5.out.txt","h",1);
+  h->Clone("new");
+  fill2("224Pa_He_xy.out.csv","new",1);
+  new->SetTitle("Focal Plane Position");
+  new->SetXTitle("x-position (cm)");
+  new->SetYTitle("y-position (cm)");
+  h->Draw("same");
+  leg = new TLegend(0.1,0.75,.2,.9);
+  leg->AddEntry(new,"^{224}Pa","p");
+  leg->AddEntry(h,"^{18}O","p");
+  leg->Draw();  
+}
+
+void Gaus1(double mean1, double sigma1,int counts=10000)
 {//extension to Gaus(), creates a 1D histogram of a Gaussian distribution with given mean and width
   gRandom = new TRandom3();
-
+  gRandom->SetSeed(0);
+  
   hname="data"; 
   if ((TH1F *) gROOT->FindObject(hname)) {
     gROOT->FindObject(hname)->Delete();  
@@ -4805,12 +4822,14 @@ void Gaus1(double mean1, double sigma1)
 
   TH1F * hist = new TH1F(hname, "hist", 100, 0.0, 100.0);
 
-  for (int i = 0; i < 10000; ++i)
+  for (int i = 0; i < counts; ++i)
     hist->Fill(gRandom->Gaus(mean1, sigma1));
 
-  TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
-
+  if(!((TCanvas *) gROOT->FindObject("c1")))
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  
   hist->Draw();
+  gfitc(hname,mean1,4*sigma1);
 }
 
 void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
@@ -4818,6 +4837,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
   gRandom = new TRandom3();
   gRandom->SetSeed(0);
   bins=(2*bins)+1;
+  printf("Number of bins is 2N+1=%d\n",bins);
   Float_t xmin=mean1-width*sigma1;
   Float_t xmax=mean1+width*sigma1;
   Float_t bwid=(xmax-xmin)/bins;
@@ -4828,7 +4848,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
     gROOT->FindObject(hname)->Delete();  
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
-  TH1F * hist = new TH1F(hname, "hist", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "Rand Gaus w/ spec N bins", bins, xmin, xmax);
   printf("    Actual bin width is %f\n",hist->GetBinWidth(1));
   
   for (int i = 0; i < counts; ++i)
@@ -4839,16 +4859,24 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
   hist->Draw();
   gfitc(hname,mean1,width*sigma1);
 
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
+  
   Float_t center=0;
   Float_t cont=0;
   Float_t inte=0;
-  for (int i = 1; i < bins+1; ++i) {
-    center=hist->GetBinCenter(i);
-    cont=hist->GetBinContent(i);
-    inte+=cont;
-    printf("Bin %9.4f has %4.0f counts\n",center,cont);
-  }
-  printf("  Total counts is %4.0f counts\n",inte);
+
+    for (int i = 1; i < bins+1; ++i) {
+      center=hist->GetBinCenter(i);
+      cont=hist->GetBinContent(i);
+      inte+=cont;
+      if(cont>0&&center>0) {
+	printf("Bin %9.4f has %6.0f counts\n",center,cont);
+	fprintf(outfile,"%10g %d\n",center,cont);
+      }
+    }
+    printf("  Total counts is %6.0f counts\n",inte);
+    fclose(outfile);
 }
 
 void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=1000)
@@ -4859,7 +4887,8 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
   Float_t xmax=mean1+width*sigma1;
   Float_t bins=(Int_t)((xmax-xmin)/bwid);
   xmax=xmin+bins*bwid;
-  printf("bin width is %f\n",bwid);
+  printf("Bin width is %f\n",bwid);
+  printf("%d bins to cover +/-%.1f sigma\n",bins,width);
 
   hname="data"; 
   if ((TH1F *) gROOT->FindObject(hname)) {
@@ -4867,7 +4896,7 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
   
-  TH1F * hist = new TH1F(hname, "hist", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "Rand Gaus w/ fixed bin width", bins, xmin, xmax);
 
   printf("bin width is %f\n",hist->GetBinWidth(1));
   
@@ -4879,20 +4908,392 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
   hist->Draw();
   gfitc(hname,mean1,width*sigma1);
 
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
   Float_t center=0;
   Float_t cont=0;
   Float_t inte=0;
+  Float_t intec=0;
   for (int i = 1; i < bins+1; ++i) {
     center=hist->GetBinCenter(i);
     cont=hist->GetBinContent(i);
     inte+=cont;
-    if(cont>0)
-      printf("Bin %9.4f has %4.0f counts\n",center,cont);
+    if(cont>(counts/100)&&center>0) {
+      printf("Bin %9.4f has %6.0f counts\n",center,cont);
+      fprintf(outfile,"%10g %d\n",center,cont);
+      intec+=cont;
+    }
   }
-  printf("  Total counts is %4.0f counts\n",inte);
+  printf("  Total counts is %6.0f counts\n",inte);
+  printf("  Gated counts is %6.0f counts\n",intec);
+   fclose(outfile);
 }
 
-void mca2root2()
+Int_t  bins=512;
+  Float_t xmin=-85;
+  Float_t xmax=130;
+  Float_t ymin=-2;
+  Float_t ymax=2;
+  Float_t tmin=0;
+  Float_t tmax=1400;
+  Float_t emin=0;
+  Float_t emax=3;
+
+  TH2F *h1;
+  TH2F *h2;
+  TH2F *h3;
+  TH2F *h4;
+TTree *t = new TTree();
+Float_t a,b,c;
+Float_t d,e,f;
+
+mca2root(TString fname="output.mca")
 {
+  TFile *f = new TFile("output.root","recreate");
+  
+  //t->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
+  t->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
+  t->Write("");
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) {
+    TCanvas * cFit=new TCanvas("cFit","cFit",0,0,675,615);
+    if(!(cFit->GetShowEventStatus()))cFit->ToggleEventStatus();
+    if(!(cFit->GetShowToolBar()))cFit->ToggleToolBar();
+  }
+  
+  for(int i=1;i<5;i++){
+    TString hname="h";
+    hname+=i;
+    if ((TH2F *) gROOT->FindObject(hname.Data())) {
+      gROOT->FindObject(hname.Data())->Delete();  
+      printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    }
+  }
+  
+  h1 = new TH2F("h1","",bins,xmin,xmax,bins,ymin,ymax);
+  h2 = new TH2F("h2","",bins,xmin,xmax,bins,tmin,tmax);
+  h3 = new TH2F("h3","",bins,xmin,xmax,bins,emin,emax);
+  h4 = new TH2F("h4","",bins,emin,emax,bins,tmin,tmax);
+
+  h1->SetXTitle("x-position (cm)");
+  h2->SetXTitle("x-position (cm)");
+  h3->SetXTitle("x-position (cm)");
+  h4->SetXTitle("Energy (MeV)");
+  h1->SetYTitle("y-position (cm)");
+  h2->SetYTitle("time-of-flight (ns)");
+  h3->SetYTitle("Energy (MeV)");
+  h4->SetYTitle("time-of-flight (ns)");
+  
+  cFit->Divide(2,2);
+  cFit->cd(1);
+  t->Draw("y:x>>h1","","col");
+  cFit->cd(2);
+  t->Draw("t:x>>h2","","col");
+  cFit->cd(3);
+  t->Draw("e:x>>h3","","col");
+  cFit->cd(4);
+  t->Draw("t:e>>h4","","col");
+  
+  //calculate time correction
+  t->Draw("t:theta","","col");
+  htemp->ProfileX();
+  htemp_pfx->Fit("pol2","m");
+  
+  h4->Draw("col");
+  h4->Fit("pol2","m");
+  /*
+  a=pol2->GetParameter(2);
+  b=pol2->GetParameter(1);
+  c=pol2->GetParameter(0);
+  */
+  Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
+    
+  cFit->cd(2);
+  h2->Clone("h2c");
+  //t->Draw(TString::Format("t-((%f)*theta*theta+(%f)*theta+(%f))+700:x>>h2c",a,b,c),"","col");
+  //t->Draw(TString::Format("t-%f*theta*theta-%f*theta:x>>h2c",a,b),"","col");
+  //t->Draw("t-0.00442252*theta*theta+9.13593*theta:e>>h2c","","col");
+  // t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h2c","","col");
+    
+  cFit->cd(4);
+  h4->Clone("h4c");
+  //t->Draw("t-4.42252e-003*theta*theta+9.13593*theta:e>>h4","","col");
+  //t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h4c","","col");
+  //t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>h4c",a,b),"","col");
+  t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:e>>h4c",a,b),"","col");
+  
+  //h2->Clone("h2cc");
+  //h2c->ProfileX();
+  //h2c_pfx->Fit("pol1","m");
+  
+  //d=pol1->GetParameter(2);
+  //e=pol1->GetParameter(1);
+  //f=pol1->GetParameter(0);
+
+  /*
+  
+  float tt;
+  float time,theta;
+  TBranch *btt = t->Branch("tt",&tt,"tt/F");
+  t->SetBranchAddress("t",&time);
+  t->SetBranchAddress("theta",&theta);
+  Long64_t nentries = t->GetEntries();
+  for (Long64_t j=0;j<nentries;j++) {
+    t->GetEntry(j);
+        tt = time-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta;
+    //tt = time-a*theta*theta-b*theta;
+    btt->Fill();
+  }
+   //   t->Print();
+  t->Write();
+  */
+}
+
+Int_t mark_style=1;//20;
+Float_t mark_size=0.4;
+Int_t mark_col=2;
+
+TTree *t2 = new TTree();
+
+void mca2root2(TString fname="output2.mca")
+{//assumes mca2root.C has been run
+ 
+for(int i=1;i<5;i++){
+    TString hname="h";
+    hname+=i;
+    TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
+    hInput->SetMarkerStyle(mark_style);
+    hInput->SetMarkerSize(mark_size);
+    hInput->SetMarkerColor(mark_col);
+    cFit->cd(i);
+    hInput->Draw();
+  }
+
+
+ 
+//t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
+ t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
+ t2->Write("");
+
+ for(int i=5;i<9;i++){
+   TString hname="h";
+   hname+=i;
+   if ((TH2F *) gROOT->FindObject(hname.Data())) {
+     gROOT->FindObject(hname.Data())->Delete();  
+     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+   }
+ }
+
+  TH2F *h5;
+  TH2F *h6;
+  TH2F *h7;
+  TH2F *h8;
+  
+  h5 = new TH2F("h5","",bins,xmin,xmax,bins,ymin,ymax);
+  h6 = new TH2F("h6","",bins,xmin,xmax,bins,tmin,tmax);
+  h7 = new TH2F("h7","",bins,xmin,xmax,bins,emin,emax);
+  h8 = new TH2F("h8","",bins,emin,emax,bins,tmin,tmax);
+
+  h5->SetXTitle("x-position (cm)");
+  h6->SetXTitle("x-position (cm)");
+  h7->SetXTitle("x-position (cm)");
+  h8->SetXTitle("Energy (MeV)");
+  h5->SetYTitle("y-position (cm)");
+  h6->SetYTitle("time-of-flight (ns)");
+  h7->SetYTitle("Energy (MeV)");
+  h8->SetYTitle("time-of-flight (ns)");
+
+  for(int i=5;i<9;i++){
+    TString hname="h";
+    hname+=i;
+    TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
+    hInput->SetMarkerStyle(mark_style);
+    hInput->SetMarkerSize(mark_size);
+    hInput->SetMarkerColor(4);
+  }
+  
+  //cFit->Divide(2,2);
+  cFit->cd(1);
+  t2->Draw("y:x>>h5","","same");
+  cFit->cd(2);
+  //t2->Draw("t:x>>h6","","same");
+  cFit->cd(3);
+  t2->Draw("e:x>>h7","","same");
+  cFit->cd(4);
+  //t2->Draw("t:e>>h8","","same");
+  h1->Write("");
+  h2->Write("");
+  h3->Write("");
+  h4->Write("");
+  h5->Write("");
+  h6->Write("");
+  h7->Write("");
+  h8->Write("");
+
+  cFit->cd(2);
+  t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h6","","same");
+  h2->Draw("same");
+    
+  cFit->cd(4);
+  t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h8","","same");
+}
+
+  TTree *t3 = new TTree();
+void mca2root3(TString fname="output3.mca")
+{//assumes mca2root.C has been run
+  
+
+  //  t3->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
+  t3->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
+  t3->Write("");
+  
+  for(int i=9;i<13;i++){
+    TString hname="h";
+    hname+=i;
+    if ((TH2F *) gROOT->FindObject(hname.Data())) {
+      gROOT->FindObject(hname.Data())->Delete();  
+      printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    }
+  }
+  
+  TH2F *h9;
+  TH2F *h10;
+  TH2F *h11;
+  TH2F *h12;
+  
+  h9 = new TH2F("h9","",bins,xmin,xmax,bins,ymin,ymax);
+  h10 = new TH2F("h10","",bins,xmin,xmax,bins,tmin,tmax);
+  h11 = new TH2F("h11","",bins,xmin,xmax,bins,emin,emax);
+  h12 = new TH2F("h12","",bins,emin,emax,bins,tmin,tmax);
+
+  h9->SetXTitle("x-position (cm)");
+  h10->SetXTitle("x-position (cm)");
+  h11->SetXTitle("x-position (cm)");
+  h12->SetXTitle("Energy (MeV)");
+  h9->SetYTitle("y-position (cm)");
+  h10->SetYTitle("time-of-flight (ns)");
+  h11->SetYTitle("Energy (MeV)");
+  h12->SetYTitle("time-of-flight (ns)");
+
+  for(int i=9;i<13;i++){
+    TString hname="h";
+    hname+=i;
+    TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
+    hInput->SetMarkerStyle(mark_style);
+    hInput->SetMarkerSize(mark_size);
+    hInput->SetMarkerColor(3);
+  }
+  
+  //cFit->Divide(2,2);
+  cFit->cd(1);
+  t3->Draw("y:x>>h9","","same");
+  cFit->cd(2);
+  t3->Draw("t:x>>h10","","same");
+  cFit->cd(3);
+  t3->Draw("e:x>>h11","","same");
+  cFit->cd(4);
+  t3->Draw("t:e>>h12","","same");
+  h9->Write("");
+  h10->Write("");
+  h11->Write("");
+  h12->Write("");
+
+  cFit->cd(2);
+  t3->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h10","","same");
+  h2->Draw("same");
+  
+  cFit->cd(4);
+  t3->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h12","","same");
+}
+
+  TTree *t4 = new TTree();
+void mca2root4(TString fname="output4.mca")
+{//assumes mca2root.C has been run
+  
+  //t4->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
+  t4->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
+  t4->Write("");
+  
+  for(int i=13;i<17;i++){
+    TString hname="h";
+    hname+=i;
+    if ((TH2F *) gROOT->FindObject(hname.Data())) {
+      gROOT->FindObject(hname.Data())->Delete();  
+      printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    }
+  }
+  
+  TH2F *h13;
+  TH2F *h14;
+  TH2F *h15;
+  TH2F *h16;
+  
+  h13 = new TH2F("h13","",bins,xmin,xmax,bins,ymin,ymax);
+  h14 = new TH2F("h14","",bins,xmin,xmax,bins,tmin,tmax);
+  h15 = new TH2F("h15","",bins,xmin,xmax,bins,emin,emax);
+  h16 = new TH2F("h16","",bins,emin,emax,bins,tmin,tmax);
+
+  h13->SetXTitle("x-position (cm)");
+  h14->SetXTitle("x-position (cm)");
+  h15->SetXTitle("x-position (cm)");
+  h16->SetXTitle("Energy (MeV)");
+  h13->SetYTitle("y-position (cm)");
+  h14->SetYTitle("time-of-flight (ns)");
+  h15->SetYTitle("Energy (MeV)");
+  h16->SetYTitle("time-of-flight (ns)");
+
+for(int i=13;i<17;i++){
+    TString hname="h";
+    hname+=i;
+    TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
+    hInput->SetMarkerStyle(mark_style);
+    hInput->SetMarkerSize(mark_size);
+    hInput->SetMarkerColor(6);
+   
+  }
+  
+  //cFit->Divide(2,2);
+  cFit->cd(1);
+  t4->Draw("y:x>>h13","","same");
+  cFit->cd(2);
+  t4->Draw("t:x>>h14","","same");
+  cFit->cd(3);
+  t4->Draw("e:x>>h15","","same");
+  cFit->cd(4);
+  t4->Draw("t:e>>h16","","same");
+
+  h13->Write("");
+  h14->Write("");
+  h15->Write("");
+  h16->Write("");
+}
+
+void fittest(TString fun="pol2",double sigma1=1)
+{
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+
+  hname="data"; 
+  if ((TH2F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+
+  Float_t xmin=0;
+  Float_t xmax=100;
+  Float_t xbins=1000;
+  
+  TH2F * hist = new TH2F(hname, "hist", xbins, xmin, xmax,100, 0.0, 100.0);
+
+  f1 = new TF1("f1",fun.Data(),xmin,xmax);
+
+  Float_t x;
+  
+  for (int j = 0; j < 3*xbins; ++j) {
+    x=gRandom->Uniform(xmin,xmax);
+    for (int i = 0; i < 1e2; ++i)
+      hist->Fill(x,gRandom->Gaus(f1(x), sigma1));
+  }
+  hist->Draw("col");
 
 }
+
