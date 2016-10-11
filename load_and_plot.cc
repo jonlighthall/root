@@ -40,8 +40,8 @@ TF1 *f1,*f4,*f5,*f6;//for plotbore()
 TF1 *fEDiff1,*fEDiff2,*fXFXN;
 
 Float_t pi=4.0*atan(1.0); 
-Float_t e=1.602176487E-19;//NIST value
-Float_t MeV=e*1E6; //J/MeV
+//Float_t e=1.602176487E-19;//NIST value
+//Float_t MeV=e*1E6; //J/MeV
 
 UInt_t width=600;
 Float_t ratio1=3./4.;
@@ -4929,23 +4929,74 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
    fclose(outfile);
 }
 
-Int_t  bins=512;
+void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=1000)
+{//creates a uniform distribution with a certain mean, sigma, and bin width
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+  Float_t xmin=mean1-width*sigma1;
+  Float_t xmax=mean1+width*sigma1;
+  Float_t bins=(Int_t)((xmax-xmin)/bwid);
+  xmax=xmin+bins*bwid;
+  printf("Bin width is %f\n",bwid);
+  printf("%d bins to cover +/-%.1f * %.1f\n",bins,width,sigma1);
+
+  hname="data"; 
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+  
+  TH1F * hist = new TH1F(hname, "Uniform random w/ fixed bin width", bins, xmin, xmax);
+
+  printf("bin width is %f\n",hist->GetBinWidth(1));
+
+  for (int i = 0; i < counts; ++i)
+    hist->Fill(gRandom->Uniform(xmin,xmax));
+
+  if(!((TCanvas *) gROOT->FindObject("c1")))
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  
+  hist->Draw();
+  hist->GetYaxis()->SetRangeUser(0,(1.2*(Float_t)counts/bins));
+   
+  FILE * outfile;
+  outfile=fopen("temp.lst","w");
+  Float_t center=0;
+  Float_t cont=0;
+  Float_t inte=0;
+  Float_t intec=0;
+  for (int i = 1; i < bins+1; ++i) {
+    center=hist->GetBinCenter(i);
+    cont=hist->GetBinContent(i);
+    inte+=cont;
+    if(cont>(0)&&center>0) {
+      //      printf("Bin %9.4f has %6.0f counts\n",center,cont);
+      fprintf(outfile,"%10g %d\n",center,cont);
+      intec+=cont;
+    }
+  }
+  printf("  Total counts is %6.0f counts\n",inte);
+  printf("  Gated counts is %6.0f counts\n",intec);
+   fclose(outfile);
+}
+
+Int_t  bins=512*2;
   Float_t xmin=-85;
   Float_t xmax=130;
   Float_t ymin=-2;
   Float_t ymax=2;
-  Float_t tmin=0;
-  Float_t tmax=1400;
+Float_t tmin=400;//0;
+Float_t tmax=750;//1400;
   Float_t emin=0;
-  Float_t emax=3;
+  Float_t emax=8;
 
   TH2F *h1;
   TH2F *h2;
   TH2F *h3;
   TH2F *h4;
 TTree *t = new TTree();
+
 Float_t a,b,c;
-Float_t d,e,f;
 
 mca2root(TString fname="output.mca")
 {
@@ -4994,34 +5045,102 @@ mca2root(TString fname="output.mca")
   t->Draw("t:e>>h4","","col");
   
   //calculate time correction
-  t->Draw("t:theta","","col");
-  htemp->ProfileX();
-  htemp_pfx->Fit("pol2","m");
-  
-  h4->Draw("col");
-  h4->Fit("pol2","m");
-  
-  Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
+  //t->Draw("t:theta>>htemp","","col");
+  //t->Draw("t:x>>htemp","","col");
+  //htemp->ProfileX();
+  //htemp_pfx->Fit("pol2","m");
+   
+  //h4->Draw("col");
+  //h4->Fit("pol2","m");
+  //copy2("h4",31);
+  //h4_copy->Fit("pol2","m");
+  pfx("h4");
+  xprof->Fit("pol2","m");
+      
+  //Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
+  a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
+  //  a=pol3->GetParameter(2);b=pol3->GetParameter(1);c=pol3->GetParameter(0);
+  //  Float_t cc=0;
+  //  cc=pol3->GetParameter(3);
   Float_t mean=h4->GetMean(2);
-    
-  cFit->cd(2);
-  h2->Clone("h2c");
-  //t->Draw(TString::Format("t-((%f)*theta*theta+(%f)*theta+(%f))+700:x>>h2c",a,b,c),"","col");
-  //t->Draw(TString::Format("t-%f*theta*theta-%f*theta:x>>h2c",a,b),"","col");
-  //t->Draw("t-0.00442252*theta*theta+9.13593*theta:e>>h2c","","col");
-  // t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h2c","","col");
-  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:x>>h2c",c-mean,a,b),"","col");
-    
-  cFit->cd(4);
-  h4->Clone("h4c");
-  //t->Draw("t-4.42252e-003*theta*theta+9.13593*theta:e>>h4","","col");
-  //t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h4c","","col");
-  //t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>h4c",a,b),"","col");
-  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>h4c",c-mean,a,b),"","col");
+
+  plotall("h");
+
+  h1->Clone("hc1");
+  h1->Clone("hcc1");
+  h1->Clone("hccc1");
+
+  h3->Clone("hc3");
+  h3->Clone("hcc3");
+  h3->Clone("hccc3");
   
-  //h2->Clone("h2cc");
-  //h2c->ProfileX();
-  //h2c_pfx->Fit("pol1","m");
+  cFit->cd(2);
+  h2->Clone("hc2");
+  h2->Clone("hcc2");
+  hcc2->SetMarkerColor(2);
+  h2->Clone("hccc2");
+  hccc2->SetMarkerColor(3);
+  //t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>hc2","","col");
+  //t->Draw(TString::Format("t-%f*theta*theta-%f*theta:x>>hc2",a,b),"","col");
+  //t->Draw("t-0.00442252*theta*theta+9.13593*theta:e>>hc2","","col");
+  //t->Draw(TString::Format("t-((%f)*theta*theta+(%f)*theta+(%f))+700:x>>hc2",a,b,c),"","col");
+  //t->Draw(TString::Format("t-%f-%f*TMath::Power(theta,2)-%f*theta:x>>hc2",c-mean,a,b),"","col");
+  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:x>>hc2",c-mean,a,b),"","same");
+  //t->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:x>>hc2",c-mean,a,b),"","same");
+
+  TCanvas::MakeDefCanvas();
+  c1->cd();
+  pfx("hc2");
+  xprof->Fit("pol1","m");
+  
+  cFit->cd(2);
+  h2->Draw("col");
+  hc2->Draw("same");
+  Float_t d=pol1->GetParameter(1), e=pol1->GetParameter(0);
+  t->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:x>>hcc2",c-mean,a,b,d,e-mean),"","same");
+
+  c1->cd();
+  t->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:theta",c-mean,a,b,d,e-mean),"","col");
+  htemp->Draw("col");
+  pfx("htemp");
+  xprof->Fit("pol1","m");
+  
+  Float_t ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
+  cFit->cd(2);
+  t->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
+  
+  cFit->cd(4);
+  h4->Clone("hc4");
+  h4->Clone("hcc4");
+  hcc4->SetMarkerColor(2);
+  h4->Clone("hccc4");
+  hccc4->SetMarkerColor(3);
+  //t->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>hc4","","col");//works
+  //t->Draw("t-0.004423*theta*theta+9.13593*theta:e>>h4","","col");//doesn't work!?
+  //t->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>hc4",a,b),"","col");
+  //t->Draw(TString::Format("t-%f*TMath::Power(theta,2)-%f*theta:e>>hc4",a,b),"","col");
+  t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
+  //t->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:e>>hc4",c-mean,a,b),"","same");
+  t->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:e>>hcc4",c-mean,a,b,d,e-mean),"","same");
+  t->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
+
+  c1->cd();
+  //pjx("h2");gfitcp("xproj");
+  pjy("h2");gfitcp("yproj");
+  pjy("hc2");gfitcp("yproj");
+  pjy("hcc2");gfitcp("yproj");
+  pjy("hccc2");gfitcp("yproj");  
+  
+  //h4->ProfileX();
+  //h4_pfx->Fit("pol2","m");
+  //a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
+  //t->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
+  //  pjy("hc4");gfitcp("yproj"); 
+  
+  
+  //h2->Clone("hcc2");
+  //hc2->ProfileX();
+  //hc2_pfx->Fit("pol1","m");
   
   //d=pol1->GetParameter(2);
   //e=pol1->GetParameter(1);
