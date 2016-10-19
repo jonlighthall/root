@@ -4538,7 +4538,7 @@ void Gaus(double mean1, double sigma1, double mean2, double sigma2)
 
   // hist->Fit("gaus");
   hist->Draw();
-  hist->SaveAs("fit.eps");
+  //hist->SaveAs("fit.C");
 }
 
 void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0,Int_t bins=1000)
@@ -4552,45 +4552,45 @@ void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, dou
   }
   else {
   
-  TH2F * hist = new TH2F(hname.Data(),hname.Data(),bins,mean1-(5*sigma1),mean1+(5*sigma1),bins,mean2-(5*sigma2),mean2+(5*sigma2));
-  //TH2F * hist = new TH2F(hname.Data(), hname.Data(), bins, 0.,100.,bins,0.,100.);
+    TH2F * hist = new TH2F(hname.Data(),hname.Data(),bins,mean1-(5*sigma1),mean1+(5*sigma1),bins,mean2-(5*sigma2),mean2+(5*sigma2));
+    //TH2F * hist = new TH2F(hname.Data(), hname.Data(), bins, 0.,100.,bins,0.,100.);
   }
-   hInput=(TH2F*)gROOT->FindObject(hname.Data());
-   hInput->SetMarkerColor(color);
+  hInput=(TH2F*)gROOT->FindObject(hname.Data());
+  hInput->SetMarkerColor(color);
 
-   printf("Distribution is %f wide (x) and %f wide (y)",sigma1/mean1,sigma2/mean2);
-   if(blur==0) 
-     printf("No blurring applied.\n");
-   else
-     printf("%f%% blurring applied.\n",blur*100);
-   blur/=2.354820045;
-   for (int i = 0; i < points; ++i) {
-     if(blur==0) 
-       hInput->Fill(gRandom->Gaus(mean1,sigma1),gRandom->Gaus(mean2,sigma2));
-     else { 
-       if(sigma1==0) {
-	 if(sigma2==0) //both 0
-	   hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
-			gRandom->Gaus(mean2,mean2*blur));
-	 else //only sigma1=0
-	   hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
-			gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
-       }
-       else {//sigma1 non-zero
-	 if(sigma2==0)//only sigma2=0
-	   hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
-			gRandom->Gaus(mean2, mean2*blur));
-	 else //neither
-	   hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
-			gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
-       }
-     }
-   }
+  printf("Distribution is %f wide (x) and %f wide (y)",sigma1/mean1,sigma2/mean2);
+  if(blur==0) 
+    printf("No blurring applied.\n");
+  else
+    printf("%f%% blurring applied.\n",blur*100);
+  blur/=2.354820045;
+  for (int i = 0; i < points; ++i) {
+    if(blur==0) 
+      hInput->Fill(gRandom->Gaus(mean1,sigma1),gRandom->Gaus(mean2,sigma2));
+    else { 
+      if(sigma1==0) {
+	if(sigma2==0) //both 0
+	  hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
+		       gRandom->Gaus(mean2,mean2*blur));
+	else //only sigma1=0
+	  hInput->Fill(gRandom->Gaus(mean1,mean1*blur),
+		       gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+      }
+      else {//sigma1 non-zero
+	if(sigma2==0)//only sigma2=0
+	  hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
+		       gRandom->Gaus(mean2, mean2*blur));
+	else //neither
+	  hInput->Fill(gRandom->Gaus(mean1,sigma1)+gRandom->Gaus(0,mean1*blur),
+		       gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,mean2*blur));
+      }
+    }
+  }
 
-   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-   //  // hist->Fit("gaus");
-   //if(bins<1000)
-    hInput->Draw();
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+  //  // hist->Fit("gaus");
+  //if(bins<1000)
+  hInput->Draw();
   //  // hist->SaveAs("fit.eps");
 }
 
@@ -4631,47 +4631,47 @@ void plotgaus(Int_t bins=100, Int_t counts=10000, Bool_t set_strag=kTRUE, Float_
   hist2->SetMarkerSize(mark_size);
   hist3->SetMarkerSize(mark_size);
 
-   Int_t steps=counts;
+  Int_t steps=counts;
 
-   Int_t strag=0;
-   if(set_strag)
-     strag=1;
-   //   Int_t blur=0;
-   //if(det_res)
-   //  blur=0.036;
+  Int_t strag=0;
+  if(set_strag)
+    strag=1;
+  //   Int_t blur=0;
+  //if(det_res)
+  //  blur=0.036;
 
-   //no straggling
-   //mkgaus2d("hist1",steps/10, 64.120, 0, 39.585, 0,1,det_res,bins); //Rb
-   //mkgaus2d("hist2",steps,58.211, 0, 41.763, 0,2,det_res,bins); //Sr
-   //mkgaus2d("hist3",steps/10,57.472, 0, 41.526, 0,4,det_res,bins); //Y
+  //no straggling
+  //mkgaus2d("hist1",steps/10, 64.120, 0, 39.585, 0,1,det_res,bins); //Rb
+  //mkgaus2d("hist2",steps,58.211, 0, 41.763, 0,2,det_res,bins); //Sr
+  //mkgaus2d("hist3",steps/10,57.472, 0, 41.526, 0,4,det_res,bins); //Y
 
-   //calculated straggling (supposed to be 3.6%)
-   //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,det_res,bins); //Rb
-   //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,det_res,bins); //Sr
-   //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880 ,4,det_res,bins); //Y
+  //calculated straggling (supposed to be 3.6%)
+  //mkgaus2d("hist1",steps/10, 64.120, 1.359, 39.585, 0.839,1,det_res,bins); //Rb
+  //mkgaus2d("hist2",steps,58.211, 1.234, 41.763, 0.885,2,det_res,bins); //Sr
+  //mkgaus2d("hist3",steps/10,57.472, 1.218, 41.526, 0.880 ,4,det_res,bins); //Y
    
-   //real straggling, parameterized
-   //mkgaus2d("hist1",steps/10, 64.120, strag*1.186, 39.585, strag*0.903,1,det_res,bins); //Rb
-   //mkgaus2d("hist2",steps,58.211, strag*1.020, 41.763, strag*1.154,2,det_res,bins); //Sr
-   //mkgaus2d("hist3",steps/10,57.472, strag*0.616, 41.526, strag*0.670,4,det_res,bins); //Y
+  //real straggling, parameterized
+  //mkgaus2d("hist1",steps/10, 64.120, strag*1.186, 39.585, strag*0.903,1,det_res,bins); //Rb
+  //mkgaus2d("hist2",steps,58.211, strag*1.020, 41.763, strag*1.154,2,det_res,bins); //Sr
+  //mkgaus2d("hist3",steps/10,57.472, strag*0.616, 41.526, strag*0.670,4,det_res,bins); //Y
 
-   //updated energies, symmetric straggling
-   //mkgaus2d("hist1",steps/10, 64.117, strag*1.065, 39.562, strag*1.065,1,det_res,bins); //Rb
-   //mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300,2,det_res,bins); //Sr
-   //mkgaus2d("hist3",steps/10,57.308, strag*0.588, 41.473, strag*0.588,4,det_res,bins); //Y
+  //updated energies, symmetric straggling
+  //mkgaus2d("hist1",steps/10, 64.117, strag*1.065, 39.562, strag*1.065,1,det_res,bins); //Rb
+  //mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300,2,det_res,bins); //Sr
+  //mkgaus2d("hist3",steps/10,57.308, strag*0.588, 41.473, strag*0.588,4,det_res,bins); //Y
    
-   //Butane only, from SRIM
-   //mkgaus2d("hist1",steps/10,69.919, strag*0.896, 33.794, strag*0.896 ,1,det_res,bins); //Rb
-   //mkgaus2d("hist2",steps,64.186, strag*0.997, 35.670, strag*0.997 ,2,det_res,bins); //Sr
-   //mkgaus2d("hist3",steps/10,63.246, strag*0.597, 35.502, strag*0.597 ,4,det_res,bins); //Y
+  //Butane only, from SRIM
+  //mkgaus2d("hist1",steps/10,69.919, strag*0.896, 33.794, strag*0.896 ,1,det_res,bins); //Rb
+  //mkgaus2d("hist2",steps,64.186, strag*0.997, 35.670, strag*0.997 ,2,det_res,bins); //Sr
+  //mkgaus2d("hist3",steps/10,63.246, strag*0.597, 35.502, strag*0.597 ,4,det_res,bins); //Y
 
-   //updated energies, symmetric straggling, scaled energy loses
-   mkgaus2d("hist1",steps/10, 56.624, strag*1.269, 40.830, strag*1.269
-	    ,1,det_res,bins); //Rb
-   mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300
-	    ,2,det_res,bins); //Sr
-   mkgaus2d("hist3",steps/10,59.413, strag*1.331, 42.841, strag*1.331
-	    ,4,det_res,bins); //Y
+  //updated energies, symmetric straggling, scaled energy loses
+  mkgaus2d("hist1",steps/10, 56.624, strag*1.269, 40.830, strag*1.269
+	   ,1,det_res,bins); //Rb
+  mkgaus2d("hist2",steps,58.032, strag*1.300, 41.846, strag*1.300
+	   ,2,det_res,bins); //Sr
+  mkgaus2d("hist3",steps/10,59.413, strag*1.331, 42.841, strag*1.331
+	   ,4,det_res,bins); //Y
    
   hist1->SetTitle("EMMA IC");
   hist1->GetXaxis()->SetTitle("E_{res} (MeV)");
@@ -4680,11 +4680,11 @@ void plotgaus(Int_t bins=100, Int_t counts=10000, Bool_t set_strag=kTRUE, Float_
   hist2->Draw("same");
   hist3->Draw("same");
   
- leg = new TLegend(0.1,0.75,0.2,0.9);
- leg->AddEntry(hist1,"^{84}Rb","p");   
- leg->AddEntry(hist2,"^{84}Sr","p");
- leg->AddEntry(hist3,"^{84}Y","p");
- leg->Draw();
+  leg = new TLegend(0.1,0.75,0.2,0.9);
+  leg->AddEntry(hist1,"^{84}Rb","p");   
+  leg->AddEntry(hist2,"^{84}Sr","p");
+  leg->AddEntry(hist3,"^{84}Y","p");
+  leg->Draw();
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -4717,7 +4717,7 @@ void treecomp(Int_t detno=0)
     else {//detector 2
       signo=detno-3;
       pgac1=kFALSE;
-  }
+    }
   }
   else {//cathode data 
     if(detno<10)//detector 1
@@ -4820,7 +4820,7 @@ void Gaus1(double mean1, double sigma1,int counts=10000)
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
 
-  TH1F * hist = new TH1F(hname, "hist", 100, 0.0, 100.0);
+  TH1F * hist = new TH1F(hname, "random Gaussian distribution", 100, mean1-5*sigma1, mean1+5*sigma1);
 
   for (int i = 0; i < counts; ++i)
     hist->Fill(gRandom->Gaus(mean1, sigma1));
@@ -4848,7 +4848,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
     gROOT->FindObject(hname)->Delete();  
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
-  TH1F * hist = new TH1F(hname, "Rand Gaus w/ spec N bins", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "Random Gausssian w/ 2N+1 bins", bins, xmin, xmax);
   printf("    Actual bin width is %f\n",hist->GetBinWidth(1));
   
   for (int i = 0; i < counts; ++i)
@@ -4866,17 +4866,17 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
   Float_t cont=0;
   Float_t inte=0;
 
-    for (int i = 1; i < bins+1; ++i) {
-      center=hist->GetBinCenter(i);
-      cont=hist->GetBinContent(i);
-      inte+=cont;
-      if(cont>0&&center>0) {
-	printf("Bin %9.4f has %6.0f counts\n",center,cont);
-	fprintf(outfile,"%10g %d\n",center,cont);
-      }
+  for (int i = 1; i < bins+1; ++i) {
+    center=hist->GetBinCenter(i);
+    cont=hist->GetBinContent(i);
+    inte+=cont;
+    if(cont>0&&center>0) {
+      printf("Bin %9.4f has %6.0f counts\n",center,cont);
+      fprintf(outfile,"%10g %d\n",center,cont);
     }
-    printf("  Total counts is %6.0f counts\n",inte);
-    fclose(outfile);
+  }
+  printf("  Total counts is %6.0f counts\n",inte);
+  fclose(outfile);
 }
 
 void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=1000)
@@ -4896,7 +4896,7 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
   
-  TH1F * hist = new TH1F(hname, "Rand Gaus w/ fixed bin width", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "Random Gaussian w/ fixed bin width", bins, xmin, xmax);
 
   printf("bin width is %f\n",hist->GetBinWidth(1));
   
@@ -4920,13 +4920,15 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
     inte+=cont;
     if(cont>(counts/100)&&center>0) {
       printf("Bin %9.4f has %6.0f counts\n",center,cont);
+      if(cont>99999.)
+	printf("WARNING: Counts greater than maximum input for RAYTRACE!");
       fprintf(outfile,"%10g %d\n",center,cont);
       intec+=cont;
     }
   }
   printf("  Total counts is %6.0f counts\n",inte);
   printf("  Gated counts is %6.0f counts\n",intec);
-   fclose(outfile);
+  fclose(outfile);
 }
 
 void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=1000)
@@ -4977,32 +4979,36 @@ void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=100
   }
   printf("  Total counts is %6.0f counts\n",inte);
   printf("  Gated counts is %6.0f counts\n",intec);
-   fclose(outfile);
+  fclose(outfile);
 }
 
 Int_t  bins=512*2;
-  Float_t xmin=-85;
-  Float_t xmax=130;
-  Float_t ymin=-2;
-  Float_t ymax=2;
+Float_t xmin=-85;
+Float_t xmax=130;
+Float_t ymin=-2;
+Float_t ymax=2;
 Float_t tmin=0;//0;
 Float_t tmax=2000;//1400;
-  Float_t emin=0;
-  Float_t emax=17;
+Float_t emin=0;
+Float_t emax=17;
 Float_t amin=500;
 Float_t amax=1250;
 
-  TH2F *h1;
-  TH2F *h2;
-  TH2F *h3;
-  TH2F *h4;
-  TH2F *h5;
+TH2F *h1;
+TH2F *h2;
+TH2F *h3;
+TH2F *h4;
+TH2F *h5;
 
 TTree *t1 = new TTree();
 
 Float_t a,b,c;
 
 TF1 *myfun;
+Double_t p[9]={0}; 
+Float_t mean;
+Float_t d,e;
+Float_t ff,g;
 
 mca2root(TString fname="output.mca")
 {
@@ -5052,7 +5058,15 @@ mca2root(TString fname="output.mca")
   t1->Draw("e:x>>h3","","col");
   cFit->cd(4);
   t1->Draw("t:e>>h4","","col");
-  
+
+  h1->Write("");
+  h2->Write("");
+  h3->Write("");
+  h4->Write("");
+}
+
+void mcacal()
+{
   //---------------------------
   //calculate time correction
   //t1->Draw("t:theta>>htemp","","col");
@@ -5069,18 +5083,19 @@ mca2root(TString fname="output.mca")
   //xprof->Fit("pol8","m");
 
   myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
+  //myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
   h4->Fit("myfun","m");
   h4->Fit("myfun","m");
   
   //Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
   //a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
-  Double_t p[9]={0}; for (int i=0;i<9;i++) //p[i]=pol8->GetParameter(i);
+  for (int i=0;i<9;i++) //p[i]=pol8->GetParameter(i);
 		       p[i]=myfun->GetParameter(i);
   
   //a=pol3->GetParameter(2);b=pol3->GetParameter(1);c=pol3->GetParameter(0);
   //Float_t cc=0;
   //cc=pol3->GetParameter(3);
-  Float_t mean=h4->GetMean(2);
+  mean=h4->GetMean(2);
   
   plotall("h");
   
@@ -5137,7 +5152,8 @@ mca2root(TString fname="output.mca")
   pfx("hc2");
   pfx("hc2_copy");
   xprof->Fit("pol1","m");
-  Float_t d=pol1->GetParameter(1), e=pol1->GetParameter(0);
+  d=pol1->GetParameter(1);
+  e=pol1->GetParameter(0);
   plotall("h");
   
   //second-order correction
@@ -5159,7 +5175,7 @@ mca2root(TString fname="output.mca")
   pfx("hcc5_copy");
   xprof->Fit("pol1","m");
   
-  Float_t ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
+  ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
   cFit->cd(2);
   //t1->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
@@ -5198,37 +5214,21 @@ mca2root(TString fname="output.mca")
   printf("              %6.2f ns FWHM position-corrected\n",tw[2]);
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
   
-  //h4->ProfileX();
-  //h4_pfx->Fit("pol2","m");
-  //a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
-  //t1->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
-  //  pjy("hc4");gfitcp("yproj"); 
-  
-  
-  //h2->Clone("hcc2");
-  //hc2->ProfileX();
-  //hc2_pfx->Fit("pol1","m");
-  
-  //d=pol1->GetParameter(2);
-  //e=pol1->GetParameter(1);
-  //f=pol1->GetParameter(0);
-
   /*
-  
-  float tt;
-  float time,theta;
-  TBranch *btt = t1->Branch("tt",&tt,"tt/F");
-  t1->SetBranchAddress("t",&time);
-  t1->SetBranchAddress("theta",&theta);
-  Long64_t nentries = t1->GetEntries();
-  for (Long64_t j=0;j<nentries;j++) {
+    float tt;
+    float time,theta;
+    TBranch *btt = t1->Branch("tt",&tt,"tt/F");
+    t1->SetBranchAddress("t",&time);
+    t1->SetBranchAddress("theta",&theta);
+    Long64_t nentries = t1->GetEntries();
+    for (Long64_t j=0;j<nentries;j++) {
     t1->GetEntry(j);
-        tt = time-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta;
+    tt = time-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta;
     //tt = time-a*theta*theta-b*theta;
     btt->Fill();
-  }
-   //   t1->Print();
-  t1->Write();
+    }
+    //   t1->Print();
+    t1->Write();
   */
 }
 TTree *t2 = new TTree();
@@ -5255,11 +5255,6 @@ mca2rootc(TString fname2="output.mca")
   cFit->cd(2);
   t2->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hc2",p[0]-mean,p[1],p[2],p[3]),"","same");
 
-  //---------------------------
-  //calculate second-order correction
-  TCanvas::MakeDefCanvas();
-  c1->cd();
-  
   //second-order correction
   cFit->cd(2);
   h2->Draw("col");
@@ -5270,7 +5265,6 @@ mca2rootc(TString fname2="output.mca")
   c1->cd();
   t2->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","col");
  
-  
   cFit->cd(2);
   t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
   
@@ -5306,7 +5300,7 @@ Int_t mark_col=2;
 void mca2root2(TString fname="output2.mca")
 {//assumes mca2root.C has been run
  
-for(int i=1;i<5;i++){
+  for(int i=1;i<5;i++){
     TString hname="h";
     hname+=i;
     TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
@@ -5317,18 +5311,18 @@ for(int i=1;i<5;i++){
     hInput->Draw();
   }
 
-//t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
- t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
- t2->Write("");
+  //t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
+  t2->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
+  t2->Write("");
 
- for(int i=5;i<9;i++){
-   TString hname="h";
-   hname+=i;
-   if ((TH2F *) gROOT->FindObject(hname.Data())) {
-     gROOT->FindObject(hname.Data())->Delete();  
-     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-   }
- }
+  for(int i=5;i<9;i++){
+    TString hname="h";
+    hname+=i;
+    if ((TH2F *) gROOT->FindObject(hname.Data())) {
+      gROOT->FindObject(hname.Data())->Delete();  
+      printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+    }
+  }
 
   TH2F *h5;
   TH2F *h6;
@@ -5367,28 +5361,26 @@ for(int i=1;i<5;i++){
   t2->Draw("e:x>>h7","","same");
   cFit->cd(4);
   t2->Draw("t:e>>h8","","same");
-  h1->Write("");
-  h2->Write("");
-  h3->Write("");
-  h4->Write("");
+ 
   h5->Write("");
   h6->Write("");
   h7->Write("");
   h8->Write("");
-
-  cFit->cd(2);
-  //t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h6","","same");
-  h2->Draw("same");
-    
-  cFit->cd(4);
-  //t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h8","","same");
 }
 
-  TTree *t3 = new TTree();
+void mcacal2()
+{
+  cFit->cd(2);
+  t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h6","","same");
+  
+  cFit->cd(4);
+  t2->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h8","","same");
+}
+
+TTree *t3 = new TTree();
 void mca2root3(TString fname="output3.mca")
 {//assumes mca2root.C has been run
   
-
   //  t3->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F");
   t3->ReadFile(fname,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
   t3->Write("");
@@ -5443,16 +5435,18 @@ void mca2root3(TString fname="output3.mca")
   h10->Write("");
   h11->Write("");
   h12->Write("");
+}
 
-  cFit->cd(2);
+void mcacal3()
+{
+cFit->cd(2);
   t3->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:x>>h10","","same");
   h2->Draw("same");
   
   cFit->cd(4);
   t3->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>h12","","same");
 }
-
-  TTree *t4 = new TTree();
+TTree *t4 = new TTree();
 void mca2root4(TString fname="output4.mca")
 {//assumes mca2root.C has been run
   
@@ -5488,7 +5482,7 @@ void mca2root4(TString fname="output4.mca")
   h15->SetYTitle("Energy (MeV)");
   h16->SetYTitle("time-of-flight (ns)");
 
-for(int i=13;i<17;i++){
+  for(int i=13;i<17;i++){
     TString hname="h";
     hname+=i;
     TH2F * hInput=(TH2F *) gROOT->FindObject(hname.Data());
