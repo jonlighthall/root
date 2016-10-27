@@ -4848,7 +4848,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
     gROOT->FindObject(hname)->Delete();  
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
-  TH1F * hist = new TH1F(hname, "Random Gausssian w/ 2N+1 bins", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "random Gausssian w/ 2N+1 bins", bins, xmin, xmax);
   printf("    Actual bin width is %f\n",hist->GetBinWidth(1));
   
   for (int i = 0; i < counts; ++i)
@@ -4860,7 +4860,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
   gfitc(hname,mean1,width*sigma1);
 
   FILE * outfile;
-  outfile=fopen("temp.lst","w");
+  outfile=fopen("rand.lst","w");
   
   Float_t center=0;
   Float_t cont=0;
@@ -4896,7 +4896,7 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
     printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
   }
   
-  TH1F * hist = new TH1F(hname, "Random Gaussian w/ fixed bin width", bins, xmin, xmax);
+  TH1F * hist = new TH1F(hname, "random Gaussian w/ fixed bin width", bins, xmin, xmax);
 
   printf("bin width is %f\n",hist->GetBinWidth(1));
   
@@ -4909,7 +4909,7 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
   gfitc(hname,mean1,width*sigma1);
 
   FILE * outfile;
-  outfile=fopen("temp.lst","w");
+  outfile=fopen("rand.lst","w");
   Float_t center=0;
   Float_t cont=0;
   Float_t inte=0;
@@ -4962,7 +4962,7 @@ void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=100
   hist->GetYaxis()->SetRangeUser(0,(1.2*(Float_t)counts/bins));
    
   FILE * outfile;
-  outfile=fopen("temp.lst","w");
+  outfile=fopen("rand.lst","w");
   Float_t center=0;
   Float_t cont=0;
   Float_t inte=0;
@@ -4988,9 +4988,9 @@ Float_t xmax=130;
 Float_t ymin=-2;
 Float_t ymax=2;
 Float_t tmin=0;//0;
-Float_t tmax=2000;//1400;
+Float_t tmax=1400;//1400;
 Float_t emin=0;
-Float_t emax=17;
+Float_t emax=21;
 Float_t amin=500;
 Float_t amax=1250;
 
@@ -5065,7 +5065,7 @@ mca2root(TString fname="output.mca")
   h4->Write("");
 }
 
-void mcacal()
+void mcacal(Bool_t bdocopy=kFALSE)
 {
   //---------------------------
   //calculate time correction
@@ -5081,9 +5081,9 @@ void mcacal()
   //pfx("h4");
   //xprof->Fit("pol2","m");
   //xprof->Fit("pol8","m");
-
-  myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
-  //myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
+  
+  //myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
+  myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
   h4->Fit("myfun","m");
   h4->Fit("myfun","m");
   
@@ -5148,9 +5148,14 @@ void mcacal()
   //calculate second-order correction
   TCanvas::MakeDefCanvas();
   c1->cd();
-  copy2("hc2",4);
-  pfx("hc2");
-  pfx("hc2_copy");
+
+  if(bdocopy) {
+    copy2("hc2",4);
+    pfx("hc2_copy");
+  }
+  else
+    pfx("hc2");
+  
   xprof->Fit("pol1","m");
   d=pol1->GetParameter(1);
   e=pol1->GetParameter(0);
@@ -5171,8 +5176,13 @@ void mcacal()
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:theta",c-mean,a,b,d,e-mean),"","col");
   t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta>>hcc5",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","col");
   //htemp->Draw("col");
-  copy2("hcc5",4);
-  pfx("hcc5_copy");
+  if(bdocopy) {
+    copy2("hcc5",4);
+    pfx("hcc5_copy");
+  }
+  else
+    pfx("hcc5");
+
   xprof->Fit("pol1","m");
   
   ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
@@ -5204,15 +5214,19 @@ void mcacal()
 
   c1->cd();
   //pjx("h2");gfitcp("xproj");
-  Float_t tw[4]={0};
+  Float_t tw[5]={0};
   pjy("h2");gfitcp("yproj");tw[0]=2.35482*gaus->GetParameter(2);
+  pjx("h2");gfitcp("xproj");tw[4]=2.35482*gaus->GetParameter(2);
+
   pjy("hc2");gfitcp("yproj");tw[1]=2.35482*gaus->GetParameter(2);
   pjy("hcc2");gfitcp("yproj");tw[2]=2.35482*gaus->GetParameter(2);
   pjy("hccc2");gfitcp("yproj");  tw[3]=2.35482*gaus->GetParameter(2);
+
   printf("Time width is %6.2f ns FWHM uncorrected\n",tw[0]);
   printf("              %6.2f ns FWHM energy-corrected\n",tw[1]);
   printf("              %6.2f ns FWHM position-corrected\n",tw[2]);
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
+  printf("              %6.2f cm FWHM uncorrected\n",tw[4]);
   
   /*
     float tt;
