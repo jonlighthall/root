@@ -4985,8 +4985,8 @@ void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=100
 Int_t  bins=512*2;
 Float_t xmin=-85;
 Float_t xmax=130;
-Float_t ymin=-2;
-Float_t ymax=2;
+Float_t ymin=-4;
+Float_t ymax=-ymin;
 Float_t tmin=0;//0;
 Float_t tmax=1400;//1400;
 Float_t emin=0;
@@ -5065,7 +5065,7 @@ mca2root(TString fname="output.mca")
   h4->Write("");
 }
 
-void mcacal(Bool_t bdocopy=kFALSE)
+void mcacal(Float_t bdocopy=kFALSE)
 {
   //---------------------------
   //calculate time correction
@@ -5103,8 +5103,9 @@ void mcacal(Bool_t bdocopy=kFALSE)
   h1->Clone("hcc1");
   h1->Clone("hccc1");
 
-  Float_t tzmin=480;//0;
-  Float_t tzmax=680;//1400;
+  Float_t twide=200;
+  Float_t tzmin=mean-twide;
+  Float_t tzmax=mean+twide;
   
   h2->Clone("hc2");
   hc2->SetBins(bins,xmin,xmax,bins,tzmin,tzmax);
@@ -5146,17 +5147,18 @@ void mcacal(Bool_t bdocopy=kFALSE)
 
   //---------------------------
   //calculate second-order correction
-  TCanvas::MakeDefCanvas();
+  if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
   c1->cd();
 
   if(bdocopy) {
-    copy2("hc2",4);
+    copy2("hc2",bdocopy);
     pfx("hc2_copy");
+    xprof->Fit("pol1","m");
   }
   else
-    pfx("hc2");
+    //pfx("hc2");
+    hc2->Fit("pol1","m");
   
-  xprof->Fit("pol1","m");
   d=pol1->GetParameter(1);
   e=pol1->GetParameter(0);
   plotall("h");
@@ -5167,24 +5169,25 @@ void mcacal(Bool_t bdocopy=kFALSE)
   hc2->Draw("same");
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:x>>hcc2",c-mean,a,b,d,e-mean),"","same");
   t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:x>>hcc2",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
-
-  c1->cd();
+  
+  if(!((TCanvas *) gROOT->FindObject("cFit2"))) mkCanvas2("cFit2","cFit2");
+  cFit2->cd();
   t1->Draw("t:theta>>h5","","col");
-  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:theta>>hc5",p[0]-mean,p[1],p[2],p[3]),"","col");
+  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:theta>>hc5",p[0]-mean,p[1],p[2],p[3]),"","same");
 
   //calculate third-order correction
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:theta",c-mean,a,b,d,e-mean),"","col");
-  t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta>>hcc5",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","col");
+  t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta>>hcc5",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
   //htemp->Draw("col");
   if(bdocopy) {
-    copy2("hcc5",4);
+    copy2("hcc5",bdocopy);
     pfx("hcc5_copy");
+    xprof->Fit("pol1","m");
   }
   else
-    pfx("hcc5");
-
-  xprof->Fit("pol1","m");
-  
+    //pfx("hcc5");
+    hcc5->Fit("pol1","m");
+    
   ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
   cFit->cd(2);
   //t1->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
@@ -5210,14 +5213,18 @@ void mcacal(Bool_t bdocopy=kFALSE)
   //t1->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
 
+  cFit2->cd();
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:theta>>hccc5",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
 
   c1->cd();
+  c1->Divide(2,1);
   //pjx("h2");gfitcp("xproj");
   Float_t tw[5]={0};
+  c1->cd(1);
   pjy("h2");gfitcp("yproj");tw[0]=2.35482*gaus->GetParameter(2);
-  pjx("h2");gfitcp("xproj");tw[4]=2.35482*gaus->GetParameter(2);
 
+  pjx("h2");gfitcp("xproj");tw[4]=2.35482*gaus->GetParameter(2);
+  c1->cd(2);
   pjy("hc2");gfitcp("yproj");tw[1]=2.35482*gaus->GetParameter(2);
   pjy("hcc2");gfitcp("yproj");tw[2]=2.35482*gaus->GetParameter(2);
   pjy("hccc2");gfitcp("yproj");  tw[3]=2.35482*gaus->GetParameter(2);
@@ -5295,7 +5302,7 @@ mca2rootc(TString fname2="output.mca")
 
   c1->cd();
   Float_t tw[4]={0};
-  pjy("h2");gfitcp("yproj");tw[0]=2.35482*gaus->GetParameter(2);
+  pjy("h2");gfitcp("yproj",-1,1,2,0.05,"q");tw[0]=2.35482*gaus->GetParameter(2);
   pjy("hc2");gfitcp("yproj");tw[1]=2.35482*gaus->GetParameter(2);
   pjy("hcc2");gfitcp("yproj");tw[2]=2.35482*gaus->GetParameter(2);
   pjy("hccc2");gfitcp("yproj");  tw[3]=2.35482*gaus->GetParameter(2);
