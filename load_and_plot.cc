@@ -5269,7 +5269,10 @@ mca2rootc(TString fname2="output.mca")
   cFit->cd(4);
   t2->Draw("t:e>>h4","","col");
   
+  h5->Delete();
   plotall("h");
+  if(((TCanvas *) gROOT->FindObject("cFit2"))) cFit2->Close();
+  //  if(((TCanvas *) gROOT->FindObject("c1"))) c1->Close();
   
   //---------------------------
   //plot first-order correction
