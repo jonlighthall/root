@@ -5102,6 +5102,7 @@ void mcacal(Float_t bdocopy=kFALSE)
   h1->Clone("hc1");
   h1->Clone("hcc1");
   h1->Clone("hccc1");
+  h1->Clone("hcccc1");
 
   Float_t twide=200;
   Float_t tzmin=mean-twide;
@@ -5113,10 +5114,13 @@ void mcacal(Float_t bdocopy=kFALSE)
   hc2->Clone("hccc2");
   hcc2->SetMarkerColor(2);
   hccc2->SetMarkerColor(3);
+  hc2->Clone("hcccc2");
+  hcccc2->SetMarkerColor(4);
   
   h3->Clone("hc3");
   h3->Clone("hcc3");
   h3->Clone("hccc3");
+  h3->Clone("hcccc3");
 
   h4->Clone("hc4");
   hc4->SetBins(bins,emin,emax,bins,tzmin,tzmax);
@@ -5124,6 +5128,8 @@ void mcacal(Float_t bdocopy=kFALSE)
   hc4->Clone("hccc4");
   hcc4->SetMarkerColor(2);
   hccc4->SetMarkerColor(3);
+  hc4->Clone("hcccc4");
+  hcccc4->SetMarkerColor(4);
 
   h5->Clone("hc5");
   hc5->SetBins(bins,amin,amax,bins,tzmin,tzmax);
@@ -5131,6 +5137,30 @@ void mcacal(Float_t bdocopy=kFALSE)
   hc5->Clone("hccc5");
   hcc5->SetMarkerColor(2);
   hccc5->SetMarkerColor(3);
+  hc5->Clone("hcccc5");
+  hcccc5->SetMarkerColor(4);
+
+  float px,py,pe,pq,pt,ptheta,pphi;
+  float ptt;
+  TBranch *bptt = t1->Branch("tt",&ptt,"tt/F");
+  t1->SetBranchAddress("x",&px);
+  t1->SetBranchAddress("y",&py);
+  t1->SetBranchAddress("e",&pe);
+  t1->SetBranchAddress("q",&pq);
+  t1->SetBranchAddress("t",&pt);
+  t1->SetBranchAddress("theta",&ptheta);
+  t1->SetBranchAddress("phi",&pphi);
+  Long64_t nentries = t1->GetEntries();
+  for (Long64_t ii=0;ii<nentries;ii++) {
+    t1->GetEntry(ii);
+    ptt = pt-myfun(pe)+mean;
+    bptt->Fill();
+  }
+  
+  t1->Write();
+  
+  t1->Draw("tt:x>>hcccc2","","same");
+
 
   //---------------------------
   //plot first-order correction
