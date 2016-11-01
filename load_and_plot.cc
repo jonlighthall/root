@@ -5002,14 +5002,6 @@ TH2F *h5;
 
 TTree *t1 = new TTree();
 
-Float_t a,b,c;
-
-TF1 *myfun;
-Double_t p[9]={0}; 
-Float_t mean;
-Float_t d,e;
-Float_t ff,g;
-
 mca2root(TString fname="output.mca")
 {
   TFile *f = new TFile("output.root","recreate");
@@ -5065,45 +5057,29 @@ mca2root(TString fname="output.mca")
   h4->Write("");
 }
 
+Float_t mean;
+//Float_t a,b,c;
+TF1 *myfun;
+TF1 *myfun2;
+Double_t p[9]={0};
+Double_t pp[9]={0};
+Float_t d,e;
+Float_t ff,g;
+
 void mcacal(Float_t bdocopy=kFALSE)
 {
-  //---------------------------
-  //calculate time correction
-  //t1->Draw("t:theta>>htemp","","col");
-  //t1->Draw("t:x>>htemp","","col");
-  //htemp->ProfileX();
-  //htemp_pfx->Fit("pol2","m");
-   
-  //h4->Draw("col");
-  //h4->Fit("pol2","m");
-  //copy2("h4",31);
-  //h4_copy->Fit("pol2","m");
-  //pfx("h4");
-  //xprof->Fit("pol2","m");
-  //xprof->Fit("pol8","m");
-  
-  //myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
-  myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
-  h4->Fit("myfun","m");
-  h4->Fit("myfun","m");
-  
-  //Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
-  //a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
-  for (int i=0;i<9;i++) //p[i]=pol8->GetParameter(i);
-		       p[i]=myfun->GetParameter(i);
-  
-  //a=pol3->GetParameter(2);b=pol3->GetParameter(1);c=pol3->GetParameter(0);
-  //Float_t cc=0;
-  //cc=pol3->GetParameter(3);
-  mean=h4->GetMean(2);
-  
   plotall("h");
+  if(!((TCanvas *) gROOT->FindObject("cFit2"))) mkCanvas2("cFit2","cFit2");
+  cFit2->cd();
+  t1->Draw("t:theta>>h5","","col");
   
+  //create calibration histograms
   h1->Clone("hc1");
   h1->Clone("hcc1");
   h1->Clone("hccc1");
   h1->Clone("hcccc1");
-
+  
+  mean=h4->GetMean(2);
   Float_t twide=200;
   Float_t tzmin=mean-twide;
   Float_t tzmax=mean+twide;
@@ -5122,6 +5098,7 @@ void mcacal(Float_t bdocopy=kFALSE)
   h3->Clone("hccc3");
   h3->Clone("hcccc3");
 
+
   h4->Clone("hc4");
   hc4->SetBins(bins,emin,emax,bins,tzmin,tzmax);
   hc4->Clone("hcc4");
@@ -5132,14 +5109,41 @@ void mcacal(Float_t bdocopy=kFALSE)
   hcccc4->SetMarkerColor(4);
 
   h5->Clone("hc5");
-  hc5->SetBins(bins,amin,amax,bins,tzmin,tzmax);
+  hc5->SetBins(bins,amin,amax,bins,tzmin,tzmax);  
   hc5->Clone("hcc5");
   hc5->Clone("hccc5");
   hc5->Clone("hcccc5");
   hcc5->SetMarkerColor(2);
   hccc5->SetMarkerColor(3);
   hcccc5->SetMarkerColor(4);
+  
+  //---------------------------
+  //calculate first order correction
+  printf(" Calculating first-order correction: time vs. energy\n");
+  //t1->Draw("t:theta>>htemp","","col");
+  //t1->Draw("t:x>>htemp","","col");
+  //htemp->ProfileX();
+  //htemp_pfx->Fit("pol2","m");
+  
+  //h4->Draw("col");
+  //h4->Fit("pol2","m");
+  //copy2("h4",31);
+  //h4_copy->Fit("pol2","m");
+  //pfx("h4");
+  //xprof->Fit("pol2","m");
+  //xprof->Fit("pol8","m");
 
+  cFit->cd(4);
+  //myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
+  myfun = new TF1("myfun","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
+  h4->Fit("myfun","m");
+  h4->Fit("myfun","m");
+  
+  //Float_t a=pol2->GetParameter(2),b=pol2->GetParameter(1),c=pol2->GetParameter(0);
+  //a=pol2->GetParameter(2);b=pol2->GetParameter(1);c=pol2->GetParameter(0);
+  for (int i=0;i<9;i++) //p[i]=pol8->GetParameter(i);
+    p[i]=myfun->GetParameter(i);
+  
   //add branch
   float px,py,pe,pq,pt,ptheta,pphi;
   float ptt;
@@ -5173,40 +5177,54 @@ void mcacal(Float_t bdocopy=kFALSE)
   //t1->Draw(TString::Format("t-%g-%g*TMath::Power(e,1)-%g*TMath::Power(e,2)-%g*TMath::Power(e,3)-%g*TMath::Power(e,4)-%g*TMath::Power(e,5)-%g*TMath::Power(e,6)-%g*TMath::Power(e,7)-%g*TMath::Power(e,8):x>>hc2",p[0]-mean,p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8]),"","col");
   //t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hc2",p[0]-mean,p[1],p[2],p[3]),"","same");
   t1->Draw("tt:x>>hc2","","same");
+  cFit->cd(4);
+  //t1->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>hc4","","col");//works
+  //t1->Draw("t-0.004423*theta*theta+9.13593*theta:e>>h4","","col");//doesn't work!?
+  //t1->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>hc4",a,b),"","col");
+  //t1->Draw(TString::Format("t-%f*TMath::Power(theta,2)-%f*theta:e>>hc4",a,b),"","col");
+  //t1->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
+  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(e,1)-%g*TMath::Power(e,2)-%g*TMath::Power(e,3)-%g*TMath::Power(e,4)-%g*TMath::Power(e,5)-%g*TMath::Power(e,6)-%g*TMath::Power(e,7)-%g*TMath::Power(e,8):e>>hc4",p[0]-mean,p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8]),"","col");
+  //t1->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:e>>hc4",c-mean,a,b),"","same");
+  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hc4",p[0]-mean,p[1],p[2],p[3]),"","same");
+  t1->Draw("tt:e>>hc4","","same");
   
+  cFit2->cd();
+  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:theta>>hc5",p[0]-mean,p[1],p[2],p[3]),"","same");
+
   //---------------------------
   //calculate second-order correction
-  if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
-  c1->cd();
-
+  printf(" Calculating second-order correction: time vs. position\n");
+  
   if(bdocopy) {
+    if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
+    c1->cd();
     copy2("hc2",bdocopy);
     pfx("hc2_copy");
     xprof->Fit("pol1","m");
   }
-  else
+  else {
+    cFit->cd(2);
     //pfx("hc2");
     hc2->Fit("pol1","m");
-  
+  }
+    
   d=pol1->GetParameter(1);
   e=pol1->GetParameter(0);
-  plotall("h");
   
-  //second-order correction
-  cFit->cd(2);
-  h2->Draw("col");
-  hc2->Draw("same");
+  //---------------------------
+  //plot second-order correction
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:x>>hcc2",c-mean,a,b,d,e-mean),"","same");
   t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:x>>hcc2",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
-  
-  if(!((TCanvas *) gROOT->FindObject("cFit2"))) mkCanvas2("cFit2","cFit2");
+  cFit->cd(4);
+  //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:e>>hcc4",c-mean,a,b,d,e-mean),"","same");
+  t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:e>>hcc4",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
   cFit2->cd();
-  t1->Draw("t:theta>>h5","","col");
-  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:theta>>hc5",p[0]-mean,p[1],p[2],p[3]),"","same");
-
-  //calculate third-order correction
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:theta",c-mean,a,b,d,e-mean),"","col");
   t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta>>hcc5",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
+  
+  //---------------------------
+  //calculate third-order correction
+  printf(" Calculating third-order correction: time vs. angle\n");
   //htemp->Draw("col");
   if(bdocopy) {
     copy2("hcc5",bdocopy);
@@ -5218,51 +5236,60 @@ void mcacal(Float_t bdocopy=kFALSE)
     hcc5->Fit("pol1","m");
     
   ff=pol1->GetParameter(1), g=pol1->GetParameter(0);
+
+  //---------------------------
+  //plot third-order correction
   cFit->cd(2);
   //t1->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
-  
-  //plot first-order correction
   cFit->cd(4);
-  h4->Draw("col");
-  //t1->Draw("t-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta:e>>hc4","","col");//works
-  //t1->Draw("t-0.004423*theta*theta+9.13593*theta:e>>h4","","col");//doesn't work!?
-  //t1->Draw(TString::Format("t-%f*TMath::Power(e,2)-%f*e:x>>hc4",a,b),"","col");
-  //t1->Draw(TString::Format("t-%f*TMath::Power(theta,2)-%f*theta:e>>hc4",a,b),"","col");
-  //  t1->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
-  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(e,1)-%g*TMath::Power(e,2)-%g*TMath::Power(e,3)-%g*TMath::Power(e,4)-%g*TMath::Power(e,5)-%g*TMath::Power(e,6)-%g*TMath::Power(e,7)-%g*TMath::Power(e,8):e>>hc4",p[0]-mean,p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8]),"","col");
-  //t1->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:e>>hc4",c-mean,a,b),"","same");
-  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hc4",p[0]-mean,p[1],p[2],p[3]),"","same");
-  t1->Draw("tt:x>>hc4","","same");
-  
-  //plot second-order correction
-  //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:e>>hcc4",c-mean,a,b,d,e-mean),"","same");
-  t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:e>>hcc4",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
-
-  //plot third-order correction
   //t1->Draw(TString::Format("((t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",c-mean,a,b,d,e-mean,ff,g-mean),"","same");
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
-
   cFit2->cd();
   t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:theta>>hccc5",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
+  
+  //---------------------------
+  //calculate fourth-order correction
+  printf(" Calculating fourth-order correction: time vs. energy (again)\n");
+  cFit->cd(4);
+  //myfun2 = new TF1("myfun2","[0]+[1]*TMath::Power([2]+x,-1)+[3]*x",0.1,16);
+  myfun2 = new TF1("myfun2","[0]+[1]*TMath::Power([2]+x,-1)",0.1,16);
+  myfun2->SetLineStyle(2);
+  
+  hccc4->Fit("myfun2","m");
+  for (int i=0;i<9;i++) pp[i]=myfun2->GetParameter(i);
 
+  //---------------------------
+  //plot fourth-order correction 
+  cFit->cd(2);
+  t1->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hcccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0]-mean,pp[1],pp[2],pp[3]),"","same");
+  cFit->cd(4);
+  t1->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hcccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0]-mean,pp[1],pp[2],pp[3]),"","same");
+  cFit2->cd();
+  t1->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:theta>>hcccc5",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0]-mean,pp[1],pp[2],pp[3]),"","same");
+
+  //---------------------------
+  //calculate peak widths
+  if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
   c1->cd();
   c1->Divide(2,1);
   //pjx("h2");gfitcp("xproj");
-  Float_t tw[5]={0};
+  Float_t tw[6]={0};
   c1->cd(1);
   pjy("h2");gfitcp("yproj");tw[0]=2.35482*gaus->GetParameter(2);
-
   pjx("h2");gfitcp("xproj");tw[4]=2.35482*gaus->GetParameter(2);
   c1->cd(2);
   pjy("hc2");gfitcp("yproj");tw[1]=2.35482*gaus->GetParameter(2);
   pjy("hcc2");gfitcp("yproj");tw[2]=2.35482*gaus->GetParameter(2);
   pjy("hccc2");gfitcp("yproj");  tw[3]=2.35482*gaus->GetParameter(2);
+  pjy("hcccc2");gfitcp("yproj");  tw[5]=2.35482*gaus->GetParameter(2);
 
   printf("Time width is %6.2f ns FWHM uncorrected\n",tw[0]);
   printf("              %6.2f ns FWHM energy-corrected\n",tw[1]);
   printf("              %6.2f ns FWHM position-corrected\n",tw[2]);
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
+  printf("              %6.2f ns FWHM 2x position-corrected\n",tw[5]);
+  printf("--------------------------------------------------\n");
   printf("              %6.2f cm FWHM uncorrected\n",tw[4]);
 }
 
@@ -5306,6 +5333,12 @@ mca2rootc(TString fname2="output.mca")
   t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
   cFit->cd(4);
   t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
+
+  //plot fourth-order correction 
+  cFit->cd(2);
+  t2->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hcccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0]-mean,pp[1],pp[2],pp[3]),"","same");
+  cFit->cd(4);
+  t2->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hcccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0],pp[1],pp[2],pp[3]),"","same");
 
   //calculate peak widths
   c1->cd();
