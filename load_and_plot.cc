@@ -5112,9 +5112,9 @@ void mcacal(Float_t bdocopy=kFALSE)
   hc2->SetBins(bins,xmin,xmax,bins,tzmin,tzmax);
   hc2->Clone("hcc2");
   hc2->Clone("hccc2");
+  hc2->Clone("hcccc2");
   hcc2->SetMarkerColor(2);
   hccc2->SetMarkerColor(3);
-  hc2->Clone("hcccc2");
   hcccc2->SetMarkerColor(4);
   
   h3->Clone("hc3");
@@ -5126,20 +5126,21 @@ void mcacal(Float_t bdocopy=kFALSE)
   hc4->SetBins(bins,emin,emax,bins,tzmin,tzmax);
   hc4->Clone("hcc4");
   hc4->Clone("hccc4");
+  hc4->Clone("hcccc4");
   hcc4->SetMarkerColor(2);
   hccc4->SetMarkerColor(3);
-  hc4->Clone("hcccc4");
   hcccc4->SetMarkerColor(4);
 
   h5->Clone("hc5");
   hc5->SetBins(bins,amin,amax,bins,tzmin,tzmax);
   hc5->Clone("hcc5");
   hc5->Clone("hccc5");
+  hc5->Clone("hcccc5");
   hcc5->SetMarkerColor(2);
   hccc5->SetMarkerColor(3);
-  hc5->Clone("hcccc5");
   hcccc5->SetMarkerColor(4);
 
+  //add branch
   float px,py,pe,pq,pt,ptheta,pphi;
   float ptt;
   TBranch *bptt = t1->Branch("tt",&ptt,"tt/F");
@@ -5159,9 +5160,6 @@ void mcacal(Float_t bdocopy=kFALSE)
   
   t1->Write();
   
-  t1->Draw("tt:x>>hcccc2","","same");
-
-
   //---------------------------
   //plot first-order correction
   cFit->cd(2);
@@ -5173,8 +5171,9 @@ void mcacal(Float_t bdocopy=kFALSE)
   //t1->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:x>>hc2",c-mean,a,b),"","same");
   //t1->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:x>>hc2",c-mean,a,b),"","same");
   //t1->Draw(TString::Format("t-%g-%g*TMath::Power(e,1)-%g*TMath::Power(e,2)-%g*TMath::Power(e,3)-%g*TMath::Power(e,4)-%g*TMath::Power(e,5)-%g*TMath::Power(e,6)-%g*TMath::Power(e,7)-%g*TMath::Power(e,8):x>>hc2",p[0]-mean,p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8]),"","col");
-  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hc2",p[0]-mean,p[1],p[2],p[3]),"","same");
-
+  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hc2",p[0]-mean,p[1],p[2],p[3]),"","same");
+  t1->Draw("tt:x>>hc2","","same");
+  
   //---------------------------
   //calculate second-order correction
   if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
@@ -5233,8 +5232,9 @@ void mcacal(Float_t bdocopy=kFALSE)
   //  t1->Draw(TString::Format("t-%f-%f*TMath::Power(e,2)-%f*e:e>>hc4",c-mean,a,b),"","same");
   //t1->Draw(TString::Format("t-%g-%g*TMath::Power(e,1)-%g*TMath::Power(e,2)-%g*TMath::Power(e,3)-%g*TMath::Power(e,4)-%g*TMath::Power(e,5)-%g*TMath::Power(e,6)-%g*TMath::Power(e,7)-%g*TMath::Power(e,8):e>>hc4",p[0]-mean,p[1],p[2],p[3],p[4],p[5],p[6],p[7],p[8]),"","col");
   //t1->Draw(TString::Format("t-%f-%f*TMath::Power(x,2)-%f*x:e>>hc4",c-mean,a,b),"","same");
-  t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hc4",p[0]-mean,p[1],p[2],p[3]),"","same");
-
+  //t1->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hc4",p[0]-mean,p[1],p[2],p[3]),"","same");
+  t1->Draw("tt:x>>hc4","","same");
+  
   //plot second-order correction
   //t1->Draw(TString::Format("(t-%f-%f*TMath::Power(e,2)-%f*e)-%f*x-%f:e>>hcc4",c-mean,a,b,d,e-mean),"","same");
   t1->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:e>>hcc4",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
@@ -5264,24 +5264,8 @@ void mcacal(Float_t bdocopy=kFALSE)
   printf("              %6.2f ns FWHM position-corrected\n",tw[2]);
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
   printf("              %6.2f cm FWHM uncorrected\n",tw[4]);
-  
-  /*
-    float tt;
-    float time,theta;
-    TBranch *btt = t1->Branch("tt",&tt,"tt/F");
-    t1->SetBranchAddress("t",&time);
-    t1->SetBranchAddress("theta",&theta);
-    Long64_t nentries = t1->GetEntries();
-    for (Long64_t j=0;j<nentries;j++) {
-    t1->GetEntry(j);
-    tt = time-pol2->GetParameter(2)*theta*theta-pol2->GetParameter(1)*theta;
-    //tt = time-a*theta*theta-b*theta;
-    btt->Fill();
-    }
-    //   t1->Print();
-    t1->Write();
-  */
 }
+
 TTree *t2 = new TTree();
 
 mca2rootc(TString fname2="output.mca")
@@ -5289,6 +5273,7 @@ mca2rootc(TString fname2="output.mca")
   t2->ReadFile(fname2,"x/F:y/F:e/F:q/F:t/F:theta/F:phi/F");
   t2->Write("");
   
+  cFit->Clear();
   cFit->Divide(2,2);
   cFit->cd(1);
   t2->Draw("y:x>>h1","","col");
@@ -5300,39 +5285,29 @@ mca2rootc(TString fname2="output.mca")
   t2->Draw("t:e>>h4","","col");
   
   h5->Delete();
-  plotall("h");
   if(((TCanvas *) gROOT->FindObject("cFit2"))) cFit2->Close();
-  //  if(((TCanvas *) gROOT->FindObject("c1"))) c1->Close();
   
   //---------------------------
   //plot first-order correction
   cFit->cd(2);
   t2->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hc2",p[0]-mean,p[1],p[2],p[3]),"","same");
-
-  //second-order correction
-  cFit->cd(2);
-  h2->Draw("col");
-  hc2->Draw("same");
-  t2->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:x>>hcc2",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
-  
-  //calculate third-order correction
-  c1->cd();
-  t2->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:theta",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","col");
- 
-  cFit->cd(2);
-  t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
-  
+  //t2->Draw("t-myfun(e)+mean:x>>hc2","","same");
   cFit->cd(4);
-  h4->Draw("col");
-  //plot first-order correction
   t2->Draw(TString::Format("t-%g-%g*TMath::Power(%g+e,-1)-%g*e:e>>hc4",p[0]-mean,p[1],p[2],p[3]),"","same");
 
   //plot second-order correction
+  cFit->cd(2);
+  t2->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:x>>hcc2",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
+  cFit->cd(4);
   t2->Draw(TString::Format("(t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f:e>>hcc4",p[0]-mean,p[1],p[2],p[3],d,e-mean),"","same");
-
-  //plot third-order correction
+  
+  //plot third-order correction 
+  cFit->cd(2);
+  t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:x>>hccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
+  cFit->cd(4);
   t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
 
+  //calculate peak widths
   c1->cd();
   Float_t tw[4]={0};
   pjy("h2");gfitcp("yproj",-1,1,2,0.05,"q");tw[0]=2.35482*gaus->GetParameter(2);
@@ -5348,8 +5323,6 @@ mca2rootc(TString fname2="output.mca")
 Int_t mark_style=1;//20;
 Float_t mark_size=0.4;
 Int_t mark_col=2;
-
-//TTree *t2 = new TTree();
 
 void mca2root2(TString fname="output2.mca")
 {//assumes mca2root.C has been run
