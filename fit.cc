@@ -2397,12 +2397,16 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
 
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
  
-  if(center==-1) {
+  if(center==-1) {//find peak with TSpectrum
     TSpectrum *spectrum=new TSpectrum();
     Float_t *gpositions;//moved * before variable name
     spectrum->Search(hist1,sigma);//,sigma,option,threshold);
     gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
     center=gpositions[0];
+  }
+
+  if(wide==1) {//estimate width based on bin width
+    wide=hist1->GetBinWidth(1)*10;
   }
   gfit(histname,center-wide,center+wide,fit_option);
   center=gaus->GetParameter(1);
@@ -3526,7 +3530,7 @@ Int_t npeaks;
 Float_t min_space=25; //minimum space between adjacent peaks
 
 void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
-	     Double_t threshold=0.05, Char_t *option="")
+	     Double_t threshold=0.05, Char_t *option="", Bool_t bfixed=kFALSE)
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
   getdet(histin);
@@ -3544,7 +3548,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 
   findpeaks(resolution,sigma,threshold,option);
   gfindpeaks(); 
-  decon(1);
+  decon(1,bfixed);
   readandfit(filename,setpad);
 }
 
@@ -3627,7 +3631,7 @@ void gfindpeaks()
   pm->Draw("same");
 }
 
-void decon(Int_t padno=1)
+void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
 {//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
   const int npar=npeaks*3;
   Double_t par[npar];
@@ -3644,6 +3648,7 @@ void decon(Int_t padno=1)
   
   printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
   printf(" fuction name is %s\n",fform.Data());
+  if((TF1 *)gROOT->FindObject("total"))total->Delete();//added
   TF1 *total = new TF1("total",fform,gfitmin,gfitmax);
 
   printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
@@ -3652,6 +3657,15 @@ void decon(Int_t padno=1)
     par[i]=gparameters[i];
   }
   total->SetParameters(par);
+
+  if(bfixed) {//use previously-determined peak centers for fit
+    for (Int_t i=0;i<npeaks;i++) {
+      //total->FixParameter(1+3*i,par[1+3*i]);
+      //total->FixParameter(1+3*i,gparameters[1+3*i]);
+      total->FixParameter(1+3*i,positions[i]);
+    }
+  }
+  
   hProj->Fit(total,"Mq+");
 
   if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
