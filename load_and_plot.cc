@@ -4983,14 +4983,14 @@ void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=100
 }
 
 Int_t  bins=512*2;
-Float_t xmin=-85;
-Float_t xmax=130;
-Float_t ymin=-4;
+Float_t xmin=0;//-85;
+Float_t xmax=100;//130;
+Float_t ymin=-3;
 Float_t ymax=-ymin;
-Float_t tmin=0;//0;
-Float_t tmax=1400;//1400;
+Float_t tmin=400;//0;
+Float_t tmax=520;//1400;
 Float_t emin=0;
-Float_t emax=21;
+Float_t emax=12;//21;
 Float_t amin=500;
 Float_t amax=1250;
 
@@ -5024,10 +5024,10 @@ mca2root(TString fname="output.mca")
     }
   }
   
-  h1 = new TH2F("h1","",bins,xmin,xmax,bins,ymin,ymax);
-  h2 = new TH2F("h2","",bins,xmin,xmax,bins,tmin,tmax);
+  h1 = new TH2F("h1","",bins,xmin,xmax,bins/4,ymin,ymax);
+  h2 = new TH2F("h2","",bins,xmin,xmax,bins*2,tmin,tmax);
   h3 = new TH2F("h3","",bins,xmin,xmax,bins,emin,emax);
-  h4 = new TH2F("h4","",bins,emin,emax,bins,tmin,tmax);
+  h4 = new TH2F("h4","",bins,emin,emax,bins*3,tmin,tmax);
   h5 = new TH2F("h5","",bins,amin,amax,bins,tmin,tmax);
 
   h1->SetXTitle("x-position (cm)");
@@ -5082,7 +5082,7 @@ void mcacal(Float_t bdocopy=kFALSE)
   h1->Clone("hccccc1");
   
   mean=h4->GetMean(2);
-  Float_t twide=200;
+  Float_t twide=100;
   Float_t tzmin=mean-twide;
   Float_t tzmax=mean+twide;
   
@@ -5205,9 +5205,11 @@ void mcacal(Float_t bdocopy=kFALSE)
   if(bdocopy) {
     if(!((TCanvas *) gROOT->FindObject("c1"))) mkCanvas2("c1","c1");
     c1->cd();
-    copy2("hc2",bdocopy);
-    pfx("hc2_copy");
-    xprof->Fit("pol1","m");
+    copy2("hc2",bdocopy,-1,0);
+    hc2_copy->Fit("pol1","m");
+    //pfx("hc2_copy");
+    //xprof->Fit("pol1","m");
+    
   }
   else {
     cFit->cd(2);
@@ -5247,9 +5249,10 @@ void mcacal(Float_t bdocopy=kFALSE)
   printf(" Calculating third-order correction: time vs. angle\n");
   //htemp->Draw("col");
   if(bdocopy) {
-    copy2("hcc5",bdocopy);
-    pfx("hcc5_copy");
-    xprof->Fit("pol1","m");
+    copy2("hcc5",bdocopy,-1,0);
+    hc2_copy->Fit("pol1","m");
+    //pfx("hcc5_copy");
+    //xprof->Fit("pol1","m");
   }
   else
     //pfx("hcc5");
@@ -5280,7 +5283,7 @@ void mcacal(Float_t bdocopy=kFALSE)
   cFit2->cd();
   //t1->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:theta>>hccc5",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
   t1->Draw("t4:theta>>hccc5","","same");
-  
+  /*
   //---------------------------
   //calculate fourth-order correction
   printf(" Calculating fourth-order correction: time vs. energy (again)\n");
@@ -5341,6 +5344,7 @@ void mcacal(Float_t bdocopy=kFALSE)
   t1->Draw("t6:e>>hccccc4","","same");
   cFit2->cd();
   t1->Draw("t6:theta>>hccccc5","","same");
+  */
 
   //---------------------------
   //calculate peak widths
@@ -5364,8 +5368,8 @@ void mcacal(Float_t bdocopy=kFALSE)
   printf("              %6.2f ns FWHM energy-corrected\n",tw[1]);
   printf("              %6.2f ns FWHM position-corrected\n",tw[2]);
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
-  printf("              %6.2f ns FWHM 2x energy-corrected\n",tw[5]);
-  printf("              %6.2f ns FWHM 2x position-corrected\n",tw[6]);
+  // printf("              %6.2f ns FWHM 2x energy-corrected\n",tw[5]);
+  //printf("              %6.2f ns FWHM 2x position-corrected\n",tw[6]);
   printf("Pos. width is %6.2f cm FWHM uncorrected\n",tw[4]);
 }
 
@@ -5403,8 +5407,8 @@ mca2rootc(TString fname2="output.mca")
   TBranch *bpt2 = t2->Branch("t2",&pt2,"t2/F");
   TBranch *bpt3 = t2->Branch("t3",&pt2,"t3/F");
   TBranch *bpt4 = t2->Branch("t4",&pt4,"t4/F");
-  TBranch *bpt5 = t2->Branch("t5",&pt5,"t5/F");
-  TBranch *bpt6 = t2->Branch("t6",&pt6,"t6/F");
+  //TBranch *bpt5 = t2->Branch("t5",&pt5,"t5/F");
+  //TBranch *bpt6 = t2->Branch("t6",&pt6,"t6/F");
   t2->SetBranchAddress("x",&px);
   t2->SetBranchAddress("y",&py);
   t2->SetBranchAddress("e",&pe);
@@ -5415,20 +5419,20 @@ mca2rootc(TString fname2="output.mca")
   t2->SetBranchAddress("t2",&pt2);
   t2->SetBranchAddress("t3",&pt3);
   t2->SetBranchAddress("t4",&pt4);
-  t2->SetBranchAddress("t5",&pt5);
+  //t2->SetBranchAddress("t5",&pt5);
   Long64_t nentries = t2->GetEntries();
   for (Long64_t ii=0;ii<nentries;ii++) {
     t2->GetEntry(ii);
     pt2 = pt-myfun(pe)+mean;
     pt3 = pt2 - d*px-e+mean;
     pt4 = pt3 -ff*ptheta-g+mean;
-    pt5 = pt4-myfun2(pe)+mean;
-    pt6 = pt5-myfun3(px)+mean;
+    // pt5 = pt4-myfun2(pe)+mean;
+    //pt6 = pt5-myfun3(px)+mean;
     bpt2->Fill();
     bpt3->Fill();
     bpt4->Fill();
-    bpt5->Fill();
-    bpt6->Fill();
+    //bpt5->Fill();
+    //bpt6->Fill();
   }
   t2->Write();
   
@@ -5457,7 +5461,7 @@ mca2rootc(TString fname2="output.mca")
   cFit->cd(4);
   //t2->Draw(TString::Format("((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f:e>>hccc4",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean),"","same");
   t2->Draw("t4:e>>hccc4","","same");
-  
+  /*
   //plot fourth-order correction 
   cFit->cd(2);
   //t2->Draw(TString::Format("(((t-%g-%g*TMath::Power(%g+e,-1)-%g*e)-%f*x-%f)-%f*theta-%f)-%g-%g*TMath::Power(%g+e,-1)-%g*e:x>>hcccc2",p[0]-mean,p[1],p[2],p[3],d,e-mean,ff,g-mean,pp[0]-mean,pp[1],pp[2],pp[3]),"","same");
@@ -5471,7 +5475,7 @@ mca2rootc(TString fname2="output.mca")
   t2->Draw("t6:x>>hccccc2","","same");
   cFit->cd(4);
   t2->Draw("t6:e>>hccccc4","","same");
-  
+  */
   //calculate peak widths
   c1->cd();
   Float_t tw[7]={0};
@@ -5487,11 +5491,86 @@ mca2rootc(TString fname2="output.mca")
   printf("              %6.2f ns FWHM angle-corrected\n",tw[3]);
   printf("              %6.2f ns FWHM 2x energy-corrected\n",tw[5]);
   printf("              %6.2f ns FWHM 2x position-corrected\n",tw[6]);
+
+  
+  //save calibrated tree
+  FILE * outfile;
+  fname2+=".cal";
+  printf("output file is %s\n",fname2.Data());
+  //outfile=fopen(fname.Data(),"w");
+  outfile=fopen("output.cal","w");
+  
+  //t2->SetBranchAddress("t6",&pt6);
+  printf("entries is %d\n",nentries);
+  for (Long64_t ii=0;ii<nentries;ii++) {
+    t2->GetEntry(ii);
+    //fprintf(outfile,"%f %f %f %f %f %f %f\n",px,py,pe,pq,pt6,ptheta,pphi);
+    fprintf(outfile,"%f %f %f %f %f %f %f\n",px,py,pe,pq,pt4,ptheta,pphi);
+  }
+  fclose(outfile);
+
 }
 
 Int_t mark_style=1;//20;
 Float_t mark_size=0.4;
 Int_t mark_col=2;
+
+void mcaplots()
+{
+  mca2root("output_39Cl.cal");
+  mca2root2("output_38Cl.cal");
+  mca2root3("output_37Cl.cal");
+  mca2root4("output_14C_35MeV_ANL.mca");
+  prop(3,1,1800);
+  cFit->Clear();
+  gStyle->SetOptStat("000000");
+  
+  cFit->Divide(2,1);
+
+  cFit->cd(1);
+  gPad->SetTickx(1);
+  gPad->SetTicky(1);
+  gPad->SetGrid(1,1);
+  h1->SetMarkerStyle(20);
+  h5->SetMarkerStyle(20);
+  h9->SetMarkerStyle(20);
+  h13->SetMarkerStyle(20);
+  h1->Draw();  h1->Draw("same");
+  h5->Draw("same");
+  h9->Draw("same");
+  h13->Draw("same");
+  
+  leg = new TLegend(0.1,0.6333,.2,.9);
+  leg->AddEntry(h1,"^{39}Cl","p");
+  leg->AddEntry(h5,"^{38}Cl","p");
+  leg->AddEntry(h9,"^{37}Cl","p");
+  leg->AddEntry(h13,"^{14}C","p");
+  leg->Draw();  
+  
+  cFit->cd(2);
+  gPad->SetTickx(1);
+  gPad->SetTicky(1);
+  gPad->SetGrid(1,1);
+  h4->SetMarkerStyle(20);
+  h8->SetMarkerStyle(20);
+  h12->SetMarkerStyle(20);
+  h16->SetMarkerStyle(20);
+  
+  //h4->SetBins(bins,emin,emax,bins,400,550);
+  h4->Draw("");  h4->Draw("same");
+  h8->Draw("same");
+  h12->Draw("same");
+  h16->Draw("same");
+
+  leg2 = new TLegend(0.1,0.7,.2,.9);
+  leg2->AddEntry(h4,"^{39}Cl","p");
+  leg2->AddEntry(h8,"^{38}Cl","p");
+  leg2->AddEntry(h12,"^{37}Cl","p");
+  //  leg2->AddEntry(h16,"^{14}C","p");
+  leg2->Draw();
+
+  cFit->SaveAs("cFit.eps");
+}
 
 void mca2root2(TString fname="output2.mca")
 {//assumes mca2root.C has been run
