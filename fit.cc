@@ -805,7 +805,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no1+no2)+1);++i){
+    for(int i=0;i<((no1+no2)+1);++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
@@ -3525,12 +3525,11 @@ void getline(void)
 // 4a). 1D Peak Search-----------------------------------------------------------------
 
 Float_t *positions;//moved * before variable name
-Float_t gparameters[300];
 Int_t npeaks;
 Float_t min_space=25; //minimum space between adjacent peaks
 
 void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
-	     Double_t threshold=0.05, Char_t *option="", Bool_t bfixed=kFALSE)
+	     Double_t threshold=0.05, Char_t *option="", Int_t bfixed=kFALSE)
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
   getdet(histin);
@@ -3603,6 +3602,8 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
   //delete spectrum;
 }
 
+Float_t gparameters[300];
+
 void gfindpeaks()
 {//assumes hname, positions[], npeaks, hProj are set
   Float_t sig_av=0;
@@ -3618,12 +3619,12 @@ void gfindpeaks()
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
     printf(" %7.3f | %8.5f |",gaus->GetParameter(1),positions[i]-gaus->GetParameter(1));
     Int_t gint=0;
-    gint= hProj->Integral(hProj->FindBin(positions[i]-min_space/2),hProj->FindBin(positions[i]+min_space/2));
+    gint= hProj->Integral(hProj->FindBin(positions[i]-min_space/2),hProj->FindBin(positions[i]+min_space/2));//integral of counts (1D cut)
     printf(" %6d |",gint);
     printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
     pm->SetPoint(i+1,gaus->GetParameter(1),gaus->GetParameter(0));
-    for (Int_t j=0; j<3; j++) {
+    for (Int_t j=0; j<3; j++) {//save fit parameters for deconvolution
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
   }
@@ -3631,7 +3632,7 @@ void gfindpeaks()
   pm->Draw("same");
 }
 
-void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
+void decon(Int_t padno=1,Int_t bfixed=kFALSE)
 {//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
   const int npar=npeaks*3;
   Double_t par[npar];
@@ -3639,7 +3640,7 @@ void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
   Float_t gfitmin=positions[0]-gfitwide;
   Float_t gfitmax=positions[npeaks-1]+gfitwide;
   printf("Step 3: Calculating global fit...");
-
+  
   TString fform; //define functional form
   fform="gaus(0)";
   for (Int_t i=1; i<npeaks; i++) {
@@ -3650,24 +3651,25 @@ void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
   printf(" fuction name is %s\n",fform.Data());
   if((TF1 *)gROOT->FindObject("total"))total->Delete();//added
   TF1 *total = new TF1("total",fform,gfitmin,gfitmax);
-
+  
   printf(" Defined range of global fit is (%.2f, %.2f)\n",gfitmin,gfitmax);
   total->SetLineColor(3);
-  for (Int_t i=0; i<(npar); i++) {
+  for (Int_t i=0; i<(npar); i++) {//load parameters from non-overlapping fits
     par[i]=gparameters[i];
   }
   total->SetParameters(par);
 
   if(bfixed) {//use previously-determined peak centers for fit
     for (Int_t i=0;i<npeaks;i++) {
-      //total->FixParameter(1+3*i,par[1+3*i]);
-      //total->FixParameter(1+3*i,gparameters[1+3*i]);
-      total->FixParameter(1+3*i,positions[i]);
+      if(bfixed==1)
+	total->FixParameter(1+3*i,positions[i]);//use centers from TSpectrum search (step 1)
+      if(bfixed==2)
+	total->FixParameter(1+3*i,par[1+3*i]);//use centers from non-overlapping fit (step 2)
     }
   }
   
   hProj->Fit(total,"Mq+");
-
+  
   if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
     mkCanvas2("cFit2","cFit2");
     cFit2->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);      
@@ -3687,6 +3689,9 @@ void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
   if(gROOT->FindObject("hFit3"))hFit3->Delete();//added
   hProj->Clone("hFit3");
   hFit3->Reset();
+  title=hFit3->GetTitle();
+  title+=" Peak Area";
+  hFit3->SetTitle(title);
   hFit3->SetXTitle("Peak position (#mu)");
   hFit3->SetYTitle("Calculated area under Gaussian");
 
@@ -3714,7 +3719,7 @@ void decon(Int_t padno=1,Bool_t bfixed=kFALSE)
     hFit2->Fill(par[1+3*i],par[2+3*i]);
     hFit3->Fill(par[1+3*i],area);
      
-    //      functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
+    //functions[i]->SetParameters(par[0+3*i],par[1+3*i],par[2+3*i]);
     functions[i]->SetLineColor(1);
     functions[i]->SetLineStyle(2);
     //cFit->cd(2);
