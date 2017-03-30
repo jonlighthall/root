@@ -3819,6 +3819,8 @@ void readandruth(Int_t detno=0, Int_t colno=0)
   }
 }
 
+TGraph *gFit = 0;
+
 void readandfit(Char_t *filename="",Int_t setpad=0)
 {
   Float_t energies[100];
@@ -3851,40 +3853,38 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
     }
   }
   
-  Float_t mwidth=0.1;
   a=hProj->GetXaxis()->GetXmin();
   b=hProj->GetXaxis()->GetXmax();
-  Float_t  margin2=(b-a)*mwidth;
 
   if(!(filefail)) {
     cFit->cd(setpad+1);
-    if(gROOT->FindObject("hPeakFit"))hPeakFit->Delete();//added, moved
-    Float_t margin = (max-min)*mwidth;
-    hFit=new TH1F("hPeakFit","hPeakFit",1024,min-margin,max+margin);//added
-    if((min-(max-min)/4)<0)printf("Notice: \"%s\" contains negatives value(s).\n        All zero-content bins are shown.\n",hFit->GetTitle());//added
-    //  TH1F *hFit =(TH1F *) gROOT->FindObject("hPeakFit");//needed?
-    hFit->Reset();  
-    hFit->SetXTitle("Positions from calibration file");
-    hFit->SetYTitle("Positions from peaks");
-    //printf("filling points...\n");
-    for (Int_t i=0; i<npeaks; i++) {
-      hFit->Fill(energies[i],positions[i]);
-      //printf("  %f, %f \n",energies[i],positions[i]);
-    }
-    //hFit->Draw();
-    //Set axis range here--- 
-    //hFit->SetAxisRangeUser(min-margin,max+margin);//set x-axis range
-    hFit->GetXaxis()->UnZoom();
-    hFit->GetYaxis()->SetRangeUser(a-margin2,b+margin2);//set y-axis range
-    printf(" Axis range is %f, %f; data (peak center) range is %f, %f\n",min-margin,max+margin,min,max); 
+        
+    if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
+    gFit = new TGraph(npeaks,energies,positions);
+    gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from calibration file");
+    gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from peaks");
+        
+      TF1 *fit = new TF1("fit","pol1");
+      TF1 *fit2 = new TF1("fit2","pol2");
+      TF1 *fit3 = new TF1("fit3","pol1");
+      fit2->SetLineColor(3);
+      fit2->SetLineStyle(2);
+      fit3->SetLineColor(4);
+      fit3->SetLineStyle(2);
+      gFit->Draw("AP*");
+      gFit->Fit("fit","q+");
+      gFit->Fit("fit2","q+");
+      gFit->Fit("fit3","q+ROB=0.95");
 
-    hFit->SetStats(kFALSE);//
-    hFit->SetMarkerStyle(2);
-    hFit->SetMarkerColor(1);
-    hFit->SetMarkerSize(3);
-    hFit->Fit("pol1","Q");    
-    slope=hFit->GetFunction("pol1")->GetParameter(1);
-    offset=hFit->GetFunction("pol1")->GetParameter(0);
+      leg = new TLegend(0.1,0.75,0.2,0.9);
+      leg->AddEntry(fit,"pol1","l");
+      leg->AddEntry(fit2,"pol2","l");
+      leg->AddEntry(fit3,"pol1, ROB=0.95","l");   
+      leg->Draw();
+      cFit->Update();
+    
+      slope=fit->GetParameter(1);
+      offset=fit->GetParameter(0);
     //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
     //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
     //width=hProj->GetFunction("gaus")->GetParameter(2);
@@ -3892,13 +3892,12 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
     printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
     printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
-
-    cFit->cd(setpad+1);
-    hFit->Draw("P");
-    printf(" Testing fit:\n");
-    for (Int_t i=0; i<npeaks; i++){
-      printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
-    }  
+      
+      cFit->cd(setpad+1);
+      printf(" Testing fit:\n");
+      for (Int_t i=0; i<npeaks; i++){
+	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+      }  
   }
    
   FILE * outfile;
@@ -3908,7 +3907,15 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
   outfile=fopen("temp_inv.lst","w");
   fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
   fclose(outfile);
-
+  outfile=fopen("temp.rob.lst","w");
+  fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
+  fclose(outfile);
+  outfile=fopen("temp_inv.rob.lst","w");
+  fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
+  fclose(outfile);
+  outfile=fopen("temp_off.rob.lst","w");
+  fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
+  fclose(outfile);
 }
 
 void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
