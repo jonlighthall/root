@@ -754,15 +754,18 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 	     Float_t minY=0,Float_t maxY=0,Int_t scale=1,bool show_blank=false)
 {//script to replace all of the macros in helios_plottools.cc
   Int_t col=0,row=0;
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
   Int_t no0=0;
+  const Int_t max=65;
+  Int_t isOK[max];
   printf("Searching for histograms named %s%s...\n",histin,suffix);
-  for(Int_t i=0;i<65;++i){
+  for(Int_t i=0;i<max;++i) {
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
     hname+=suffix;//updated to be compatible with poorly named histograms
     if(gROOT->FindObject(hname.Data())) {
+      isOK[no]=i;
+      //printf("%d %s\n",no,hname.Data());
       no++;
       if((gROOT->FindObject(hname.Data())->InheritsFrom("TH1F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH1D"))) {
 	no1++;
@@ -789,7 +792,8 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
   else
     no-=no0;
   
-  if(no!=0){
+  if(no!=0) {
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
     cFit->Clear();
     printf("Plotting %d histograms with name %s%s...\n",no,histin,suffix);  
     if(no>6){
@@ -805,20 +809,20 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no1+no2)+1);++i) {
+    for(int i=0;i<((no1+no2));++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       cFit->cd(pno+1);
        
       hname=histin;
-      hname+=i;
+      hname+=isOK[i];
       hname+=suffix;     
  
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	if(gROOT->FindObject(hname.Data())->InheritsFrom("TH2F")) {//if histograms are 2D
 	  hInput=(TH2F*)gROOT->FindObject(hname.Data());
-
+	  //printf("%d %s\n",i,hname.Data());
 	  if(hInput->GetEntries()>0) {
 	    pno++;
 	    //printf(" Plotting %s\n",hname.Data()); 
@@ -891,11 +895,14 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
   Int_t no=0;
   Int_t no0=0;
+  const Int_t max=65;
+  Int_t isOK[max];
   printf("Searching for histograms named %s...\n",histin);
-  for(int i=0;i<65;++i){
+  for(int i=0;i<max;++i){
     hname=histin;
     hname+=i;
     if((TH2F*)gROOT->FindObject(hname.Data())){
+      isOK[no]=i;
       no++;
       hInput=(TH2F*)gROOT->FindObject(hname.Data());  
       if(hInput->GetEntries()==0){
@@ -923,14 +930,14 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no+no0)+1);++i) {
+    for(int i=0;i<((no+no0));++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       cFit->cd(pno+1);
 
       hname=histin;
-      hname+=i;
+      hname+=isOK[i];
       
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());  
@@ -963,11 +970,14 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
   Int_t no=0;
   Int_t no0=0;
+  const Int_t max=65;
+  Int_t isOK[max];
   printf("Searching for histograms named %s...\n",histin);
-  for(int i=0;i<65;++i){
+  for(int i=0;i<max;++i) {
     hname=histin;
     hname+=i;
-    if((TH2F*)gROOT->FindObject(hname.Data())){
+    if((TH2F*)gROOT->FindObject(hname.Data())) {
+      isOK[no]=i;
       no++;
       hInput=(TH2F*)gROOT->FindObject(hname.Data());  
       if(hInput->GetEntries()==0){
@@ -995,14 +1005,14 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no+no0)+1);++i) {
+    for(int i=0;i<((no+no0));++i) {
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       cFit->cd(pno+1);
 
       hname=histin;
-      hname+=i;
+      hname+=isOK[i];
       
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());  
@@ -1034,11 +1044,14 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1358,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
   Int_t no0=0;
-  for(Int_t i=0;i<25;++i){
+  const Int_t max=65;
+  Int_t isOK[max];
+  for(Int_t i=0;i<max;++i){
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
     hname+=suffix;
     if(gROOT->FindObject(hname.Data())) {
+      isOK[no]=i;
       no++;
       if(gROOT->FindObject(hname.Data())->InheritsFrom("TH1F")) {
 	no1++;
@@ -1078,14 +1091,14 @@ void plotalllow(Char_t *histin, Char_t *suffix="", Int_t style=7, Int_t size=1, 
     
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no1+no2)+1);++i){
+    for(int i=0;i<((no1+no2));++i){
       TString pname="cFit_";
       pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
       cFit->cd(pno+1);
       
       hname=histin;
-      hname+=i;
+      hname+=isOK[i];
       hname+=suffix;
       
       if(gROOT->FindObject(hname.Data())) {
@@ -1165,12 +1178,15 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1350,616);
   Int_t no=0,no1=0, no2=0; //number of histograms with given name
   Int_t no0=0;
+  const Int_t max=65;
+  Int_t isOK[max];
   printf("Searching for histograms named %s%s...\n",histin,suffix);
-  for(Int_t i=0;i<65;++i){
+  for(Int_t i=0;i<max;++i){
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
     hname+=suffix;//updated to be compatible with poorly named histograms
     if(gROOT->FindObject(hname.Data())) {
+      isOK[no]=i;
       no++;
       if((gROOT->FindObject(hname.Data())->InheritsFrom("TH1F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH1D"))) {
 	no1++;
@@ -1197,19 +1213,19 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
   else
     no-=no0;
   
-  if(no!=0){
+  if(no!=0) {
     cFit->Clear();
     printf("Plotting %d histograms with name %s%s...\n",no,histin,suffix);  
   
     TPad *pOutput=0;
     Int_t pno=0;
-    for(int i=0;i<((no1+no2)+1);++i){
+    for(int i=0;i<((no1+no2));++i) {
       TString pname="cFit";
       //      pname+=pno+1;
       pOutput=(TPad*)gROOT->FindObject(pname.Data());
          
       hname=histin;
-      hname+=i;
+      hname+=isOK[i];
       hname+=suffix;     
  
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
@@ -1241,7 +1257,10 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	    }
 	    if(log)
 	      pOutput->SetLogz();
-	    hInput->Draw("COL2");
+	     if(i==0)
+	       hInput->Draw("COL2");
+	     else
+	       hInput->Draw("same col2");
 	  }else if(show_blank)pno++;
 	}
 	else{//if histograms are 1-D
@@ -1267,7 +1286,10 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	    if(log)
 	      pOutput->SetLogy();  
 	    hProj->SetLineColor(i+1);
-	    hProj->Draw("same");
+	    if(i==0)
+	      hProj->Draw("");
+	    else
+	      hProj->Draw("same");
 	  }else if(show_blank)pno++;
 	}
       }
@@ -2656,6 +2678,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
     fclose(outfile);
     printf("y-mean is %f offset is %f\n",hInput->GetMean(2),20750-hInput->GetMean(2));
+    cFit->cd(1);
+    pol1->SetRange(minfit,maxfit);
+    pol1->Draw("same");
     break;
   case 2:// adapted from linefit.cc
     //      copied from minfit(), used to find minimum (center) of hEX plots
@@ -2700,7 +2725,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     fprintf(outfile,"%g\n",slope);
     printf("%g\n",slope);
     fclose(outfile);
-   
+    cFit->cd(1);
+    pol2->SetRange(minfit,maxfit);
+    pol2->Draw("same");
     break;
   case 3:
     p0=hProf->GetFunction("pol3")->GetParameter(0);
@@ -2754,7 +2781,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     line->SetLineStyle(2);
     line->SetLineWidth(2);
     line->Draw();
-
+    cFit->cd(1);
+    pol3->SetRange(minfit,maxfit);
+    pol3->Draw("same");
     break;
   case 4://copied from fit4pfx() in linefit.cc
     p0=hProf->GetFunction("pol4")->GetParameter(0);
@@ -2763,6 +2792,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     p3=hProf->GetFunction("pol4")->GetParameter(3);
     p4=hProf->GetFunction("pol4")->GetParameter(4);
     printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\ncp = %7.3f\n",p1,p2,p3,p4);
+    cFit->cd(1);
+    pol4->SetRange(minfit,maxfit);
+    pol4->Draw("same");
     break;
   default:
     break; 
