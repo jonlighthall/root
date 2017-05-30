@@ -5813,3 +5813,31 @@ void fittest(TString fun="pol2",double sigma1=1)
 
 }
 
+///////////
+void fluorine() {
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  //cFit->SetLogz();  
+  TH2F * hist1=(TH2F *) gROOT->FindObject("E_de_corrected");
+  hist1->Rebin2D(hist1->GetXaxis()->GetNbins()/500,hist1->GetXaxis()->GetNbins()/500);
+  hist1->SetAxisRange(0.4,28.9,"X");
+  //hist1->SetAxisRange(0.003,0.23,"Y");
+  hist1->GetYaxis()->SetRange(113,360);
+  //hist1->Rebin2D();
+  hist1->GetZaxis()->SetRangeUser(0,35);
+
+  hist1->SetXTitle("Si Energy (MeV)");
+  //hist1->GetXaxis()->CenterTitle(1);
+  //hist1->GetXaxis()->SetTitleOffset(1.23);
+  hist1->SetYTitle("PC Energy (arb. unit)");
+  //hist1->GetYaxis()->CenterTitle(1);
+  //hist1->GetYaxis()->SetTitleOffset(1.23);
+  hist1->SetTitle("#DeltaE vs E (#theta corrected) ^{17}F in ^{4}He gas");
+  
+  hist1->SetStats(kFALSE);
+  //hist1->SetTitle();
+  hist1->Draw("col");
+
+  prop();
+  cFit->SaveAs("E_dE.pdf");
+  cFit->SaveAs("E_dE.png");
+}

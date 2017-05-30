@@ -3962,15 +3962,17 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
   outfile=fopen("temp_inv.lst","w");
   fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
   fclose(outfile);
-  outfile=fopen("temp.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
-  fclose(outfile);
-  outfile=fopen("temp_inv.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
-  fclose(outfile);
-  outfile=fopen("temp_off.rob.lst","w");
-  fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
-  fclose(outfile);
+  if(!(filefail)) {
+    outfile=fopen("temp.rob.lst","w");
+    fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
+    fclose(outfile);
+    outfile=fopen("temp_inv.rob.lst","w");
+    fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
+    fclose(outfile);
+    outfile=fopen("temp_off.rob.lst","w");
+    fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
+    fclose(outfile);
+  }
 }
 
 void readandfiti(Char_t *filename="",Int_t setpad=0)
