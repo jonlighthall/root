@@ -2457,6 +2457,39 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   pm->Draw("same");
 }
 
+TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
+
+void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W") {
+  emg->SetParNames("Constant","Mean","Sigma","Tau");
+  if(!(gROOT->FindObject(histname))) {
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t wide=(xmax-xmin);
+  Float_t mid=xmin+wide/2;
+  emg->SetParameter(0,hist1->GetBinContent(hist1->FindBin(mid)));
+  emg->SetParameter(1,mid);
+  emg->SetParameter(2,wide/5);
+  emg->SetParameter(3,wide/10);
+  emg->SetRange(xmin,xmax);
+  hist1->SetAxisRange(xmin-wide/10,xmax+wide/10,"X");
+  hist1->Fit("emg",option,"",xmin,xmax);
+
+  Float_t mean = emg->GetParameter(1)+emg->GetParameter(3);
+  Float_t sigma = TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));
+  printf("Gaussian parameters are:\n");
+  printf("      Mean \t  %7.5e\n",mean);
+  printf("      Sigma\t  %7.5e\n",sigma);
+  g1 = new TF1("m1","gaus",xmin,xmax);
+  g1->SetLineColor(4);
+  g1->SetLineStyle(4);
+  g1->FixParameter(0,emg->GetParameter(0));
+  g1->FixParameter(1,mean);
+  g1->FixParameter(2,sigma);
+  g1->Draw("same");
+}
+
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
 {//copied form util.cc
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
