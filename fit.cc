@@ -2459,7 +2459,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
 
 TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
 
-void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W") {
+void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W", Bool_t estimate=kTRUE) {
   emg->SetParNames("Constant","Mean","Sigma","Tau");
   if(!(gROOT->FindObject(histname))) {
     printf("Histogram %s not found!\n",histname);
@@ -2468,10 +2468,12 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   Float_t wide=(xmax-xmin);
   Float_t mid=xmin+wide/2;
-  emg->SetParameter(0,hist1->GetBinContent(hist1->FindBin(mid)));
-  emg->SetParameter(1,mid);
-  emg->SetParameter(2,wide/5);
-  emg->SetParameter(3,wide/10);
+  if(estimate) {
+    emg->SetParameter(0,hist1->GetBinContent(hist1->FindBin(mid)));
+    emg->SetParameter(1,mid);
+    emg->SetParameter(2,wide/5);
+    emg->SetParameter(3,wide/10);
+  }
   emg->SetRange(xmin,xmax);
   hist1->SetAxisRange(xmin-wide/10,xmax+wide/10,"X");
   hist1->Fit("emg",option,"",xmin,xmax);
@@ -2488,6 +2490,22 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   g1->FixParameter(1,mean);
   g1->FixParameter(2,sigma);
   g1->Draw("same");
+}
+
+void emgfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W") {
+ emgfit(histname,center-wide,center+wide,option);
+}
+
+void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2, Float_t threshold=0.05, Char_t *fit_option="W") {
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  TSpectrum *spectrum=new TSpectrum();
+  Float_t *gpositions;//moved * before variable name
+  spectrum->Search(hist1,sigma);//,sigma,option,threshold);
+  gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+  center=gpositions[0];
+  
+  emgfitc(histname,center,wide,fit_option);
+  
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)

@@ -5817,13 +5817,17 @@ void fittest(TString fun="pol2",double sigma1=1)
 void fluorine() {
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   //cFit->SetLogz();  
-  TH2F * hist1=(TH2F *) gROOT->FindObject("E_de_corrected");
-  hist1->Rebin2D(hist1->GetXaxis()->GetNbins()/500,hist1->GetXaxis()->GetNbins()/500);
+  TH2F * hist=(TH2F *) gROOT->FindObject("E_de_corrected");
+  //hist->Rebin2D(hist->GetXaxis()->GetNbins()/500,hist->GetXaxis()->GetNbins()/500);
+  hist->Rebin2D();
+  hist->Clone("hist1");
+  MainTree->Draw("Tr.TrEvent.PCEnergy*sin(Tr.TrEvent.Theta):Tr.TrEvent.SiEnergy>>hist1","Tr.TrEvent.PCEnergy>0 && Tr.TrEvent.DetID>-1 && Tr.TrEvent.DetID<16 && MCPTime>0 && RFTime>0","col");
+
   hist1->SetAxisRange(0.4,28.9,"X");
-  //hist1->SetAxisRange(0.003,0.23,"Y");
-  hist1->GetYaxis()->SetRange(113,360);
+  hist1->SetAxisRange(0.000,0.22,"Y");
+  //hist1->GetYaxis()->SetRange(113,360);
   //hist1->Rebin2D();
-  hist1->GetZaxis()->SetRangeUser(0,35);
+  //hist1->GetZaxis()->SetRangeUser(0,35);
 
   hist1->SetXTitle("Si Energy (MeV)");
   //hist1->GetXaxis()->CenterTitle(1);
@@ -5838,6 +5842,27 @@ void fluorine() {
   hist1->Draw("col");
 
   prop();
-  cFit->SaveAs("E_dE.pdf");
-  cFit->SaveAs("E_dE.png");
+  cFit->SaveAs("E_dEg.pdf");
+  cFit->SaveAs("E_dEg.png");
+}
+
+void fl2() {
+  MainTree->Draw("fmod((MCPTime-RFTime)+1005,271.6515)>>hist1(272,0,272)","MCPTime>0 && RFTime>0");
+
+  //hist1->SetAxisRange(0,272,"X");
+  hist1->SetXTitle("TOF (arb. unit)");
+  //hist1->GetXaxis()->CenterTitle(1);
+  //hist1->GetXaxis()->SetTitleOffset(1.23);
+  //hist1->SetYTitle("PC Energy (arb. unit)");
+  //hist1->GetYaxis()->CenterTitle(1);
+  //hist1->GetYaxis()->SetTitleOffset(1.23);
+  hist1->SetTitle("Time of flight (wrapped)");
+  
+  hist1->SetStats(kFALSE);
+  //hist1->SetTitle();
+  hist1->Draw("");
+
+  prop();
+  cFit->SaveAs("TOF.pdf");
+  cFit->SaveAs("TOF.png");
 }
