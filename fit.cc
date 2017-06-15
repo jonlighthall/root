@@ -291,12 +291,16 @@ Int_t whatis(Char_t *hname,Int_t verbose=1)
     returnvalue=6;
   }
   if (gROOT->FindObject(hname)->InheritsFrom("TH1I")) {
-    if (verbose==1) cout << "histogram " <<hname<<" is a TH1D"<<endl;
+    if (verbose==1) cout << "histogram " <<hname<<" is a TH1I"<<endl;
     returnvalue=7;
   }
   if (gROOT->FindObject(hname)->InheritsFrom("TH2I")) {
-    if (verbose==1) cout << "histogram "<< hname <<" is a TH2F"<<endl;
+    if (verbose==1) cout << "histogram "<< hname <<" is a TH2I"<<endl;
     returnvalue=8;
+  }
+  if (gROOT->FindObject(hname)->InheritsFrom("TGraph")) {
+    if (verbose==1) cout << hname <<" not a histogram, it is a TGraph"<<endl;
+    returnvalue=9;
   }
   return returnvalue;
 }
@@ -889,7 +893,7 @@ void plotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float_
   }
 }
 
-void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
+void plotallpjx(Char_t *histin,Char_t *suffix="",Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 {//note, mins and maxs not used.  consider matching input to pjx()
   Int_t col=0,row=0;  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
@@ -898,9 +902,10 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
   const Int_t max=65;
   Int_t isOK[max];
   printf("Searching for histograms named %s...\n",histin);
-  for(int i=0;i<max;++i){
+  for(int i=0;i<max;++i) {
     hname=histin;
     hname+=i;
+    hname+=suffix;//updated to be compatible with poorly named histograms
     if((TH2F*)gROOT->FindObject(hname.Data())){
       isOK[no]=i;
       no++;
@@ -938,6 +943,7 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
 
       hname=histin;
       hname+=isOK[i];
+      hname+=suffix;
       
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());  
@@ -964,7 +970,7 @@ void plotallpjx(Char_t *histin,Float_t minY=0,Float_t maxY=0,Int_t scale=1)
   }
 }
 
-void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
+void plotallpjy(Char_t *histin,Char_t *suffix="",Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 {
   Int_t col=0,row=0;
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2("cFit","cFit",1272,695);
@@ -976,6 +982,7 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
   for(int i=0;i<max;++i) {
     hname=histin;
     hname+=i;
+    hname+=suffix;//updated to be compatible with poorly named histograms
     if((TH2F*)gROOT->FindObject(hname.Data())) {
       isOK[no]=i;
       no++;
@@ -1013,6 +1020,7 @@ void plotallpjy(Char_t *histin,Float_t minX=0,Float_t maxX=0,Int_t scale=1)
 
       hname=histin;
       hname+=isOK[i];
+      hname+=suffix;
       
       if(gROOT->FindObject(hname.Data())) {//only try to plot if histogram exists
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());  
@@ -3723,7 +3731,7 @@ void decon(Int_t padno=1,Int_t bfixed=kFALSE)
     }
   }
   
-  hProj->Fit(total,"Mq+");
+  hProj->Fit(total,"Mrq+");
   
   if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
     mkCanvas2("cFit2","cFit2");
@@ -3766,6 +3774,9 @@ void decon(Int_t padno=1,Int_t bfixed=kFALSE)
       functions[i]->SetParameter(j,par[j+3*i]);
     }
 
+    if(fabs(par[1+3*i]-positions[i])>min_space)
+      printf("**Probable error on peak %d!**\n",i);
+    
     printf("  Peak %2d  centered at %7.3f | ",i,par[1+3*i]);
     // Area under a Gaussian = sqrt(2*pi)*sigma*amplitude
     area=par[0+3*i]*par[2+3*i]*TMath::Sqrt(TMath::TwoPi());
@@ -3903,7 +3914,7 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
       nlist++;
     }
     printf(" Read in %d peaks from file.\n",nlist);
-    if(nlist<=1){
+    if(nlist<=1) {
       printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
     }
   }
@@ -3913,12 +3924,12 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
 
   if(!(filefail)) {
     cFit->cd(setpad+1);
-        
-    if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
-    gFit = new TGraph(npeaks,energies,positions);
-    gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from calibration file");
-    gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from peaks");
-        
+    if(npeaks==nlist) {
+      if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
+      gFit = new TGraph(npeaks,energies,positions);
+      gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from calibration file");
+      gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from peaks");
+      
       TF1 *fit = new TF1("fit","pol1");
       TF1 *fit2 = new TF1("fit2","pol2");
       TF1 *fit3 = new TF1("fit3","pol1");
@@ -3953,8 +3964,7 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
       for (Int_t i=0; i<npeaks; i++){
 	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
       }  
-  }
-   
+     
   FILE * outfile;
   outfile=fopen("temp.lst","w");
   fprintf(outfile,"%g, %g\n",slope,offset);
@@ -3971,6 +3981,10 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
   outfile=fopen("temp_off.rob.lst","w");
   fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
   fclose(outfile);
+  }
+    else
+      printf("Number of peaks %d does not equal number of energies from file %d!\n",npeaks,nlist);
+  }
 }
 
 void readandfiti(Char_t *filename="",Int_t setpad=0)
