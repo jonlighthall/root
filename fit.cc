@@ -1265,10 +1265,10 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	    }
 	    if(log)
 	      pOutput->SetLogz();
-	     if(i==0)
-	       hInput->Draw("COL2");
-	     else
-	       hInput->Draw("same col2");
+	    if(i==0)
+	      hInput->Draw("COL2");
+	    else
+	      hInput->Draw("same col2");
 	  }else if(show_blank)pno++;
 	}
 	else{//if histograms are 1-D
@@ -2355,8 +2355,8 @@ void ginfo (void)
   mean=gaus->GetParameter(1);
   width=sigma*2.35482;
   printf("Width of peak is %f or %f FWHM (%.2f%%)\n",sigma,width,width/mean*100);
-//printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
-//printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
+  //printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
+  //printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
 
   gxmin=gaus->GetCurrent()->GetXmin();
   gxmax=gaus->GetCurrent()->GetXmax();
@@ -2365,7 +2365,7 @@ void ginfo (void)
   
   FILE * outfile;
   outfile=fopen("temp.lst","w");
-//printf("file contents: %g, %g, %g\n",mean,sigma,grange/sigma);
+  //printf("file contents: %g, %g, %g\n",mean,sigma,grange/sigma);
   fprintf(outfile,"%g, %g, %g\n",mean,sigma,grange/sigma);
   fclose(outfile);
 }
@@ -2463,6 +2463,57 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   pm->SetMarkerColor(4);
   pm->SetPoint(1,gaus->GetParameter(1),gaus->GetParameter(0));
   pm->Draw("same");
+}
+
+TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
+
+void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W", Bool_t estimate=kTRUE) {
+  emg->SetParNames("Constant","Mean","Sigma","Tau");
+  if(!(gROOT->FindObject(histname))) {
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t wide=(xmax-xmin);
+  Float_t mid=xmin+wide/2;
+  if(estimate) {
+    emg->SetParameter(0,hist1->GetBinContent(hist1->FindBin(mid)));
+    emg->SetParameter(1,mid);
+    emg->SetParameter(2,wide/5);
+    emg->SetParameter(3,wide/10);
+  }
+  emg->SetRange(xmin,xmax);
+  hist1->SetAxisRange(xmin-wide/10,xmax+wide/10,"X");
+  hist1->Fit("emg",option,"",xmin,xmax);
+
+  Float_t mean = emg->GetParameter(1)+emg->GetParameter(3);
+  Float_t sigma = TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));
+  printf("Gaussian parameters are:\n");
+  printf("      Mean \t  %7.5e\n",mean);
+  printf("      Sigma\t  %7.5e\n",sigma);
+  g1 = new TF1("m1","gaus",xmin,xmax);
+  g1->SetLineColor(4);
+  g1->SetLineStyle(4);
+  g1->FixParameter(0,emg->GetParameter(0));
+  g1->FixParameter(1,mean);
+  g1->FixParameter(2,sigma);
+  g1->Draw("same");
+}
+
+void emgfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W") {
+  emgfit(histname,center-wide,center+wide,option);
+}
+
+void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2, Float_t threshold=0.05, Char_t *fit_option="W") {
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  TSpectrum *spectrum=new TSpectrum();
+  Float_t *gpositions;//moved * before variable name
+  spectrum->Search(hist1,sigma);//,sigma,option,threshold);
+  gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
+  center=gpositions[0];
+  
+  emgfitc(histname,center,wide,fit_option);
+  
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
@@ -3592,7 +3643,7 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
 }
 
 void peakfiti(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
-	     Double_t threshold=0.05, Char_t *option="", Int_t bfixed=kFALSE)
+	      Double_t threshold=0.05, Char_t *option="", Int_t bfixed=kFALSE)
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
   getdet(histin);
@@ -3887,8 +3938,7 @@ void readandruth(Int_t detno=0, Int_t colno=0)
 
 TGraph *gFit = 0;
 
-void readandfit(Char_t *filename="",Int_t setpad=0)
-{
+void readandfit(Char_t *filename="",Int_t setpad=0) {
   Float_t energies[100];
   Float_t slope,offset,width;
   Float_t ein;
@@ -3951,13 +4001,13 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
     
       slope=fit->GetParameter(1);
       offset=fit->GetParameter(0);
-    //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
-    //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
-    //width=hProj->GetFunction("gaus")->GetParameter(2);
-    //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-    printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-    printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
-    //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
+      //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
+      //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
+      //width=hProj->GetFunction("gaus")->GetParameter(2);
+      //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+      printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+      printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
@@ -3965,667 +4015,590 @@ void readandfit(Char_t *filename="",Int_t setpad=0)
 	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
       }  
      
-  FILE * outfile;
-  outfile=fopen("temp.lst","w");
-  fprintf(outfile,"%g, %g\n",slope,offset);
-  fclose(outfile);
-  outfile=fopen("temp_inv.lst","w");
-  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
-  fclose(outfile);
-  outfile=fopen("temp.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
-  fclose(outfile);
-  outfile=fopen("temp_inv.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
-  fclose(outfile);
-  outfile=fopen("temp_off.rob.lst","w");
-  fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
-  fclose(outfile);
-  }
+      FILE * outfile;
+      outfile=fopen("temp.lst","w");
+      fprintf(outfile,"%g, %g\n",slope,offset);
+      fclose(outfile);
+      outfile=fopen("temp_inv.lst","w");
+      fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
+      fclose(outfile);
+      if(!(filefail)) {
+	outfile=fopen("temp.rob.lst","w");
+	fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
+	fclose(outfile);
+	outfile=fopen("temp_inv.rob.lst","w");
+	fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
+	fclose(outfile);
+	outfile=fopen("temp_off.rob.lst","w");
+	fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
+	fclose(outfile);
+
+      }
+    }
     else
       printf("Number of peaks %d does not equal number of energies from file %d!\n",npeaks,nlist);
   }
 }
 
-void readandfiti(Char_t *filename="",Int_t setpad=0)
-{
-  Float_t energies[100];
-  Float_t slope,offset,width;
-  Float_t ein;
-  Float_t max=0,min=0;//added
-  Float_t a=0,b=0;//added
-  Int_t nlist=0;  
-  Bool_t filefail=false;
-  ifstream listfile(filename);
+  void readandfiti(Char_t *filename="",Int_t setpad=0)
+  {
+    Float_t energies[100];
+    Float_t slope,offset,width;
+    Float_t ein;
+    Float_t max=0,min=0;//added
+    Float_t a=0,b=0;//added
+    Int_t nlist=0;  
+    Bool_t filefail=false;
+    ifstream listfile(filename);
   
-  printf("Step 4: Calculating linear calibration... ");
-  if(!(listfile))  {//just show the peaks!
-    printf("No calibration file found! Terminating without fit!\n");
-    filefail=true;
-  }
-  else {
-    printf(" Reading file %s\n",filename);
-    while(listfile>>ein) {
-      energies[nlist]=ein;
-      if(nlist==0)min=energies[nlist];//added
-      if(energies[nlist]>max)max=energies[nlist];//added
-      if(energies[nlist]<min)min=energies[nlist];//added
-      cout << "  Energy "<<nlist<< "= "<<energies[nlist]<<endl;
-      nlist++;
+    printf("Step 4: Calculating linear calibration... ");
+    if(!(listfile))  {//just show the peaks!
+      printf("No calibration file found! Terminating without fit!\n");
+      filefail=true;
     }
-    printf(" Read in %d peaks from file.\n",nlist);
-    if(nlist<=1){
-      printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
+    else {
+      printf(" Reading file %s\n",filename);
+      while(listfile>>ein) {
+	energies[nlist]=ein;
+	if(nlist==0)min=energies[nlist];//added
+	if(energies[nlist]>max)max=energies[nlist];//added
+	if(energies[nlist]<min)min=energies[nlist];//added
+	cout << "  Energy "<<nlist<< "= "<<energies[nlist]<<endl;
+	nlist++;
+      }
+      printf(" Read in %d peaks from file.\n",nlist);
+      if(nlist<=1){
+	printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
+      }
     }
-  }
   
-  a=hProj->GetXaxis()->GetXmin();
-  b=hProj->GetXaxis()->GetXmax();
+    a=hProj->GetXaxis()->GetXmin();
+    b=hProj->GetXaxis()->GetXmax();
 
-  if(!(filefail)) {
-    cFit->cd(setpad+1);
+    if(!(filefail)) {
+      cFit->cd(setpad+1);
         
-    if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
-    gFit = new TGraph(npeaks,positions,energies);
-    gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from calibration file");
-    gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from peaks");
+      if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
+      gFit = new TGraph(npeaks,positions,energies);
+      gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from calibration file");
+      gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from peaks");
     
-    TF1 *fit = new TF1("fit","pol1");
-    TF1 *fit2 = new TF1("fit2","pol2");
-    TF1 *fit3 = new TF1("fit3","pol1");
-    fit2->SetLineColor(3);
-    fit2->SetLineStyle(2);
-    fit3->SetLineColor(4);
-    fit3->SetLineStyle(2);
-    gFit->Draw("AP*");
-    gFit->Fit("fit","q+");
-    gFit->Fit("fit2","q+");
-    gFit->Fit("fit3","q+ROB=0.95");
+      TF1 *fit = new TF1("fit","pol1");
+      TF1 *fit2 = new TF1("fit2","pol2");
+      TF1 *fit3 = new TF1("fit3","pol1");
+      fit2->SetLineColor(3);
+      fit2->SetLineStyle(2);
+      fit3->SetLineColor(4);
+      fit3->SetLineStyle(2);
+      gFit->Draw("AP*");
+      gFit->Fit("fit","q+");
+      gFit->Fit("fit2","q+");
+      gFit->Fit("fit3","q+ROB=0.95");
     
-    leg = new TLegend(0.1,0.75,0.2,0.9);
-    leg->AddEntry(fit,"pol1","l");
-    leg->AddEntry(fit2,"pol2","l");
-    leg->AddEntry(fit3,"pol1, ROB=0.95","l");   
-    leg->Draw();
-    cFit->Update();
+      leg = new TLegend(0.1,0.75,0.2,0.9);
+      leg->AddEntry(fit,"pol1","l");
+      leg->AddEntry(fit2,"pol2","l");
+      leg->AddEntry(fit3,"pol1, ROB=0.95","l");   
+      leg->Draw();
+      cFit->Update();
     
       slope=fit->GetParameter(1);
       offset=fit->GetParameter(0);
-    //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
-    //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
-    //width=hProj->GetFunction("gaus")->GetParameter(2);
-    //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
-    printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-    printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
-    //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
+      //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
+      //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
+      //width=hProj->GetFunction("gaus")->GetParameter(2);
+      //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
+      printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+      printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
+      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
       for (Int_t i=0; i<npeaks; i++){
 	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
       }  
-  }
+    }
    
-  FILE * outfile;
-  outfile=fopen("temp.lst","w");
-  fprintf(outfile,"%g, %g\n",slope,offset);
-  fclose(outfile);
-  outfile=fopen("temp_inv.lst","w");
-  fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
-  fclose(outfile);
-  outfile=fopen("temp.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
-  fclose(outfile);
-  outfile=fopen("temp_inv.rob.lst","w");
-  fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
-  fclose(outfile);
-  outfile=fopen("temp_off.rob.lst","w");
-  fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
-  fclose(outfile);
-}
-
-void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
-{//extension of peakfit() - takes a 2D histogram as input
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  getdet(histin);
-  cFit->Clear();
-
-  Int_t setpad=1;//set target canvas pad for peak search
-  if(filename!="") 
-    setpad++;
-  cFit->Divide(1,setpad+1);  
-  
-  cFit->cd(1);
-  TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
-  hInput->Draw("COL");
- 
-  cFit->cd(2);
-  hname=histin;
-  hname+="_px";
-  hInput->ProjectionX(hname);
-  hProj=(TH1F *) gROOT->FindObject(hname.Data());
-  hProj->Draw(); 
-
-  findpeaks(resolution,sigma,threshold,option);
-  gfindpeaks();  
-  decon(2);
-  readandfit(filename,setpad);
-}
-
-void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
-{//extension of peakfit() - takes a 2D histogram as input
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  getdet(histin);
-  cFit->Clear();
-  
-  Int_t setpad=1;//set target canvas pad for peak search
-  if(filename!="") 
-    setpad++;
-  cFit->Divide(1,setpad+1);  
-
-  cFit->cd(1);
-  TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
-  hInput->Draw("COL");
- 
-  cFit->cd(2);
-  hname=histin;
-  hname+="_py"; 
-  hInput->ProjectionY(hname);
-  hProj=(TH1F *) gROOT->FindObject(hname.Data());
-  hProj->Draw(); 
-  
-  findpeaks(resolution,sigma,threshold,option);
-  gfindpeaks();
-  decon(2);
-  readandfit(filename,setpad);
-}
-
-//-------------------------------------------------------------------------------------
-// 4b). 1D Background Estimation-------------------------------------------------------
-void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t threshold=.05, Int_t niter=20, Char_t *option="")
-{//modified to run in fit.cc and automatically copy histin.
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-  if(!((TH1F *) gROOT->FindObject("hPeakFit"))) hFit=new TH1F("hPeakFit","hPeakFit",1000,0,100);  //added
-  hFit=(TH1F *) gROOT->FindObject("hPeakFit");//added
- 
-  cFit->Clear();//cFitCanvas renamed to CFit
-  cFit->Divide(1,2);
-  
-  //  Float_t *positions;//* moved to start to avoid automatic variable warning
-  Float_t energies[10];
-  Float_t slope,offset,width;
-  Float_t ein;
-  Int_t nlist=0;
-  float result[2048];
-  Int_t nbins;
-  TSpectrum *spectrum=new TSpectrum();
- 
-  //The non-histogram-declaration lines in the following block were added to copy the input histogram automatically.
-  TH1F * hProj=(TH1F *) gROOT->FindObject(histin);
-  hname=histin;
-  hname+="_bkg"; 
-  hProj->Clone(hname);
-  TString histbkg=hname.Data();
-  TH1F *hBkg=(TH1F *) gROOT->FindObject(hname.Data());
-  hname=histin;
-  hname+="_out"; 
-  hProj->Clone(hname);
-  TString histout=hname.Data();
-  TH1F *hRresult=(TH1F *) gROOT->FindObject(hname.Data());
-
-  hFit->Reset();
-  cFit->cd(1);
-  spectrum->SetResolution(resolution);
-  spectrum->Search(hProj,sigma,option,threshold);
-  positions=spectrum->GetPositionX();
-  npeaks=spectrum->GetNPeaks();
-  cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
-  for (Int_t i=0; i<npeaks; i++){
-    cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    FILE * outfile;
+    outfile=fopen("temp.lst","w");
+    fprintf(outfile,"%g, %g\n",slope,offset);
+    fclose(outfile);
+    outfile=fopen("temp_inv.lst","w");
+    fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
+    fclose(outfile);
+    outfile=fopen("temp.rob.lst","w");
+    fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
+    fclose(outfile);
+    outfile=fopen("temp_inv.rob.lst","w");
+    fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
+    fclose(outfile);
+    outfile=fopen("temp_off.rob.lst","w");
+    fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
+    fclose(outfile);
   }
-  cFit->cd(1);
-  hProj->Draw();
-  nbins=hProj->GetNbinsX();
-  for (Int_t i=0; i<nbins; i++){
-    result[i]=hProj->GetBinContent(i);
-  }
-  spectrum->Background(result,nbins,niter,1,1,kFALSE,1,kFALSE);
-  for (Int_t i=0; i<nbins; i++){
-    hBkg->SetBinContent(i,result[i]);
-  }
-  hBkg->SetLineColor(2);
-  hBkg->Draw("same");
-  cFit->cd(2);
-  subtract(histin,histbkg,histout);
-}
 
-//-------------------------------------------------------------------------------------
-// 4c). Smoothing----------------------------------------------------------------------
-void smooth(Char_t *histin,Int_t averWindow=3)
-{
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
-  TH1F * hProj=(TH1F *) gROOT->FindObject(histin);
-  hname=histin;
-  hname+="_smooth";
-  hProj->Clone(hname);
-  TH1F *hResult=(TH1F *) gROOT->FindObject(hname.Data());
+  void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+  {//extension of peakfit() - takes a 2D histogram as input
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+    getdet(histin);
+    cFit->Clear();
 
-  Float_t nbins;
-  nbins=hProj->GetXaxis()->GetNbins();
+    Int_t setpad=1;//set target canvas pad for peak search
+    if(filename!="") 
+      setpad++;
+    cFit->Divide(1,setpad+1);  
+  
+    cFit->cd(1);
+    TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
+    hInput->Draw("COL");
  
-  Float_t * source = new float[nbins];
-  for(int i=0;i<nbins;i++){
-    source[i]=hProj->GetBinContent(i+1);
+    cFit->cd(2);
+    hname=histin;
+    hname+="_px";
+    hInput->ProjectionX(hname);
+    hProj=(TH1F *) gROOT->FindObject(hname.Data());
+    hProj->Draw(); 
+
+    findpeaks(resolution,sigma,threshold,option);
+    gfindpeaks();  
+    decon(2);
+    readandfit(filename,setpad);
   }
+
+  void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+  {//extension of peakfit() - takes a 2D histogram as input
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+    getdet(histin);
+    cFit->Clear();
+  
+    Int_t setpad=1;//set target canvas pad for peak search
+    if(filename!="") 
+      setpad++;
+    cFit->Divide(1,setpad+1);  
+
+    cFit->cd(1);
+    TH2F * hInput=(TH2F *) gROOT->FindObject(histin); 
+    hInput->Draw("COL");
+ 
+    cFit->cd(2);
+    hname=histin;
+    hname+="_py"; 
+    hInput->ProjectionY(hname);
+    hProj=(TH1F *) gROOT->FindObject(hname.Data());
+    hProj->Draw(); 
+  
+    findpeaks(resolution,sigma,threshold,option);
+    gfindpeaks();
+    decon(2);
+    readandfit(filename,setpad);
+  }
+
+  //-------------------------------------------------------------------------------------
+  // 4b). 1D Background Estimation-------------------------------------------------------
+  void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t threshold=.05, Int_t niter=20, Char_t *option="")
+  {//modified to run in fit.cc and automatically copy histin.
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+    if(!((TH1F *) gROOT->FindObject("hPeakFit"))) hFit=new TH1F("hPeakFit","hPeakFit",1000,0,100);  //added
+    hFit=(TH1F *) gROOT->FindObject("hPeakFit");//added
+ 
+    cFit->Clear();//cFitCanvas renamed to CFit
+    cFit->Divide(1,2);
+  
+    //  Float_t *positions;//* moved to start to avoid automatic variable warning
+    Float_t energies[10];
+    Float_t slope,offset,width;
+    Float_t ein;
+    Int_t nlist=0;
+    float result[2048];
+    Int_t nbins;
+    TSpectrum *spectrum=new TSpectrum();
+ 
+    //The non-histogram-declaration lines in the following block were added to copy the input histogram automatically.
+    TH1F * hProj=(TH1F *) gROOT->FindObject(histin);
+    hname=histin;
+    hname+="_bkg"; 
+    hProj->Clone(hname);
+    TString histbkg=hname.Data();
+    TH1F *hBkg=(TH1F *) gROOT->FindObject(hname.Data());
+    hname=histin;
+    hname+="_out"; 
+    hProj->Clone(hname);
+    TString histout=hname.Data();
+    TH1F *hRresult=(TH1F *) gROOT->FindObject(hname.Data());
+
+    hFit->Reset();
+    cFit->cd(1);
+    spectrum->SetResolution(resolution);
+    spectrum->Search(hProj,sigma,option,threshold);
+    positions=spectrum->GetPositionX();
+    npeaks=spectrum->GetNPeaks();
+    cout << "Found "<<npeaks<<" peaks in spectrum."<<endl;
+    for (Int_t i=0; i<npeaks; i++){
+      cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
+    }
+    cFit->cd(1);
+    hProj->Draw();
+    nbins=hProj->GetNbinsX();
+    for (Int_t i=0; i<nbins; i++){
+      result[i]=hProj->GetBinContent(i);
+    }
+    spectrum->Background(result,nbins,niter,1,1,kFALSE,1,kFALSE);
+    for (Int_t i=0; i<nbins; i++){
+      hBkg->SetBinContent(i,result[i]);
+    }
+    hBkg->SetLineColor(2);
+    hBkg->Draw("same");
+    cFit->cd(2);
+    subtract(histin,histbkg,histout);
+  }
+
+  //-------------------------------------------------------------------------------------
+  // 4c). Smoothing----------------------------------------------------------------------
+  void smooth(Char_t *histin,Int_t averWindow=3)
+  {
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+    TH1F * hProj=(TH1F *) gROOT->FindObject(histin);
+    hname=histin;
+    hname+="_smooth";
+    hProj->Clone(hname);
+    TH1F *hResult=(TH1F *) gROOT->FindObject(hname.Data());
+
+    Float_t nbins;
+    nbins=hProj->GetXaxis()->GetNbins();
+ 
+    Float_t * source = new float[nbins];
+    for(int i=0;i<nbins;i++){
+      source[i]=hProj->GetBinContent(i+1);
+    }
       
-  TSpectrum *s = new TSpectrum();
-  s->SmoothMarkov(source,nbins,averWindow);  //3, 7, 10
-  for (int i = 0; i < nbins; i++) hResult->SetBinContent(i + 1,source[i]);
-  cFit->Clear();//cFitCanvas renamed to CFit
-  cFit->Divide(1,2);
-  cFit->cd(1);
-  hProj->Draw();
-  cFit->cd(2);
-  hResult->Draw("L");
-}
-
-/* 5). File Utilities----------------------------------------------------------------------------
- *
- */
-//-------------------------------------------------------------------------------------
-// 5a). Directory Utilities------------------------------------------------------------
-void browse()
-{//copied form util.cc
-  TBrowser *b=new TBrowser();
-}
-
-void setdef(Char_t *dirname)
-{//copied form util.cc
-  gDirectory->cd(dirname);
-  cout << "Current directory is " <<gDirectory->pwd()<<endl;
-}
-
-void setname(Char_t *oldname, Char_t *newname)
-{//copied form util.cc
-  TNamed *obj=(TNamed *) gROOT->FindObject(oldname);
-  obj->SetName(newname);
-}
-
-void where(void)
-{//copied form util.cc
-  cout << "Current directory is "<<gDirectory->pwd()<<endl;
-}
-
-void sethome()
-{ //may not work?
-  gROOT->ProcessLine("TDirectory *home=gDirectory"); 
-}
-
-//-------------------------------------------------------------------------------------
-// 5b). General File Utilities---------------------------------------------------------
-void dir(void)
-{
-  gROOT->GetListOfFiles()->Print();
-}
-
-void getfile(Char_t *filename)
-{//copied form util.cc
-  TFile *f=new TFile(filename);
-}
-
-void saveall(Char_t *filename)
-{//copied form util.cc
-  TList *hlist=gDirectory->GetList();
-  TList *clist=gROOT->GetListOfCanvases();
-  TList *speclist=gROOT->GetListOfSpecials();
-  TFile *fout=new TFile(filename,"recreate");
-  fout->cd();
-  hlist->Write();
-  clist->Write();
-  speclist->Write();
-  fout->Close();
-  cout << "Histograms, canvases and specials written to file "<<filename<<endl;
-}
-
-//-------------------------------------------------------------------------------------
-// 5c). Calibration File Utilities-----------------------------------------------------
-void printcaldata(void)
-{//adapted from linefit.cc
-  Float_t p0av=0;
-  Int_t entries=0;
-  printf("Contents of array are: \n");
-  for(int i=0;i<24;i++){
-    for(int j=0;j<11;j++){
-      //cout<<array[i][j]<<" ";
-      if(j==0)
-	printf("%2d ",array[i][j]);
-      else
-	printf("%7.0f ",array[i][j]);
-    }
-    cout<<endl;
-    if(array[i][0]){
-      // printf("Det %2d, p0 is %f, p0av is %f\n",i+1,array[i][1],p0av);
-      p0av+=array[i][1];
-      entries++;
-    }
+    TSpectrum *s = new TSpectrum();
+    s->SmoothMarkov(source,nbins,averWindow);  //3, 7, 10
+    for (int i = 0; i < nbins; i++) hResult->SetBinContent(i + 1,source[i]);
+    cFit->Clear();//cFitCanvas renamed to CFit
+    cFit->Divide(1,2);
+    cFit->cd(1);
+    hProj->Draw();
+    cFit->cd(2);
+    hResult->Draw("L");
   }
-  p0av=p0av/entries;
-  printf("p0 average is %5.1f for %d entries\n",p0av,entries);
-}
 
-void createfile(Int_t numbered=0)
-{//writes array[i][j] to file or creates blank file, adapted from linefit.cc
-  ofstream outfile("calibration.cal");
-  for(int i=0;i<24;i++){
-    outfile<<i+1<<" ";
-    for(int j=0;j<11;j++){
-      switch(numbered){
-      case 0:
-	outfile<<array[i][j]<<" ";
-	break;
-      case 1:
-	outfile<<0<<" ";
-	break;
-      case 2:
-	outfile<<j<<" ";
-	break;
-      default:break;  
+  /* 5). File Utilities----------------------------------------------------------------------------
+   *
+   */
+  //-------------------------------------------------------------------------------------
+  // 5a). Directory Utilities------------------------------------------------------------
+  void browse()
+  {//copied form util.cc
+    TBrowser *b=new TBrowser();
+  }
+
+  void setdef(Char_t *dirname)
+  {//copied form util.cc
+    gDirectory->cd(dirname);
+    cout << "Current directory is " <<gDirectory->pwd()<<endl;
+  }
+
+  void setname(Char_t *oldname, Char_t *newname)
+  {//copied form util.cc
+    TNamed *obj=(TNamed *) gROOT->FindObject(oldname);
+    obj->SetName(newname);
+  }
+
+  void where(void)
+  {//copied form util.cc
+    cout << "Current directory is "<<gDirectory->pwd()<<endl;
+  }
+
+  void sethome()
+  { //may not work?
+    gROOT->ProcessLine("TDirectory *home=gDirectory"); 
+  }
+
+  //-------------------------------------------------------------------------------------
+  // 5b). General File Utilities---------------------------------------------------------
+  void dir(void)
+  {
+    gROOT->GetListOfFiles()->Print();
+  }
+
+  void getfile(Char_t *filename)
+  {//copied form util.cc
+    TFile *f=new TFile(filename);
+  }
+
+  void saveall(Char_t *filename)
+  {//copied form util.cc
+    TList *hlist=gDirectory->GetList();
+    TList *clist=gROOT->GetListOfCanvases();
+    TList *speclist=gROOT->GetListOfSpecials();
+    TFile *fout=new TFile(filename,"recreate");
+    fout->cd();
+    hlist->Write();
+    clist->Write();
+    speclist->Write();
+    fout->Close();
+    cout << "Histograms, canvases and specials written to file "<<filename<<endl;
+  }
+
+  //-------------------------------------------------------------------------------------
+  // 5c). Calibration File Utilities-----------------------------------------------------
+  void printcaldata(void)
+  {//adapted from linefit.cc
+    Float_t p0av=0;
+    Int_t entries=0;
+    printf("Contents of array are: \n");
+    for(int i=0;i<24;i++){
+      for(int j=0;j<11;j++){
+	//cout<<array[i][j]<<" ";
+	if(j==0)
+	  printf("%2d ",array[i][j]);
+	else
+	  printf("%7.0f ",array[i][j]);
+      }
+      cout<<endl;
+      if(array[i][0]){
+	// printf("Det %2d, p0 is %f, p0av is %f\n",i+1,array[i][1],p0av);
+	p0av+=array[i][1];
+	entries++;
       }
     }
-    outfile<<endl;
+    p0av=p0av/entries;
+    printf("p0 average is %5.1f for %d entries\n",p0av,entries);
   }
-}
 
-void readfile(Char_t *filename="test.cal", Bool_t showtest=1, const int numdet=24, int start_no=1)
-{
-  Float_t param[numdet][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  printf("param array size is: [%d][%d].\n",(int)(sizeof(param)/sizeof(param[0])),size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<numdet;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
+  void createfile(Int_t numbered=0)
+  {//writes array[i][j] to file or creates blank file, adapted from linefit.cc
+    ofstream outfile("calibration.cal");
+    for(int i=0;i<24;i++){
+      outfile<<i+1<<" ";
+      for(int j=0;j<11;j++){
+	switch(numbered){
+	case 0:
+	  outfile<<array[i][j]<<" ";
+	  break;
+	case 1:
+	  outfile<<0<<" ";
+	  break;
+	case 2:
+	  outfile<<j<<" ";
+	  break;
+	default:break;  
+	}
+      }
+      outfile<<endl;
+    }
+  }
+
+  void readfile(Char_t *filename="test.cal", Bool_t showtest=1, const int numdet=24, int start_no=1)
+  {
+    Float_t param[numdet][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    printf("param array size is: [%d][%d].\n",(int)(sizeof(param)/sizeof(param[0])),size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<numdet;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
  
-  FILE * infile;
-  Int_t k=1;//array length
-  while(!fit&&k<=(size)) {
-    infile = fopen (filename,"r");
-    for(Int_t i=0;i<numdet;i++) {
-      for(Int_t j=0;j<k;j++) {
-	fscanf(infile,"%f",&param[i][j]);
-      }
-    }
-    fclose(infile);
-    if(showtest) printf("Testing array length %d:\n",k);
-
-    if (param[0][0]==start_no) {
-      fit=kTRUE;
+    FILE * infile;
+    Int_t k=1;//array length
+    while(!fit&&k<=(size)) {
+      infile = fopen (filename,"r");
       for(Int_t i=0;i<numdet;i++) {
-	fit=(fit&&(param[i][0]==(i+start_no)));	
+	for(Int_t j=0;j<k;j++) {
+	  fscanf(infile,"%f",&param[i][j]);
+	}
+      }
+      fclose(infile);
+      if(showtest) printf("Testing array length %d:\n",k);
+
+      if (param[0][0]==start_no) {
+	fit=kTRUE;
+	for(Int_t i=0;i<numdet;i++) {
+	  fit=(fit&&(param[i][0]==(i+start_no)));	
+	  if(fit){
+	    if(showtest) printf("  %2.0f ",param[i][0]);
+	    for(Int_t j=1;j<k;j++){
+	      if(showtest) printf("  %7.2f ",param[i][j]);
+	    }
+	    if(showtest) printf("\n");
+	    if((i+1)>errorline)errorline=i+1;
+	  }
+	}
+      }
+      else {
+	fit=kFALSE;
+	k=size;
+	printf("  Each line of \"%s\" is expected to start with a detector number.\n",filename);
+	printf("  File \"%s\" is expected to start with %d.\n",filename,start_no);
+      }
+      k++;
+    }//end while
+    if(fit) {
+      printf("  File \"%s\" has %d elements per line.\n",filename,k-1);
+      FILE * outfile;
+      outfile=fopen("output.txt","w");
+      printf("The contents of \"%s\" are:\n",filename);
+      for(Int_t i=0;i<numdet;i++){
+	fprintf(outfile,"%2.0f ",param[i][0]);
+	printf("  %2.0f ",param[i][0]);
+	for(Int_t j=1;j<k-1;j++){
+	  fprintf(outfile,"%g ",param[i][j]);
+	  printf("%7.2f ",param[i][j]);
+	}
+	fprintf(outfile,"\n");
+	printf("\n");
+      }
+      fclose(outfile);
+    }
+    else
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",filename,size,errorline);
+  }
+
+  void truncfile(Char_t *filename="source.cal",Char_t *output="shortsource.cal",Int_t trunc=6)
+  {
+    Float_t param[24][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    printf("param array size is: [24][%d].\n",size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<24;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
+ 
+    FILE * infile;
+    Int_t k=2;
+    while(!fit&&k<=(size)){
+      infile = fopen (filename,"r");
+      for(Int_t i=0;i<24;i++){
+	for(Int_t j=0;j<k;j++){
+	  fscanf(infile,"%f",&param[i][j]);
+	}
+      }
+      fclose(infile);
+      printf("Testing array length %2d:\n",k);
+      if (param[0][0]==1)fit=kTRUE;
+      else fit=kFALSE;
+      for(Int_t i=0;i<24;i++){
+	fit=(fit&&(param[i][0]==(i+1)));	
 	if(fit){
-	  if(showtest) printf("  %2.0f ",param[i][0]);
+	  printf("%2.0f ",param[i][0]);
 	  for(Int_t j=1;j<k;j++){
-	    if(showtest) printf("  %7.2f ",param[i][j]);
+	    printf("%7.3f ",param[i][j]);
+	  }
+	  printf("\n");
+	  if((i+1)>errorline)errorline=i+1;
+	}
+      }
+      if(fit)printf("File \"%s\" has %d elements per line.\n",filename,k);
+      k++;
+    }
+    if(fit){   
+      FILE * outfile;
+      outfile=fopen(output,"w");
+      printf("The new contents of \"%s\" are:\n",output);
+      for(Int_t i=0;i<24;i++){
+	fprintf(outfile,"%2.0f ",param[i][0]);
+	printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<trunc;j++){
+	  fprintf(outfile,"%g ",param[i][j]);
+	  printf("%7.3f ",param[i][j]);
+	}
+	fprintf(outfile,"\n");
+	printf("\n");
+      }
+      fclose(outfile);
+    }
+    else
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n
+File \"%s\" not written.\n",filename,size,errorline,output);
+  }
+
+  void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
+  {
+    if(detno==-1)
+      detno=det;
+    printf("Input detector number is %d\n",det);
+    printf("Number of detectors = %d, ",dets);
+    Float_t param[dets][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<dets;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
+  
+    FILE * infile;
+    Int_t k=1;
+  
+    while(!fit&&k<=(size)) {
+      infile = fopen (calfile,"r");
+      if(infile!=NULL){
+	for(Int_t i=0;i<dets;i++){
+	  for(Int_t j=0;j<k;j++){
+	    fscanf(infile,"%f",&param[i][j]);
+	  }
+	}
+	fclose(infile);
+      }
+      else{
+	printf("File is NULL!\n");
+	//for(Int_t l=0;l<size;l++){
+	//	Fit[l]=0;
+      }
+      
+      if(showtest) printf("Testing array length %d:\n",k);
+      
+      if(param[0][0]==start)
+	fit=kTRUE;
+      else
+	fit=kFALSE;
+      
+      for(Int_t i=0;i<dets;i++){
+	fit=(fit&&(param[i][0]==(i+start)));	
+	if(fit){
+	  if(showtest) printf("%2.0f ",param[i][0]);
+	  for(Int_t j=1;j<k;j++){
+	    if(showtest) printf("%7.2f ",param[i][j]);
 	  }
 	  if(showtest) printf("\n");
 	  if((i+1)>errorline)errorline=i+1;
 	}
       }
+           
+      if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+     
+      k++;
     }
-    else {
-      fit=kFALSE;
-      k=size;
-      printf("  Each line of \"%s\" is expected to start with a detector number.\n",filename);
-      printf("  File \"%s\" is expected to start with %d.\n",filename,start_no);
-    }
-    k++;
-  }//end while
-  if(fit) {
-    printf("  File \"%s\" has %d elements per line.\n",filename,k-1);
-    FILE * outfile;
-    outfile=fopen("output.txt","w");
-    printf("The contents of \"%s\" are:\n",filename);
-    for(Int_t i=0;i<numdet;i++){
-      fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("  %2.0f ",param[i][0]);
-      for(Int_t j=1;j<k-1;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%7.2f ",param[i][j]);
+    
+    if(fit){   
+      Float_t Fit[10];
+      Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
+      infile = fopen (tempfile,"r");
+      if(infile!=NULL){
+	for(Int_t l=0;l<size;l++){
+	  if(fscanf(infile,"%f, ",&Fit[l])==-1)
+	    Fit[l]=0;
+	  if(Fit[l])//added
+	    param[detno-start][l+1+index]=Fit[l];//note use of index
+	}
+	fclose(infile);
       }
-      fprintf(outfile,"\n");
-      printf("\n");
-    }
-    fclose(outfile);
-  }
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",filename,size,errorline);
-}
-
-void truncfile(Char_t *filename="source.cal",Char_t *output="shortsource.cal",Int_t trunc=6)
-{
-  Float_t param[24][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  printf("param array size is: [24][%d].\n",size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<24;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
- 
-  FILE * infile;
-  Int_t k=2;
-  while(!fit&&k<=(size)){
-    infile = fopen (filename,"r");
-    for(Int_t i=0;i<24;i++){
-      for(Int_t j=0;j<k;j++){
-	fscanf(infile,"%f",&param[i][j]);
+      else
+	printf("File is NULL!\n");
+     
+      FILE * outfile;
+      if(overwrite)
+	outfile=fopen(calfile,"w");
+      else{
+	outfile=fopen("output.txt","w");
+	printf("Output file is \"output.txt\"\n");
       }
-    }
-    fclose(infile);
-    printf("Testing array length %2d:\n",k);
-    if (param[0][0]==1)fit=kTRUE;
-    else fit=kFALSE;
-    for(Int_t i=0;i<24;i++){
-      fit=(fit&&(param[i][0]==(i+1)));	
-      if(fit){
+      printf("The contents of \"%s\" are approximately:\n",calfile);
+      for(Int_t i=0;i<dets;i++){
+	fprintf(outfile,"%2.0f ",param[i][0]);
 	printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  printf("%7.3f ",param[i][j]);
-	}
-	printf("\n");
-	if((i+1)>errorline)errorline=i+1;
-      }
-    }
-    if(fit)printf("File \"%s\" has %d elements per line.\n",filename,k);
-    k++;
-  }
-  if(fit){   
-    FILE * outfile;
-    outfile=fopen(output,"w");
-    printf("The new contents of \"%s\" are:\n",output);
-    for(Int_t i=0;i<24;i++){
-      fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("%2.0f ",param[i][0]);
-      for(Int_t j=1;j<trunc;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%7.3f ",param[i][j]);
-      }
-      fprintf(outfile,"\n");
-      printf("\n");
-    }
-    fclose(outfile);
-  }
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n
-File \"%s\" not written.\n",filename,size,errorline,output);
-}
-
-void writetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
-{
-  if(detno==-1)
-    detno=det;
-  printf("Input detector number is %d\n",det);
-  printf("Number of detectors = %d, ",dets);
-  Float_t param[dets][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<dets;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
-  
-  FILE * infile;
-  Int_t k=1;
-  
-  while(!fit&&k<=(size)) {
-    infile = fopen (calfile,"r");
-    if(infile!=NULL){
-      for(Int_t i=0;i<dets;i++){
-	for(Int_t j=0;j<k;j++){
-	  fscanf(infile,"%f",&param[i][j]);
-	}
-      }
-      fclose(infile);
-    }
-    else{
-      printf("File is NULL!\n");
-      //for(Int_t l=0;l<size;l++){
-      //	Fit[l]=0;
-    }
-      
-    if(showtest) printf("Testing array length %d:\n",k);
-      
-    if(param[0][0]==start)
-      fit=kTRUE;
-    else
-      fit=kFALSE;
-      
-    for(Int_t i=0;i<dets;i++){
-      fit=(fit&&(param[i][0]==(i+start)));	
-      if(fit){
-	if(showtest) printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  if(showtest) printf("%7.2f ",param[i][j]);
-	}
-	if(showtest) printf("\n");
-	if((i+1)>errorline)errorline=i+1;
-      }
-    }
-           
-    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
-     
-    k++;
-  }
-    
-  if(fit){   
-    Float_t Fit[10];
-    Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
-    infile = fopen (tempfile,"r");
-    if(infile!=NULL){
-      for(Int_t l=0;l<size;l++){
-	if(fscanf(infile,"%f, ",&Fit[l])==-1)
-	  Fit[l]=0;
-	if(Fit[l])//added
-	  param[detno-start][l+1+index]=Fit[l];//note use of index
-      }
-      fclose(infile);
-    }
-    else
-      printf("File is NULL!\n");
-     
-    FILE * outfile;
-    if(overwrite)
-      outfile=fopen(calfile,"w");
-    else{
-      outfile=fopen("output.txt","w");
-      printf("Output file is \"output.txt\"\n");
-    }
-    printf("The contents of \"%s\" are approximately:\n",calfile);
-    for(Int_t i=0;i<dets;i++){
-      fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("%2.0f ",param[i][0]);
-      for(Int_t j=1;j<k-1;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%5.0f ",param[i][j]);
-      }
-      fprintf(outfile,"\n");
-      printf("\n");
-    }
-    fclose(outfile);
-  }
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
-  
-}
-
-void expandcal(Char_t *calfile="calibration.cal",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=4,Int_t start=0)
-{
-  Float_t param[dets][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<dets;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
-  
-  FILE * infile;
-  Int_t k=1;
-  
-  while(!fit&&k<=(size)){
-    infile = fopen (calfile,"r");
-    if(infile!=NULL){
-      for(Int_t i=0;i<dets;i++){
-	for(Int_t j=0;j<k;j++){
-	  fscanf(infile,"%f",&param[i][j]);
-	}
-      }
-      fclose(infile);
-    }
-    else{
-      printf("File is NULL!\n");
-    }
-      
-    if(showtest) printf("Testing array length %d:\n",k);
-      
-    if(param[0][0]==start)
-      fit=kTRUE;
-    else
-      fit=kFALSE;
-    
-    for(Int_t i=0;i<dets;i++){
-      fit=(fit&&(param[i][0]==(i+start)));	
-      if(fit){
-	if(showtest) printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  if(showtest) printf("%7.2f ",param[i][j]);
-	}
-	if(showtest) printf("\n");
-	if((i+1)>errorline)errorline=i+1;
-      }
-    }
-           
-    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
-     
-    k++;
-  }
-    
-  if(fit) {   
-    FILE * outfile;
-    if(overwrite)
-      outfile=fopen(calfile,"w");
-    else{
-      outfile=fopen("output.txt","w");
-      printf("Output file is \"output.txt\"\n");
-    }
-    printf("The contents of \"%s\" are approximately:\n",calfile);
-    for(Int_t i=0;i<dets;i++) {
-      for(Int_t l=0;l<3;l++) {
-      
-	fprintf(outfile,"%2.0f ",param[i][0]*3+l);
-	printf("%2.0f ",param[i][0]*3+l);
 	for(Int_t j=1;j<k-1;j++){
 	  fprintf(outfile,"%g ",param[i][j]);
 	  printf("%5.0f ",param[i][j]);
@@ -4633,698 +4606,778 @@ void expandcal(Char_t *calfile="calibration.cal",Int_t index=0,Bool_t overwrite=
 	fprintf(outfile,"\n");
 	printf("\n");
       }
+      fclose(outfile);
     }
-    fclose(outfile);
+    else
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  
   }
 
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  void expandcal(Char_t *calfile="calibration.cal",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=4,Int_t start=0)
+  {
+    Float_t param[dets][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<dets;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
   
-}
-
-void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
-{//re-writes calibration constants after testing fit.
-  if(detno==-1)
-    detno=det;
-  printf("Input detector number is %d\n",det);
-  printf("Number of detectors = %d, ",dets);
-  Float_t param[dets][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<dets;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
+    FILE * infile;
+    Int_t k=1;
   
-  FILE * infile;
-  Int_t k=1;
-  
-  while(!fit&&k<=(size)){
-    infile = fopen (calfile,"r");
-    if(infile!=NULL){
+    while(!fit&&k<=(size)){
+      infile = fopen (calfile,"r");
+      if(infile!=NULL){
+	for(Int_t i=0;i<dets;i++){
+	  for(Int_t j=0;j<k;j++){
+	    fscanf(infile,"%f",&param[i][j]);
+	  }
+	}
+	fclose(infile);
+      }
+      else{
+	printf("File is NULL!\n");
+      }
+      
+      if(showtest) printf("Testing array length %d:\n",k);
+      
+      if(param[0][0]==start)
+	fit=kTRUE;
+      else
+	fit=kFALSE;
+    
       for(Int_t i=0;i<dets;i++){
-	for(Int_t j=0;j<k;j++){
-	  fscanf(infile,"%f",&param[i][j]);
+	fit=(fit&&(param[i][0]==(i+start)));	
+	if(fit){
+	  if(showtest) printf("%2.0f ",param[i][0]);
+	  for(Int_t j=1;j<k;j++){
+	    if(showtest) printf("%7.2f ",param[i][j]);
+	  }
+	  if(showtest) printf("\n");
+	  if((i+1)>errorline)errorline=i+1;
 	}
       }
-      fclose(infile);
-    }
-    else{
-      printf("File is NULL!\n");
-      //for(Int_t l=0;l<size;l++){
-      //	Fit[l]=0;
-    }
-      
-    if(showtest) printf("Testing array length %d:\n",k);
-      
-    if(param[0][0]==start)
-      fit=kTRUE;
-    else
-      fit=kFALSE;
-      
-    for(Int_t i=0;i<dets;i++){
-      fit=(fit&&(param[i][0]==(i+start)));	
-      if(fit){
-	if(showtest) printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  if(showtest) printf("%7.2f ",param[i][j]);
-	}
-	if(showtest) printf("\n");
-	if((i+1)>errorline)errorline=i+1;
-      }
-    }
            
-    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+      if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
      
-    k++;
-  }
-  double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
-  printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
-  double change[2]={0,0};
-  
-  if(fit) {//readin successful   
-    Float_t Fit[10];
-    Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
-    infile = fopen (tempfile,"r");
-    if(infile!=NULL){
-      printf("     The contents of %s are ",tempfile);
-      for(Int_t l=0;l<size;l++) {
-	if(fscanf(infile,"%f, ",&Fit[l])==-1)
-	  Fit[l]=0;
-	if(Fit[l]){//added
-	  if(l<2) change[l]=Fit[l];
-	  param[detno-start][l+1+index]=Fit[l];//note use of index
-	  printf("%9.4f ",param[detno-start][l+1+index]);
+      k++;
+    }
+    
+    if(fit) {   
+      FILE * outfile;
+      if(overwrite)
+	outfile=fopen(calfile,"w");
+      else{
+	outfile=fopen("output.txt","w");
+	printf("Output file is \"output.txt\"\n");
+      }
+      printf("The contents of \"%s\" are approximately:\n",calfile);
+      for(Int_t i=0;i<dets;i++) {
+	for(Int_t l=0;l<3;l++) {
+      
+	  fprintf(outfile,"%2.0f ",param[i][0]*3+l);
+	  printf("%2.0f ",param[i][0]*3+l);
+	  for(Int_t j=1;j<k-1;j++){
+	    fprintf(outfile,"%g ",param[i][j]);
+	    printf("%5.0f ",param[i][j]);
+	  }
+	  fprintf(outfile,"\n");
+	  printf("\n");
 	}
       }
-      printf("\n");
-      fclose(infile);
+      fclose(outfile);
     }
+
     else
-      printf("File is NULL!\n");
-
-    double new[2]={change[0]*old[0],change[0]*old[1]+change[1]}; 
-    printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
-    param[detno-start][0+1+index]=new[0];
-    param[detno-start][1+1+index]=new[1];
- 
-    FILE * outfile;
-    if(!overwrite)
-      calfile="output.txt";
-    outfile=fopen(calfile,"w");
-    printf(" Output file is \"%s\"\n",calfile);
-    printf("The contents of \"%s\" are approximately:\n",calfile);
-    for(Int_t i=0;i<dets;i++){
-      fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("%2.0f ",param[i][0]);
-      for(Int_t j=1;j<k-1;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%5.0f ",param[i][j]);
-      }
-      fprintf(outfile,"\n");
-      printf("\n");
-    }
-    fclose(outfile);
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  
   }
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
-}
 
-void rewritetempa(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
-{//re-writes calibration constants after testing fit.
-  if(detno==-1)
-    detno=det;
-  printf("Input detector number is %d\n",det);
-  printf("Number of detectors = %d, ",dets);
-  Float_t param[dets][50]; 
-  Int_t errorline=-1;
-  Int_t size=sizeof(param[0])/sizeof(param[0][0]);
-  if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
-  Bool_t fit=kFALSE;
-  for(Int_t i=0;i<dets;i++)
-    for(Int_t j=0;j<size;j++)
-      param[i][j]=0;//initializes all array elements to zero
+  void rewritetemp(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
+  {//re-writes calibration constants after testing fit.
+    if(detno==-1)
+      detno=det;
+    printf("Input detector number is %d\n",det);
+    printf("Number of detectors = %d, ",dets);
+    Float_t param[dets][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<dets;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
   
-  FILE * infile;
-  Int_t k=1;
+    FILE * infile;
+    Int_t k=1;
   
-  while(!fit&&k<=(size)){
-    infile = fopen (calfile,"r");
-    if(infile!=NULL){
+    while(!fit&&k<=(size)){
+      infile = fopen (calfile,"r");
+      if(infile!=NULL){
+	for(Int_t i=0;i<dets;i++){
+	  for(Int_t j=0;j<k;j++){
+	    fscanf(infile,"%f",&param[i][j]);
+	  }
+	}
+	fclose(infile);
+      }
+      else{
+	printf("File is NULL!\n");
+	//for(Int_t l=0;l<size;l++){
+	//	Fit[l]=0;
+      }
+      
+      if(showtest) printf("Testing array length %d:\n",k);
+      
+      if(param[0][0]==start)
+	fit=kTRUE;
+      else
+	fit=kFALSE;
+      
       for(Int_t i=0;i<dets;i++){
-	for(Int_t j=0;j<k;j++){
-	  fscanf(infile,"%f",&param[i][j]);
+	fit=(fit&&(param[i][0]==(i+start)));	
+	if(fit){
+	  if(showtest) printf("%2.0f ",param[i][0]);
+	  for(Int_t j=1;j<k;j++){
+	    if(showtest) printf("%7.2f ",param[i][j]);
+	  }
+	  if(showtest) printf("\n");
+	  if((i+1)>errorline)errorline=i+1;
 	}
       }
-      fclose(infile);
-    }
-    else{
-      printf("File is NULL!\n");
-      //for(Int_t l=0;l<size;l++){
-      //	Fit[l]=0;
-    }
-      
-    if(showtest) printf("Testing array length %d:\n",k);
-      
-    if(param[0][0]==start)
-      fit=kTRUE;
-    else
-      fit=kFALSE;
-      
-    for(Int_t i=0;i<dets;i++){
-      fit=(fit&&(param[i][0]==(i+start)));	
-      if(fit){
-	if(showtest) printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k;j++){
-	  if(showtest) printf("%7.2f ",param[i][j]);
-	}
-	if(showtest) printf("\n");
-	if((i+1)>errorline)errorline=i+1;
-      }
-    }
            
-    if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+      if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
      
-    k++;
-  }
-  double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
-  printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
-  double change[2]={0,0};
+      k++;
+    }
+    double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
+    printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
+    double change[2]={0,0};
   
-  if(fit) {//readin successful   
-    Float_t Fit[10];
-    Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
-    infile = fopen (tempfile,"r");
-    if(infile!=NULL){
-      printf("     The contents of %s are ",tempfile);
-      for(Int_t l=0;l<size;l++) {
-	if(fscanf(infile,"%f, ",&Fit[l])==-1)
-	  Fit[l]=0;
-	if(Fit[l]){//added
-	  if(l<2) change[l]=Fit[l];
-	  param[detno-start][l+1+index]=Fit[l];//note use of index
-	  printf("%9.4f ",param[detno-start][l+1+index]);
+    if(fit) {//readin successful   
+      Float_t Fit[10];
+      Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
+      infile = fopen (tempfile,"r");
+      if(infile!=NULL){
+	printf("     The contents of %s are ",tempfile);
+	for(Int_t l=0;l<size;l++) {
+	  if(fscanf(infile,"%f, ",&Fit[l])==-1)
+	    Fit[l]=0;
+	  if(Fit[l]){//added
+	    if(l<2) change[l]=Fit[l];
+	    param[detno-start][l+1+index]=Fit[l];//note use of index
+	    printf("%9.4f ",param[detno-start][l+1+index]);
+	  }
 	}
+	printf("\n");
+	fclose(infile);
       }
-      printf("\n");
-      fclose(infile);
+      else
+	printf("File is NULL!\n");
+
+      double new[2]={change[0]*old[0],change[0]*old[1]+change[1]}; 
+      printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
+      param[detno-start][0+1+index]=new[0];
+      param[detno-start][1+1+index]=new[1];
+ 
+      FILE * outfile;
+      if(!overwrite)
+	calfile="output.txt";
+      outfile=fopen(calfile,"w");
+      printf(" Output file is \"%s\"\n",calfile);
+      printf("The contents of \"%s\" are approximately:\n",calfile);
+      for(Int_t i=0;i<dets;i++){
+	fprintf(outfile,"%2.0f ",param[i][0]);
+	printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<k-1;j++){
+	  fprintf(outfile,"%g ",param[i][j]);
+	  printf("%5.0f ",param[i][j]);
+	}
+	fprintf(outfile,"\n");
+	printf("\n");
+      }
+      fclose(outfile);
     }
     else
-      printf("File is NULL!\n");
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
+  }
 
-    double new[2]={old[0],old[1]+change[1]}; 
-    printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
-    param[detno-start][0+1+index]=new[0];
-    param[detno-start][1+1+index]=new[1];
- 
-    FILE * outfile;
-    if(!overwrite)
-      calfile="output.txt";
-    outfile=fopen(calfile,"w");
-    printf(" Output file is \"%s\"\n",calfile);
-    printf("The contents of \"%s\" are approximately:\n",calfile);
-    for(Int_t i=0;i<dets;i++){
-      fprintf(outfile,"%2.0f ",param[i][0]);
-      printf("%2.0f ",param[i][0]);
-      for(Int_t j=1;j<k-1;j++){
-	fprintf(outfile,"%g ",param[i][j]);
-	printf("%5.5f ",param[i][j]);
+  void rewritetempa(Char_t *calfile="calibration.cal", Int_t detno=-1, Char_t *tempfile="temp.lst",Int_t index=0,Bool_t overwrite=1,Bool_t showtest=0,const int dets=24,Int_t start=0)
+  {//re-writes calibration constants after testing fit.
+    if(detno==-1)
+      detno=det;
+    printf("Input detector number is %d\n",det);
+    printf("Number of detectors = %d, ",dets);
+    Float_t param[dets][50]; 
+    Int_t errorline=-1;
+    Int_t size=sizeof(param[0])/sizeof(param[0][0]);
+    if(showtest)  printf("param array size is: [%d][%d].\n",sizeof(param)/sizeof(param[0]),size); 
+    Bool_t fit=kFALSE;
+    for(Int_t i=0;i<dets;i++)
+      for(Int_t j=0;j<size;j++)
+	param[i][j]=0;//initializes all array elements to zero
+  
+    FILE * infile;
+    Int_t k=1;
+  
+    while(!fit&&k<=(size)){
+      infile = fopen (calfile,"r");
+      if(infile!=NULL){
+	for(Int_t i=0;i<dets;i++){
+	  for(Int_t j=0;j<k;j++){
+	    fscanf(infile,"%f",&param[i][j]);
+	  }
+	}
+	fclose(infile);
       }
-      fprintf(outfile,"\n");
-      printf("\n");
-    }
-    fclose(outfile);
-  }
-  else
-    printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
-}
-
-//-------------------------------------------------------------------------------------
-// 5d). Fill (dump) a histogram from (to) a file---------------------------------------
-void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
-{//copied form util.cc
-  //   gDirectory->pwd();
-  Int_t whatsit=0;
-  whatsit=whatis(histname);
-   
-  switch(whatsit) {
-  case 1:
-    TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
-    break;
-  case 2:
-    TH1D *hist1=(TH1D *) gROOT->FindObject(histname);
-    break;
-  case 3:
-    TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-    break;
-  case 4:
-    TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
-    break;
-  case 5:
-    TH3F *hist3=(TH3F *) gROOT->FindObject(histname);
-    break;
-  case 6:
-    TProfile *hist1=(TProfile *) gROOT->FindObject(histname);
-    break;
-  }
-   
-  ofstream outfile(filename);
-   
-  if (whatsit==1 || whatsit==2 || whatsit==6) {//1D object
+      else{
+	printf("File is NULL!\n");
+	//for(Int_t l=0;l<size;l++){
+	//	Fit[l]=0;
+      }
       
-    for (Int_t ibin=0; ibin < hist1->GetNbinsX()+1;ibin++) {//includes underflow bin
-      if (ierr==0) {
-	if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
-	    zsupp==0) {
-	  outfile<< hist1->GetBinCenter(ibin) << " " <<
-	    hist1->GetBinContent(ibin)<<endl;
-	}
-      } else {
-	if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
-	    zsupp==0) {
-	  outfile<<hist1->GetBinCenter(ibin)<<" "<<
-	    hist1->GetBinContent(ibin)<<" "<<
-	    hist1->GetBinError(ibin)<<endl;
+      if(showtest) printf("Testing array length %d:\n",k);
+      
+      if(param[0][0]==start)
+	fit=kTRUE;
+      else
+	fit=kFALSE;
+      
+      for(Int_t i=0;i<dets;i++){
+	fit=(fit&&(param[i][0]==(i+start)));	
+	if(fit){
+	  if(showtest) printf("%2.0f ",param[i][0]);
+	  for(Int_t j=1;j<k;j++){
+	    if(showtest) printf("%7.2f ",param[i][j]);
+	  }
+	  if(showtest) printf("\n");
+	  if((i+1)>errorline)errorline=i+1;
 	}
       }
+           
+      if(fit)printf("File \"%s\" has %d elements per line.\n",calfile,k);
+     
+      k++;
     }
+    double old[2]={param[detno-start][1+index],param[detno-start][1+1+index]}; 
+    printf("The old calibration constants are %9.4f %9.4f\n",old[0],old[1]);
+    double change[2]={0,0};
+  
+    if(fit) {//readin successful   
+      Float_t Fit[10];
+      Int_t size=sizeof(Fit)/sizeof(Fit[0]); 
+      infile = fopen (tempfile,"r");
+      if(infile!=NULL){
+	printf("     The contents of %s are ",tempfile);
+	for(Int_t l=0;l<size;l++) {
+	  if(fscanf(infile,"%f, ",&Fit[l])==-1)
+	    Fit[l]=0;
+	  if(Fit[l]){//added
+	    if(l<2) change[l]=Fit[l];
+	    param[detno-start][l+1+index]=Fit[l];//note use of index
+	    printf("%9.4f ",param[detno-start][l+1+index]);
+	  }
+	}
+	printf("\n");
+	fclose(infile);
+      }
+      else
+	printf("File is NULL!\n");
+
+      double new[2]={old[0],old[1]+change[1]}; 
+      printf("The new calibration constants are %9.4f %9.4f\n",new[0],new[1]);
+      param[detno-start][0+1+index]=new[0];
+      param[detno-start][1+1+index]=new[1];
+ 
+      FILE * outfile;
+      if(!overwrite)
+	calfile="output.txt";
+      outfile=fopen(calfile,"w");
+      printf(" Output file is \"%s\"\n",calfile);
+      printf("The contents of \"%s\" are approximately:\n",calfile);
+      for(Int_t i=0;i<dets;i++){
+	fprintf(outfile,"%2.0f ",param[i][0]);
+	printf("%2.0f ",param[i][0]);
+	for(Int_t j=1;j<k-1;j++){
+	  fprintf(outfile,"%g ",param[i][j]);
+	  printf("%5.5f ",param[i][j]);
+	}
+	fprintf(outfile,"\n");
+	printf("\n");
+      }
+      fclose(outfile);
+    }
+    else
+      printf("File \"%s\" has more than %d elements per line, or there is an error on line %d.\n",calfile,size,errorline);
   }
+
+  //-------------------------------------------------------------------------------------
+  // 5d). Fill (dump) a histogram from (to) a file---------------------------------------
+  void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
+  {//copied form util.cc
+    //   gDirectory->pwd();
+    Int_t whatsit=0;
+    whatsit=whatis(histname);
    
-  if (whatsit==3 ||  whatsit==4) {//2D object
-    for (Int_t ixbin=0; ixbin < hist2->GetNbinsX();ixbin++) {
-      for (Int_t iybin=0; iybin<hist2->GetNbinsY();iybin++) {
-	    
-	Float_t content=hist2->GetBinContent(ixbin,iybin);
-	Float_t xbin=hist2->GetXaxis()->GetBinCenter(ixbin);
-	Float_t ybin=hist2->GetYaxis()->GetBinCenter(iybin);
+    switch(whatsit) {
+    case 1:
+      TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
+      break;
+    case 2:
+      TH1D *hist1=(TH1D *) gROOT->FindObject(histname);
+      break;
+    case 3:
+      TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
+      break;
+    case 4:
+      TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
+      break;
+    case 5:
+      TH3F *hist3=(TH3F *) gROOT->FindObject(histname);
+      break;
+    case 6:
+      TProfile *hist1=(TProfile *) gROOT->FindObject(histname);
+      break;
+    }
+   
+    ofstream outfile(filename);
+   
+    if (whatsit==1 || whatsit==2 || whatsit==6) {//1D object
+      
+      for (Int_t ibin=0; ibin < hist1->GetNbinsX()+1;ibin++) {//includes underflow bin
 	if (ierr==0) {
-	  if ((zsupp==1 && content!=0) ||
+	  if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
 	      zsupp==0) {
-	    outfile<< xbin << " " << ybin <<" "<<content<<endl;
+	    outfile<< hist1->GetBinCenter(ibin) << " " <<
+	      hist1->GetBinContent(ibin)<<endl;
 	  }
 	} else {
-	  if ((zsupp==1 && content!=0) ||
+	  if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
 	      zsupp==0) {
-	    outfile<<xbin<<" "<< ybin<<" "<<content<<endl;
+	    outfile<<hist1->GetBinCenter(ibin)<<" "<<
+	      hist1->GetBinContent(ibin)<<" "<<
+	      hist1->GetBinError(ibin)<<endl;
 	  }
 	}
       }
     }
+   
+    if (whatsit==3 ||  whatsit==4) {//2D object
+      for (Int_t ixbin=0; ixbin < hist2->GetNbinsX();ixbin++) {
+	for (Int_t iybin=0; iybin<hist2->GetNbinsY();iybin++) {
+	    
+	  Float_t content=hist2->GetBinContent(ixbin,iybin);
+	  Float_t xbin=hist2->GetXaxis()->GetBinCenter(ixbin);
+	  Float_t ybin=hist2->GetYaxis()->GetBinCenter(iybin);
+	  if (ierr==0) {
+	    if ((zsupp==1 && content!=0) ||
+		zsupp==0) {
+	      outfile<< xbin << " " << ybin <<" "<<content<<endl;
+	    }
+	  } else {
+	    if ((zsupp==1 && content!=0) ||
+		zsupp==0) {
+	      outfile<<xbin<<" "<< ybin<<" "<<content<<endl;
+	    }
+	  }
+	}
+      }
+    }
+    outfile.close();
   }
-  outfile.close();
-}
 
-//---------------------------------------------------------------------------
-// 5di). Fill a 1D histogram from a file-------------------------------------
-void fillhist0(Char_t *filename, Char_t *histname)
-{//copied form util.cc
-  Float_t x;
-  TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
-  hist1->Reset();
-  ifstream infile(filename);
-  while (infile >> x) {
-    hist1->Fill(x);
-  }
-  hist1->Draw();
-}
-
-void fillhist(Char_t *filename, Char_t *histname, Int_t opt1=0, Int_t ierr=0)
-{//copied form util.cc
-  // if opt1=0 use x as channel to fill, else use bin number
-  // if ierr=1 also read in errors and set bin errors
-
-  Float_t x,y,dy,xval;
-  Int_t xbin=1;
-  TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
-  hist1->Reset();
-  ifstream infile(filename);
-  switch (ierr) {
-  case 0:
+  //---------------------------------------------------------------------------
+  // 5di). Fill a 1D histogram from a file-------------------------------------
+  void fillhist0(Char_t *filename, Char_t *histname)
+  {//copied form util.cc
+    Float_t x;
+    TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
+    hist1->Reset();
+    ifstream infile(filename);
     while (infile >> x) {
-      infile >> y;
-      xval=x;
-      if (opt1==1) {xval=(Float_t) xbin;}
-      hist1->Fill(xval,y);
-      xbin++;
+      hist1->Fill(x);
     }
     hist1->Draw();
-    break;
-  case 1:
-    while (infile >> x) {
-      infile>>y;
-      infile>>dy;
-      xval=x;
-      if (opt1==1) {xval=(Float_t) xbin;}
-      hist1->Fill(xval,y);
-      hist1->SetBinError(xbin,dy);
-      xbin++;
-    }
-    hist1->Draw("E");
-    break;
   }
-}
 
-void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//extension to fillhist0() from util.cc, includes weight and reset option.  
- //Fills a 1-dimensional histogram from a text file.
- //File is to be formatted as x-value, weight.
-  Float_t x,y,w;
-  TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
-  if (reset){
-    printf("Resetting histogram \"%s\"\n",histname);
+  void fillhist(Char_t *filename, Char_t *histname, Int_t opt1=0, Int_t ierr=0)
+  {//copied form util.cc
+    // if opt1=0 use x as channel to fill, else use bin number
+    // if ierr=1 also read in errors and set bin errors
+
+    Float_t x,y,dy,xval;
+    Int_t xbin=1;
+    TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
     hist1->Reset();
+    ifstream infile(filename);
+    switch (ierr) {
+    case 0:
+      while (infile >> x) {
+	infile >> y;
+	xval=x;
+	if (opt1==1) {xval=(Float_t) xbin;}
+	hist1->Fill(xval,y);
+	xbin++;
+      }
+      hist1->Draw();
+      break;
+    case 1:
+      while (infile >> x) {
+	infile>>y;
+	infile>>dy;
+	xval=x;
+	if (opt1==1) {xval=(Float_t) xbin;}
+	hist1->Fill(xval,y);
+	hist1->SetBinError(xbin,dy);
+	xbin++;
+      }
+      hist1->Draw("E");
+      break;
+    }
   }
-  ifstream infile(filename);
-  while (infile >> x) {
-    //infile >> y;
-    infile >> w;
-    hist1->Fill(x,w);
-  }
-  hist1->Draw();
-}
 
-void fillgraph(Char_t *filename, Char_t *graphname, Int_t npts, Int_t ierr=0)
-{//copied form util.cc
-  gr=new TGraphErrors(npts);
-  Double_t x,y,dx,dy;
-  ifstream infile(filename);
-  Int_t i=0;
-  while (infile >> x) {
-    infile >> y;
-    infile >> dy;
-    gr->SetPoint(i,x,y);
-    gr->SetPointError(i,dx,dy);
-    i++;
+  void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
+  {//extension to fillhist0() from util.cc, includes weight and reset option.  
+    //Fills a 1-dimensional histogram from a text file.
+    //File is to be formatted as x-value, weight.
+    Float_t x,y,w;
+    TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
+    if (reset){
+      printf("Resetting histogram \"%s\"\n",histname);
+      hist1->Reset();
+    }
+    ifstream infile(filename);
+    while (infile >> x) {
+      //infile >> y;
+      infile >> w;
+      hist1->Fill(x,w);
+    }
+    hist1->Draw();
   }
-  gr->SetName(graphname);
-  gr->SetTitle("graph test");
-  gr->SetMarkerColor(4);
-  gr->SetMarkerStyle(21);
-  gr->Draw("AP");
-}
 
-//---------------------------------------------------------------------------
-// 5dii). Fill a 2D histogram from a file------------------------------------
-void fillhist2(Char_t *filename,Char_t *histname)
-{//copied form util.cc
-  Float_t x,y,z;
-  TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-  hist2->Reset();
-  ifstream infile(filename);
-  while (infile >> x) {
-    infile >> y;
-    infile >> z;
-    hist2->Fill(x,y,z);
+  void fillgraph(Char_t *filename, Char_t *graphname, Int_t npts, Int_t ierr=0)
+  {//copied form util.cc
+    gr=new TGraphErrors(npts);
+    Double_t x,y,dx,dy;
+    ifstream infile(filename);
+    Int_t i=0;
+    while (infile >> x) {
+      infile >> y;
+      infile >> dy;
+      gr->SetPoint(i,x,y);
+      gr->SetPointError(i,dx,dy);
+      i++;
+    }
+    gr->SetName(graphname);
+    gr->SetTitle("graph test");
+    gr->SetMarkerColor(4);
+    gr->SetMarkerStyle(21);
+    gr->Draw("AP");
   }
-  hist2->Draw("col2");
-}
 
-void fill2(Char_t *filename,Char_t *histname,Int_t reset=1)
-{//Extension to fillhist2(), includes reset option.
- //Fills a 2-dimensional histogram from a text file.
- //File is to be formatted as x-value, y-value, weight.
-  Float_t x,y,w;
-  TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-  if (reset){
-    printf("Resetting histogram \"%s\"\n",histname);
+  //---------------------------------------------------------------------------
+  // 5dii). Fill a 2D histogram from a file------------------------------------
+  void fillhist2(Char_t *filename,Char_t *histname)
+  {//copied form util.cc
+    Float_t x,y,z;
+    TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
     hist2->Reset();
-  }
-  ifstream infile(filename);
-  while (infile >> x) {
-    infile >> y;
-    infile >> w;
-    hist2->Fill(x,y,w);
-  }
-  hist2->Draw("col2");
-}
-
-//-------------------------------------------------------------------------------------
-// 5e). Cuts and Cut File Utilities----------------------------------------------------
-void cutg(Char_t *histname,Char_t * newcutname, Int_t graphit=1, Int_t npts=0, Char_t *xvar="", Char_t *yvar="")
-{//copied form util.cc
-  if (graphit==1) {
-      
-    if (!(TCanvas *) gROOT->GetListOfCanvases()->FindObject("c1"))
-      TCanvas *c1=new TCanvas("c1","c1");
-    c1->cd();
-    if ((TCutG *) gROOT->GetListOfSpecials()->FindObject("CUTG"))
-      CUTG->Delete();
-    if ((TCutG *) gROOT->GetListOfSpecials()->FindObject(newcutname)) {
-      (TCutG *) gROOT->GetListOfSpecials()->FindObject(newcutname)->Delete();
+    ifstream infile(filename);
+    while (infile >> x) {
+      infile >> y;
+      infile >> z;
+      hist2->Fill(x,y,z);
     }
-    TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
     hist2->Draw("col2");
-    c1->EditorBar();
-    cout << "Click on \"Graphical Cut\" to create cut"<<endl;
-    cout << "When finished don't forget to setname(\"CUTG\",\""<<newcutname<<"\")"<<endl;
   }
-  else {
-    if (npts==0) {
-      cout << "enter number of points in graphical cut: ";
-      cin >> npts;
-    }
-    TCutG *newcut=new TCutG(newcutname,npts);
-    Double_t x,y;
-    for (Int_t i=0; i<npts-1; i++) {
-      cout <<"enter x, y for point "<<i<<", one per line:"<<endl;
-      cin>>x>>y;
-      newcut->SetPoint(i,x,y);
-    }
-    newcut->GetPoint(0,x,y);
-    newcut->SetPoint(npts-1,x,y);
-    newcut->Draw();
-    newcut->SetVarX(xvar);
-    newcut->SetVarY(yvar);
-    //      newcut->Print();
-    newcut->SetName(newcutname);      
-  }
-}   
 
-void drawcut(Char_t *cutname) 
-{ if( c1 == 0 ) {
-    cout<<"please display the histogram first.\n";
-    return;
-  }
-  char path[124]=gROOT->GetPath();
-  readcuts("cut_file.root");
-  TCutG *cut1 = (TCutG*) gROOT->FindObject(cutname);
-  if( cut1 == 0 ) { 
-    cout<<"Sorry, "<<cutname<<" does not exist.\n";
-  } else {
-    c1->cd();
-    cut1->SetLineColor(2);
-    cut1->SetLineWidth(2);
-    cut1->Draw();
-  }
-  gROOT->cd(path);
-}
-
-void readcuts(Char_t *filename)
-{//copied form util.cc
-  char path[124]=gROOT->GetPath();//added
-  cout<<path<<endl;
-  TFile *fin=new TFile(filename);
-  TList *speclist=(TList*) fin->GetListOfSpecials();
-  speclist->Read();
-  //the following 3 lines are copied from a similar block of code...
-  fin->ReadAll();
-  fin->Purge();
-  fin->ls("-d");
-  fin->Close();
-  gROOT->cd(path);
-}
-
-void deletecuts(Char_t *filename, Char_t *cut_name) 
-{
-  char path[124]=gROOT->GetPath();
-  cout<<path<<endl;
-  TFile *fin=new TFile(filename,"update");
-  fin->ReadAll();
-  TString cutname=TString(cut_name)+";*";
-  cout<<"Do you want to delete "<<cutname<<" ? (y/n)"<<endl;
-  char opt;
-  cin>>opt;
-  if( opt == 'y' ) {
-    fin->Delete( cutname.Data() );
-    cout<<cutname<<" is deleted."<<endl;
-  }
-  fin->Close();
-  gROOT->cd(path);
-}
-
-void savecuts(Char_t *filename)
-{//copied form util.cc
-  TList *speclist=gROOT->GetListOfSpecials();
-  TFile *fout=new TFile(filename,"recreate");
-  fout->cd();
-  speclist->Write();
-  fout->Purge();//added
-  fout->ls();
-  fout->Close();
-  cout << "Special objects written to file "<<filename<<endl;
-}
-
-void listcuts()
-{    
-  TList *speclist=gROOT->GetListOfSpecials();
-  cout<<"To be implemented."<<endl;
-}
-
-void setcutg(Char_t *cutname="CUTG", Char_t *xvar="",Char_t *yvar="")
-{//copied form util.cc
-  TCutG *gcut=(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
-  gcut->SetVarX(xvar);
-  gcut->SetVarY(yvar);
-}
-
-void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", 
-	    Char_t *cutname="cEDE0_B13_big")
-{
-  //TCutG *tempcut;  
-  gROOT->ProcessLine("TDirectory *_home=gDirectory"); 
-  if(gROOT->FindObject("_file0"))
-    _filename0=_file0;
-  dr(histname);
-  getfile(filename);
-  cWindow=(TCutG *) gROOT->FindObject(cutname);
-  cWindow->Draw();
-  if(gROOT->FindObject("_file0"))
-    _file0->cd();
-  pjxwin(histname,cutname);
-  //hProj=(TH1F *) gROOT->FindObject("xwproj");
-  xwproj->Integral();
-  printf("The integral of %s in %s is %d\n",cutname,histname,xwproj->Integral());
-  _home->cd();
-  //  hInput=(TH2F *) gROOT->FindObject(hname.Data());
-  dr(histname);
-  cWindow->Draw();
-}
-
-// 5e-). Project Cuts--------------------------------------------------------
-void pjxwin(Char_t *histname, Char_t *cutname)
-{//copied form util.cc
-  TCutG *tempcut;
-  Int_t whatsit=whatis(histname,0);
-  if (whatsit != 3 && whatsit !=4) {
-    cout << "histogram is not a 2D or is not found!"<<endl;
-    return;
-  }
-  switch(whatsit) {
-  case 3:
+  void fill2(Char_t *filename,Char_t *histname,Int_t reset=1)
+  {//Extension to fillhist2(), includes reset option.
+    //Fills a 2-dimensional histogram from a text file.
+    //File is to be formatted as x-value, y-value, weight.
+    Float_t x,y,w;
     TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-    break ;
-  case 4:
-    TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
-    break;
+    if (reset){
+      printf("Resetting histogram \"%s\"\n",histname);
+      hist2->Reset();
+    }
+    ifstream infile(filename);
+    while (infile >> x) {
+      infile >> y;
+      infile >> w;
+      hist2->Fill(x,y,w);
+    }
+    hist2->Draw("col2");
   }
-   
-  if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
-    cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
-    return;
-  } else {
-    tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
+
+  //-------------------------------------------------------------------------------------
+  // 5e). Cuts and Cut File Utilities----------------------------------------------------
+  void cutg(Char_t *histname,Char_t * newcutname, Int_t graphit=1, Int_t npts=0, Char_t *xvar="", Char_t *yvar="")
+  {//copied form util.cc
+    if (graphit==1) {
+      
+      if (!(TCanvas *) gROOT->GetListOfCanvases()->FindObject("c1"))
+	TCanvas *c1=new TCanvas("c1","c1");
+      c1->cd();
+      if ((TCutG *) gROOT->GetListOfSpecials()->FindObject("CUTG"))
+	CUTG->Delete();
+      if ((TCutG *) gROOT->GetListOfSpecials()->FindObject(newcutname)) {
+	(TCutG *) gROOT->GetListOfSpecials()->FindObject(newcutname)->Delete();
+      }
+      TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
+      hist2->Draw("col2");
+      c1->EditorBar();
+      cout << "Click on \"Graphical Cut\" to create cut"<<endl;
+      cout << "When finished don't forget to setname(\"CUTG\",\""<<newcutname<<"\")"<<endl;
+    }
+    else {
+      if (npts==0) {
+	cout << "enter number of points in graphical cut: ";
+	cin >> npts;
+      }
+      TCutG *newcut=new TCutG(newcutname,npts);
+      Double_t x,y;
+      for (Int_t i=0; i<npts-1; i++) {
+	cout <<"enter x, y for point "<<i<<", one per line:"<<endl;
+	cin>>x>>y;
+	newcut->SetPoint(i,x,y);
+      }
+      newcut->GetPoint(0,x,y);
+      newcut->SetPoint(npts-1,x,y);
+      newcut->Draw();
+      newcut->SetVarX(xvar);
+      newcut->SetVarY(yvar);
+      //      newcut->Print();
+      newcut->SetName(newcutname);      
+    }
+  }   
+
+  void drawcut(Char_t *cutname) 
+  { if( c1 == 0 ) {
+      cout<<"please display the histogram first.\n";
+      return;
+    }
+    char path[124]=gROOT->GetPath();
+    readcuts("cut_file.root");
+    TCutG *cut1 = (TCutG*) gROOT->FindObject(cutname);
+    if( cut1 == 0 ) { 
+      cout<<"Sorry, "<<cutname<<" does not exist.\n";
+    } else {
+      c1->cd();
+      cut1->SetLineColor(2);
+      cut1->SetLineWidth(2);
+      cut1->Draw();
+    }
+    gROOT->cd(path);
   }
+
+  void readcuts(Char_t *filename)
+  {//copied form util.cc
+    char path[124]=gROOT->GetPath();//added
+    cout<<path<<endl;
+    TFile *fin=new TFile(filename);
+    TList *speclist=(TList*) fin->GetListOfSpecials();
+    speclist->Read();
+    //the following 3 lines are copied from a similar block of code...
+    fin->ReadAll();
+    fin->Purge();
+    fin->ls("-d");
+    fin->Close();
+    gROOT->cd(path);
+  }
+
+  void deletecuts(Char_t *filename, Char_t *cut_name) 
+  {
+    char path[124]=gROOT->GetPath();
+    cout<<path<<endl;
+    TFile *fin=new TFile(filename,"update");
+    fin->ReadAll();
+    TString cutname=TString(cut_name)+";*";
+    cout<<"Do you want to delete "<<cutname<<" ? (y/n)"<<endl;
+    char opt;
+    cin>>opt;
+    if( opt == 'y' ) {
+      fin->Delete( cutname.Data() );
+      cout<<cutname<<" is deleted."<<endl;
+    }
+    fin->Close();
+    gROOT->cd(path);
+  }
+
+  void savecuts(Char_t *filename)
+  {//copied form util.cc
+    TList *speclist=gROOT->GetListOfSpecials();
+    TFile *fout=new TFile(filename,"recreate");
+    fout->cd();
+    speclist->Write();
+    fout->Purge();//added
+    fout->ls();
+    fout->Close();
+    cout << "Special objects written to file "<<filename<<endl;
+  }
+
+  void listcuts()
+  {    
+    TList *speclist=gROOT->GetListOfSpecials();
+    cout<<"To be implemented."<<endl;
+  }
+
+  void setcutg(Char_t *cutname="CUTG", Char_t *xvar="",Char_t *yvar="")
+  {//copied form util.cc
+    TCutG *gcut=(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
+    gcut->SetVarX(xvar);
+    gcut->SetVarY(yvar);
+  }
+
+  void intcut(Char_t *filename="b13_cuts.root", Char_t *histname="hEDE0", 
+	      Char_t *cutname="cEDE0_B13_big")
+  {
+    //TCutG *tempcut;  
+    gROOT->ProcessLine("TDirectory *_home=gDirectory"); 
+    if(gROOT->FindObject("_file0"))
+      _filename0=_file0;
+    dr(histname);
+    getfile(filename);
+    cWindow=(TCutG *) gROOT->FindObject(cutname);
+    cWindow->Draw();
+    if(gROOT->FindObject("_file0"))
+      _file0->cd();
+    pjxwin(histname,cutname);
+    //hProj=(TH1F *) gROOT->FindObject("xwproj");
+    xwproj->Integral();
+    printf("The integral of %s in %s is %d\n",cutname,histname,xwproj->Integral());
+    _home->cd();
+    //  hInput=(TH2F *) gROOT->FindObject(hname.Data());
+    dr(histname);
+    cWindow->Draw();
+  }
+
+  // 5e-). Project Cuts--------------------------------------------------------
+  void pjxwin(Char_t *histname, Char_t *cutname)
+  {//copied form util.cc
+    TCutG *tempcut;
+    Int_t whatsit=whatis(histname,0);
+    if (whatsit != 3 && whatsit !=4) {
+      cout << "histogram is not a 2D or is not found!"<<endl;
+      return;
+    }
+    switch(whatsit) {
+    case 3:
+      TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
+      break ;
+    case 4:
+      TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
+      break;
+    }
    
-  if ((TH1D *) gROOT->FindObject("xwproj")) xwproj->Delete();
-  TH1D * xwproj=new TH1D("xwproj","X projection",hist2->GetNbinsX(),
-			 hist2->GetXaxis()->GetXmin(),
-			 hist2->GetXaxis()->GetXmax());
+    if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
+      cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
+      return;
+    } else {
+      tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
+    }
    
-  for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
-    for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
-      if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
-			    hist2->GetYaxis()->GetBinCenter(ybin))) {
-	xwproj->Fill(hist2->GetXaxis()->GetBinCenter(xbin),
-		     hist2->GetBinContent(xbin,ybin));
+    if ((TH1D *) gROOT->FindObject("xwproj")) xwproj->Delete();
+    TH1D * xwproj=new TH1D("xwproj","X projection",hist2->GetNbinsX(),
+			   hist2->GetXaxis()->GetXmin(),
+			   hist2->GetXaxis()->GetXmax());
+   
+    for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
+      for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
+	if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
+			      hist2->GetYaxis()->GetBinCenter(ybin))) {
+	  xwproj->Fill(hist2->GetXaxis()->GetBinCenter(xbin),
+		       hist2->GetBinContent(xbin,ybin));
+	}
       }
     }
-  }
-  xwproj->Draw();
-}	 
+    xwproj->Draw();
+  }	 
 
-void pjywin(Char_t *histname, Char_t *cutname)
-{//copied form util.cc
-  TCutG *tempcut;
-  Int_t whatsit=whatis(histname,0);
-  if (whatsit != 3 && whatsit !=4) {
-    cout << "histogram is not a 2D or is not found!"<<endl;
-    return;
-  }
-  switch(whatsit) {
-  case 3:
-    TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-    break ;
-  case 4:
-    TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
-    break;
-  }
+  void pjywin(Char_t *histname, Char_t *cutname)
+  {//copied form util.cc
+    TCutG *tempcut;
+    Int_t whatsit=whatis(histname,0);
+    if (whatsit != 3 && whatsit !=4) {
+      cout << "histogram is not a 2D or is not found!"<<endl;
+      return;
+    }
+    switch(whatsit) {
+    case 3:
+      TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
+      break ;
+    case 4:
+      TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
+      break;
+    }
    
-  if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
-    cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
-    return;
-  } else {
-    tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
-  }
+    if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
+      cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
+      return;
+    } else {
+      tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
+    }
    
-  if ((TH1D *) gROOT->FindObject("ywproj")) ywproj->Delete();
-  TH1D * ywproj=new TH1D("ywproj","Y projection",hist2->GetNbinsY(),
-			 hist2->GetYaxis()->GetXmin(),
-			 hist2->GetYaxis()->GetXmax());
+    if ((TH1D *) gROOT->FindObject("ywproj")) ywproj->Delete();
+    TH1D * ywproj=new TH1D("ywproj","Y projection",hist2->GetNbinsY(),
+			   hist2->GetYaxis()->GetXmin(),
+			   hist2->GetYaxis()->GetXmax());
    
-  for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
-    for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
-      if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
-			    hist2->GetYaxis()->GetBinCenter(ybin))) {
-	ywproj->Fill(hist2->GetYaxis()->GetBinCenter(ybin),
-		     hist2->GetBinContent(xbin,ybin));
+    for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
+      for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
+	if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
+			      hist2->GetYaxis()->GetBinCenter(ybin))) {
+	  ywproj->Fill(hist2->GetYaxis()->GetBinCenter(ybin),
+		       hist2->GetBinContent(xbin,ybin));
+	}
       }
     }
-  }
-  ywproj->Draw();
-}	 
+    ywproj->Draw();
+  }	 
 
-void pj2win(Char_t *histname, Char_t *cutname)
-{//copied form util.cc
-  TCutG *tempcut;
-  Int_t whatsit=whatis(histname,0);
-  if (whatsit != 3 && whatsit !=4) {
-    cout << "histogram is not a 2D or is not found!"<<endl;
-    return;
-  }
-  switch(whatsit) {
-  case 3:
-    TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
-    break ;
-  case 4:
-    TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
-    break;
-  }
+  void pj2win(Char_t *histname, Char_t *cutname)
+  {//copied form util.cc
+    TCutG *tempcut;
+    Int_t whatsit=whatis(histname,0);
+    if (whatsit != 3 && whatsit !=4) {
+      cout << "histogram is not a 2D or is not found!"<<endl;
+      return;
+    }
+    switch(whatsit) {
+    case 3:
+      TH2F *hist2=(TH2F *) gROOT->FindObject(histname);
+      break ;
+    case 4:
+      TH2D *hist2=(TH2D *) gROOT->FindObject(histname);
+      break;
+    }
    
-  if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
-    cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
-    return;
-  } else {
-    tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
-  }
+    if (!(TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname)) {
+      cout << "Graphical cut "<<cutname<<" is not found!"<<endl;
+      return;
+    } else {
+      tempcut = (TCutG *) gROOT->GetListOfSpecials()->FindObject(cutname);
+    }
    
-  if ((TH2F *) gROOT->FindObject("xywproj")) xywproj->Delete();
-  TH2F * xywproj=new TH2F("xywproj","XY copy",hist2->GetNbinsX(),
-			  hist2->GetXaxis()->GetXmin(),
-			  hist2->GetXaxis()->GetXmax(),
-			  hist2->GetNbinsY(),
-			  hist2->GetYaxis()->GetXmin(),
-			  hist2->GetYaxis()->GetXmax());
+    if ((TH2F *) gROOT->FindObject("xywproj")) xywproj->Delete();
+    TH2F * xywproj=new TH2F("xywproj","XY copy",hist2->GetNbinsX(),
+			    hist2->GetXaxis()->GetXmin(),
+			    hist2->GetXaxis()->GetXmax(),
+			    hist2->GetNbinsY(),
+			    hist2->GetYaxis()->GetXmin(),
+			    hist2->GetYaxis()->GetXmax());
    
-  for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
-    for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
-      if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
-			    hist2->GetYaxis()->GetBinCenter(ybin))) {
-	xywproj->Fill(hist2->GetXaxis()->GetBinCenter(xbin),
-		      hist2->GetYaxis()->GetBinCenter(ybin),
-		      hist2->GetBinContent(xbin,ybin));
+    for (Int_t xbin=0; xbin < hist2->GetNbinsX();xbin++) {
+      for (Int_t ybin=0; ybin < hist2->GetNbinsY(); ybin++) {
+	if (tempcut->IsInside(hist2->GetXaxis()->GetBinCenter(xbin),
+			      hist2->GetYaxis()->GetBinCenter(ybin))) {
+	  xywproj->Fill(hist2->GetXaxis()->GetBinCenter(xbin),
+			hist2->GetYaxis()->GetBinCenter(ybin),
+			hist2->GetBinContent(xbin,ybin));
+	}
       }
     }
+    xywproj->Draw("col2");
   }
-  xywproj->Draw("col2");
-}
