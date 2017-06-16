@@ -2516,6 +2516,65 @@ void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma
   
 }
 
+void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Float_t center=1, Float_t wide=.2, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
+  Float_t  start=center-wide/2;
+  Float_t stop=center+wide/2;
+  TTree *tree1=(TTree*) gROOT->FindObject(tree);
+  printf("tree is %s with %d branches\n",tree1->GetName(),tree1->GetNbranches());
+  Float_t delta=(stop-start)/steps;
+  printf("step size is %f\n",delta);
+  steps++;
+  printf("size is %d\n",steps);
+  const int size=steps;
+  printf("size is %d\n",size);
+  Float_t gain[size];
+  Float_t width[size];
+
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+  cFit->Clear();
+  
+  for (Int_t i=0; i<size; i++){
+    gain[i]=start+i*delta;
+    printf("gain = %f\n",gain[i]);
+    printf("plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
+    tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
+    TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
+    htemp->GetXaxis()->UnZoom();
+    cFit->Update();
+    emgfitcp(histname,-1,40);
+    width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+    //width[i]=emg->GetParameter(2);//sig
+    //width[i]=emg->GetParameter(0);//sig
+    printf("width = %f\n",width[i]);
+    cFit->Update();
+  }
+
+if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
+    mkCanvas2("cFit2","cFit2");
+    cFit2->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);      
+  }
+  cFit2->Clear();
+
+  if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
+  gFit = new TGraph(size,gain,width);
+  gFit->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit->GetHistogram()->GetYaxis()->SetTitle("Width");
+  gFit->Draw("AP*");
+  gFit->Fit("pol2","ROB");
+
+  Float_t cp=0 ;  
+  Float_t a=0,b=0,c=0;  
+  
+  c=pol2->GetParameter(0);//"c"
+  b=pol2->GetParameter(1);//"b"
+  a=pol2->GetParameter(2);//"a"
+  
+  cp=(-b/(2*a)); //critical point
+  printf("Fit has critical point = %7.3f\n",cp);  
+
+  
+}
+
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
 {//copied form util.cc
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
@@ -2751,7 +2810,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     Float_t zero1=(-p1-TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     Float_t zero2=(-p1+TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     printf("p1 = %7.3f p2=%7.3f\n",p1,p2);
-    printf("Fit has critical point = %7.3f\n",p1,p2,cp);
+    printf("Fit has critical point = %7.3f\n",cp);
     Float_t slope=0;
     if((p1*p1-(4*p2*p0))>0){
       printf("Fit has roots = %.1f, %.1f\n",zero1,zero2);
