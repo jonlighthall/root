@@ -1188,8 +1188,10 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
   Int_t no0=0;
   const Int_t max=65;
   Int_t isOK[max];
+  Float_t ymax=0;
+  Float_t ymin=0;
   printf("Searching for histograms named %s%s...\n",histin,suffix);
-  for(Int_t i=0;i<max;++i){
+  for(Int_t i=0;i<max;++i) {
     hname=histin;
     hname+=i;//had to change from "=hname+i" to "+=i" to work on ROOT 5.26
     hname+=suffix;//updated to be compatible with poorly named histograms
@@ -1199,9 +1201,15 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
       if((gROOT->FindObject(hname.Data())->InheritsFrom("TH1F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH1D"))) {
 	no1++;
 	hInput=(TH2F*)gROOT->FindObject(hname.Data());
-	if(hInput->GetEntries()==0){
+	if(hInput->GetEntries()==0) {
 	  no0++;
 	  printf(" Histogram %s has no entries.\n",hname.Data());
+	}
+	else {
+	  if(hInput->GetMaximum()>ymax)
+	    ymax=hInput->GetMaximum();
+	  if(hInput->GetMinimum()<ymin)
+	    ymin=hInput->GetMinimum();
 	}
       }
       if((gROOT->FindObject(hname.Data())->InheritsFrom("TH2F"))||(gROOT->FindObject(hname.Data())->InheritsFrom("TH2D"))) {
@@ -1243,17 +1251,17 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	  if(hInput->GetEntries()>0) {
 	    pno++;
 	    //printf(" Plotting %s\n",hname.Data()); 
-	    if(maxX==minX){//show full range 
+	    if(maxX==minX) {//show full range 
 	      minX=hInput->GetXaxis()->GetXmin();
 	      maxX=hInput->GetXaxis()->GetXmax();
 	      scale=0;//added, otherwise assumes all histograms same size
 	    }
 	   
-	    if(maxY==minY){
+	    if(maxY==minY) {
 	      minY=hInput->GetYaxis()->GetXmin();
 	      maxY=hInput->GetYaxis()->GetXmax();
-	    } 
-	    if(scale==1){
+	    }
+	    if(scale==1) {
 	      hInput->SetAxisRange(minX,maxX,"X");
 	      hInput->SetAxisRange(minY,maxY,"Y");
 	    }
@@ -1275,21 +1283,24 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	  hProj=(TH1F*)gROOT->FindObject(hname.Data());
 	  if(hProj->GetEntries()>0) {
 	    pno++;
-	    if(maxX==minX){
+	    if(maxX==minX) {
 	      minX=hProj->GetXaxis()->GetXmin();
 	      maxX=hProj->GetXaxis()->GetXmax();
-	      if(maxY==minY)
-		scale=0;
+	      if(maxY==minY) {//show maximum range by default
+		maxY=ymax*1.05;
+		minY=ymin;
+	      }
 	    }
 	    if((minY==0)&&(log))
 	      minY=0.1;
-	    if(scale==1){
+	    if(scale==1) {
 	      hProj->SetAxisRange(minX,maxX,"X");
 	      hProj->SetAxisRange(minY,maxY,"Y");
 	    }
 	    else{
 	      hProj->SetAxisRange(-1,-1,"X");
 	      hProj->GetXaxis()->UnZoom();
+	      hProj->SetAxisRange(minY,maxY,"Y");
 	    }
 	    if(log)
 	      pOutput->SetLogy();  
