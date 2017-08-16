@@ -2478,7 +2478,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
 
 TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
 
-void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="W", Bool_t estimate=kTRUE) {
+void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="", Bool_t estimate=kTRUE) {
   emg->SetParNames("Constant","Mean","Sigma","Tau");
   if(!(gROOT->FindObject(histname))) {
     printf("Histogram %s not found!\n",histname);
@@ -2502,13 +2502,19 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   printf("Gaussian parameters are:\n");
   printf("      Mean \t  %7.5e\n",mean);
   printf("      Sigma\t  %7.5e\n",sigma);
-  g1 = new TF1("m1","gaus",xmin,xmax);
+  g1 = new TF1("g1","gaus",xmin,xmax);
   g1->SetLineColor(4);
   g1->SetLineStyle(4);
   g1->FixParameter(0,emg->GetParameter(0));
+  //g1->FixParameter(0,emg->GetMaximum());
   g1->FixParameter(1,mean);
   g1->FixParameter(2,sigma);
   g1->Draw("same");
+  g2 = new TF1("g2","gaus",xmin,xmax);
+  g2->SetLineColor(3);
+  g2->SetLineStyle(4);
+  //g2->FixParameter(1,emg->GetMaximumX());
+  hist1->Fit("g2","+","",xmin,xmax);
 }
 
 void emgfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W") {
@@ -2527,6 +2533,7 @@ void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma
   
 }
 
+Float_t mgain;
 void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Float_t center=1, Float_t wide=.2, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
   Float_t  start=center-wide/2;
   Float_t stop=center+wide/2;
@@ -2540,29 +2547,40 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   printf("size is %d\n",size);
   Float_t gain[size];
   Float_t width[size];
+  Float_t height[size];
 
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
+  if(!((TCanvas *) gROOT->FindObject("cFit4"))) {
+    mkCanvas2("cFit4","cFit4");
+    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);
+  }
+  cFit4->Clear();
   
   for (Int_t i=0; i<size; i++){
     gain[i]=start+i*delta;
     printf("gain = %f\n",gain[i]);
     printf("plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
+    cFit->cd();
     tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
     htemp->GetXaxis()->UnZoom();
     cFit->Update();
-    emgfitcp(histname,-1,40);
-    width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
-    //width[i]=emg->GetParameter(2);//sig
-    //width[i]=emg->GetParameter(0);//sig
-    printf("width = %f\n",width[i]);
-    cFit->Update();
+    
+     cFit4->cd();
+     emgfitcp(histname,-1,40);
+     width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+     //width[i]=emg->GetParameter(2);//sig
+     //width[i]=emg->GetParameter(0);//sig  
+     height[i]=emg->GetMaximum();
+     printf("width = %f\n",width[i]);
+     printf("gwidth = %f\n", g2->GetParameter(2));
+     cFit4->Update();
   }
 
-if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
+  if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
     mkCanvas2("cFit2","cFit2");
-    cFit2->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);      
+    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY()-22);      
   }
   cFit2->Clear();
 
@@ -2581,9 +2599,115 @@ if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
   a=pol2->GetParameter(2);//"a"
   
   cp=(-b/(2*a)); //critical point
-  printf("Fit has critical point = %7.3f\n",cp);  
-
+  printf("Fit has critical point = %7.4f\n",cp);
   
+  if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
+    mkCanvas2("cFit3","cFit3");
+    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY()-22);      
+  }
+  cFit3->Clear();
+  
+  if(gROOT->FindObject("gFit2"))gFit2->Delete();//added, moved
+  gFit2 = new TGraph(size,gain,height);
+  gFit2->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit2->GetHistogram()->GetYaxis()->SetTitle("Height");
+  gFit2->Draw("AP*");
+  gFit2->Fit("pol2","ROB");
+
+  b=pol2->GetParameter(1);//"b"
+  a=pol2->GetParameter(2);//"a"
+  
+  cp=(-b/(2*a)); //critical point
+  printf("Fit has critical point = %7.4f\n",cp);
+  mgain=cp;
+}
+
+Float_t moffset;
+void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", Float_t center=270,
+		Float_t wide=5, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
+  Float_t start=center-wide/2;
+  Float_t stop=center+wide/2;
+  TTree *tree1=(TTree*) gROOT->FindObject(tree);
+  printf("tree is %s with %d branches\n",tree1->GetName(),tree1->GetNbranches());
+  Float_t delta=(stop-start)/steps;
+  printf("step size is %f\n",delta);
+  steps++;
+  printf("size is %d\n",steps);
+  const int size=steps;
+  printf("size is %d\n",size);
+  Float_t offset[size];
+  Float_t width[size];
+  Float_t height[size];
+
+  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
+  cFit->Clear();
+  if(!((TCanvas *) gROOT->FindObject("cFit4"))) {
+    mkCanvas2("cFit4","cFit4");
+    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);
+  }
+  cFit4->Clear();
+  
+  for (Int_t i=0; i<size; i++){
+    offset[i]=start+i*delta;
+    printf("gain = %f\n",offset[i]);
+    printf("plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
+    cFit->cd();
+    tree1->Draw(Form("fmod(%s*%f-%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
+    TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
+    htemp->GetXaxis()->UnZoom();
+    cFit->Update();
+
+    cFit4->cd();
+    emgfitcp(histname,-1,40);
+    width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+    height[i]=emg->GetMaximum();
+    printf("width = %f\n",width[i]);
+    printf("gwidth = %f\n", g2->GetParameter(2));
+    cFit4->Update();
+  }
+
+if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
+    mkCanvas2("cFit2","cFit2");
+    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY()-22);      
+  }
+  cFit2->Clear();
+
+  if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
+  gFit = new TGraph(size,offset,width);
+  gFit->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit->GetHistogram()->GetYaxis()->SetTitle("Width");
+  gFit->Draw("AP*");
+  gFit->Fit("pol2","ROB");
+
+  Float_t cp=0 ;  
+  Float_t a=0,b=0,c=0;  
+  
+  c=pol2->GetParameter(0);//"c"
+  b=pol2->GetParameter(1);//"b"
+  a=pol2->GetParameter(2);//"a"
+  
+  cp=(-b/(2*a)); //critical point
+  printf("Fit has critical point = %7.4f\n",cp);
+
+  if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
+    mkCanvas2("cFit3","cFit3");
+    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY()-22);      
+  }
+  cFit3->Clear();
+  
+  if(gROOT->FindObject("gFit2"))gFit2->Delete();//added, moved
+  gFit2 = new TGraph(size,offset,height);
+  gFit2->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit2->GetHistogram()->GetYaxis()->SetTitle("Height");
+  gFit2->Draw("AP*");
+  gFit2->Fit("pol2","ROB");
+
+  b=pol2->GetParameter(1);//"b"
+  a=pol2->GetParameter(2);//"a"
+  
+  cp=(-b/(2*a)); //critical point
+  printf("Fit has critical point = %7.4f\n",cp);
+  moffset=cp;
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
