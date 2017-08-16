@@ -5847,7 +5847,8 @@ void fluorine() {
 }
 
 void fl2() {
-  MainTree->Draw("fmod((MCPTime-RFTime)+1005,271.6515)>>hist1(272,0,272)","MCPTime>0 && RFTime>0");
+  //MainTree->Draw("fmod((MCPTime-RFTime)+1005,271.6515)>>hist1(272,0,272)","MCPTime>0 && RFTime>0");
+  MainTree->Draw("fmod((MCPTime*1.0149-RFTime)+275.5882*4,275.5882)>>hist1(275,0,275)","MCPTime>0 && RFTime>0");
 
   //hist1->SetAxisRange(0,272,"X");
   hist1->SetXTitle("TOF (arb. unit)");
