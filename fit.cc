@@ -2478,6 +2478,11 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
 
 TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
 
+TF1 *laplace = new TF1("laplace","[0]/(2*[2])*exp(-TMath::Abs(x-[1])/[2])");
+
+laplace->SetParNames("Constant","Mean","Scale");
+laplace->SetParLimits(2,1e-3,1e5);
+
 void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="", Bool_t estimate=kTRUE) {
   emg->SetParNames("Constant","Mean","Sigma","Tau");
   if(!(gROOT->FindObject(histname))) {
@@ -2533,7 +2538,7 @@ void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma
   
 }
 
-Float_t mgain;
+Float_t mgain=1.0;
 void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Float_t center=1, Float_t wide=.2, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
   Float_t  start=center-wide/2;
   Float_t stop=center+wide/2;
@@ -2548,7 +2553,8 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   Float_t gain[size];
   Float_t width[size];
   Float_t height[size];
-
+  Float_t chi[3];
+  
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
   if(!((TCanvas *) gROOT->FindObject("cFit4"))) {
@@ -2559,8 +2565,9 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   
   for (Int_t i=0; i<size; i++){
     gain[i]=start+i*delta;
-    printf("gain = %f\n",gain[i]);
-    printf("plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
+    printf("Step %d of %d:\n",i+1,size);
+    printf(" gain = %f\n",gain[i]);
+    printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
     cFit->cd();
     tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
@@ -2573,8 +2580,8 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
      //width[i]=emg->GetParameter(2);//sig
      //width[i]=emg->GetParameter(0);//sig  
      height[i]=emg->GetMaximum();
-     printf("width = %f\n",width[i]);
-     printf("gwidth = %f\n", g2->GetParameter(2));
+     printf(" width = %f\n",width[i]);
+     printf(" gwidth = %f\n", g2->GetParameter(2));
      cFit4->Update();
   }
 
@@ -2600,6 +2607,8 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   
   cp=(-b/(2*a)); //critical point
   printf("Fit has critical point = %7.4f\n",cp);
+  chi[0]=pol2->GetChisquare();
+  mgain=cp;
   
   if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
     mkCanvas2("cFit3","cFit3");
@@ -2619,7 +2628,35 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   
   cp=(-b/(2*a)); //critical point
   printf("Fit has critical point = %7.4f\n",cp);
+  chi[1]=pol2->GetChisquare();
+  if(chi[1]<chi[0]) {
+    printf("Peak hight fit has better chi squared than peak width fit\n");
+  }
   mgain=cp;
+  
+  laplace->SetParameter(0,height[steps/2]);
+  laplace->SetParameter(1,center);
+  laplace->SetParameter(2,1);
+  laplace->SetLineColor(3);
+  gFit2->Fit("laplace","+","",start,stop);
+  printf("Center of Laplace fit =  %f\n",laplace->GetParameter(1));
+  chi[2]=laplace->GetChisquare();
+  
+  if(TMath::IsNaN(cp)) {
+    printf("Polynomial fit invalid. Range is probably too wide. Use Laplace fit");
+    mgain=laplace->GetParameter(1);
+  }
+
+  if(chi[2]<chi[1]) {
+    printf("Laplace fit of peak height gives best chi squared\n");
+    mgain=laplace->GetParameter(1);
+  }
+  else
+    printf("Using previous gain\n.");
+  printf("Optimum gain is %f\n",mgain);
+
+  cFit->cd();
+  tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,mgain,var2,histname,bins),condition);
 }
 
 Float_t moffset;
@@ -2632,7 +2669,7 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
   Float_t delta=(stop-start)/steps;
   printf("step size is %f\n",delta);
   steps++;
-  printf("size is %d\n",steps);
+  //printf("size is %d\n",steps);
   const int size=steps;
   printf("size is %d\n",size);
   Float_t offset[size];
@@ -2649,8 +2686,9 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
   
   for (Int_t i=0; i<size; i++){
     offset[i]=start+i*delta;
-    printf("gain = %f\n",offset[i]);
-    printf("plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
+    printf("Step %d of %d:\n",i+1,size);
+    printf(" gain = %f\n",offset[i]);
+    printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
     cFit->cd();
     tree1->Draw(Form("fmod(%s*%f-%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
@@ -2661,8 +2699,8 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
     emgfitcp(histname,-1,40);
     width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
     height[i]=emg->GetMaximum();
-    printf("width = %f\n",width[i]);
-    printf("gwidth = %f\n", g2->GetParameter(2));
+    printf(" width = %f\n",width[i]);
+    printf(" gwidth = %f\n", g2->GetParameter(2));
     cFit4->Update();
   }
 
