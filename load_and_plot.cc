@@ -4809,7 +4809,7 @@ void fpplot()
   leg->Draw();  
 }
 
-void Gaus1(double mean1, double sigma1,int counts=10000)
+void Gaus1(double mean1=0, double sigma1=1,int counts=10000)
 {//extension to Gaus(), creates a 1D histogram of a Gaussian distribution with given mean and width
   gRandom = new TRandom3();
   gRandom->SetSeed(0);
@@ -5814,7 +5814,8 @@ void fittest(TString fun="pol2",double sigma1=1)
 }
 
 ///////////
-void fluorine() {
+void fluorine()
+{
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   //cFit->SetLogz();  
   TH2F * hist=(TH2F *) gROOT->FindObject("E_de_corrected");
@@ -5846,7 +5847,8 @@ void fluorine() {
   cFit->SaveAs("E_dEg.png");
 }
 
-void fl2() {
+void fl2()
+{
   //MainTree->Draw("fmod((MCPTime-RFTime)+1005,271.6515)>>hist1(272,0,272)","MCPTime>0 && RFTime>0");
   MainTree->Draw("fmod((MCPTime*1.0149-RFTime)+275.5882*4,275.5882)>>hist1(275,0,275)","MCPTime>0 && RFTime>0");
 
