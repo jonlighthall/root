@@ -2510,16 +2510,23 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   g1 = new TF1("g1","gaus",xmin,xmax);
   g1->SetLineColor(4);
   g1->SetLineStyle(4);
-  g1->FixParameter(0,emg->GetParameter(0));
+  //g1->FixParameter(0,emg->GetParameter(0));
   //g1->FixParameter(0,emg->GetMaximum());
   g1->FixParameter(1,mean);
   g1->FixParameter(2,sigma);
+  hist1->Fit("g1","+","",xmin,xmax);
   g1->Draw("same");
   g2 = new TF1("g2","gaus",xmin,xmax);
   g2->SetLineColor(3);
   g2->SetLineStyle(4);
   //g2->FixParameter(1,emg->GetMaximumX());
   hist1->Fit("g2","+","",xmin,xmax);
+
+  leg = new TLegend(0.1,0.8,0.3,0.9);
+  leg->AddEntry(emg,"Exponentially-modified Gaussian","l");
+  leg->AddEntry(g1,"constrained Gaussian","l");
+  leg->AddEntry(g2,"unconstrained Gaussian, ROB=0.95","l");   
+  leg->Draw();
 }
 
 void emgfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W") {
@@ -2539,7 +2546,7 @@ void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma
 }
 
 Float_t mgain=1.0;
-void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Float_t center=1, Float_t wide=.2, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
+void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Float_t center=1, Float_t wide=.1, Int_t steps=10, Int_t bins=10000, Char_t *histname="htemp") {
   Float_t  start=center-wide/2;
   Float_t stop=center+wide/2;
   TTree *tree1=(TTree*) gROOT->FindObject(tree);
@@ -2569,7 +2576,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
     printf(" gain = %f\n",gain[i]);
     printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
     cFit->cd();
-    tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
+    tree1->Draw(Form("%s-%f*%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
     htemp->GetXaxis()->UnZoom();
     cFit->Update();
@@ -2690,13 +2697,13 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
     printf(" gain = %f\n",offset[i]);
     printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
     cFit->cd();
-    tree1->Draw(Form("fmod(%s*%f-%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
+    tree1->Draw(Form("fmod(%s-%f*%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
     htemp->GetXaxis()->UnZoom();
     cFit->Update();
 
     cFit4->cd();
-    emgfitcp(histname,-1,40);
+    emgfitcp(histname,-1,center/10,center/10);
     width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
     height[i]=emg->GetMaximum();
     printf(" width = %f\n",width[i]);
@@ -4209,6 +4216,9 @@ void readandfit(Char_t *filename="",Int_t setpad=0) {
     if(npeaks==nlist) {
       if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
       gFit = new TGraph(npeaks,energies,positions);
+      TString title=hProj->GetTitle();
+      title+=" Fit";
+      gFit->SetTitle(title);
       gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from calibration file");
       gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from peaks");
       
@@ -4243,7 +4253,7 @@ void readandfit(Char_t *filename="",Int_t setpad=0) {
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
-      for (Int_t i=0; i<npeaks; i++){
+      for (Int_t i=0; i<npeaks; i++) {
 	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
       }  
      
@@ -4312,6 +4322,9 @@ void readandfit(Char_t *filename="",Int_t setpad=0) {
         
       if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
       gFit = new TGraph(npeaks,positions,energies);
+      TString title=hProj->GetTitle();
+      title+=" Fit";
+      gFit->SetTitle(title);
       gFit->GetHistogram()->GetYaxis()->SetTitle("Positions from calibration file");
       gFit->GetHistogram()->GetXaxis()->SetTitle("Positions from peaks");
     
