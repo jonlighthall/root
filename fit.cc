@@ -3976,7 +3976,7 @@ void gfindpeaks()
     printf(" %6d |",gint);
     printf(" %7.3g \n",gaus->GetParameter(2));
     sig_av+=gaus->GetParameter(2);
-    pm->SetPoint(i+1,gaus->GetParameter(1),gaus->GetParameter(0));
+    pm->SetPoint(i,gaus->GetParameter(1),gaus->GetParameter(0));
     for (Int_t j=0; j<3; j++) {//save fit parameters for deconvolution
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
