@@ -3875,10 +3875,10 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   hProj=(TH1F *) gROOT->FindObject(hname.Data());//hInput changed to hProj from here on.  
   hProj->Draw();
 
-  findpeaks(resolution,sigma,threshold,option);
-  gfindpeaks(); 
-  decon(1,bfixed);
-  readandfit(filename,setpad);
+  findpeaks(histin,resolution,sigma,threshold,option);
+  gfindpeaks(histin); 
+  decon(histin,1,bfixed);
+  readandfit(histin,filename,setpad);
 }
 
 void peakfiti(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
@@ -3898,14 +3898,15 @@ void peakfiti(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   hProj=(TH1F *) gROOT->FindObject(hname.Data());//hInput changed to hProj from here on.  
   hProj->Draw();
 
-  findpeaks(resolution,sigma,threshold,option);
-  gfindpeaks(); 
-  decon(1,bfixed);
-  readandfiti(filename,setpad);
+  findpeaks(histin,resolution,sigma,threshold,option);
+  gfindpeaks(histin); 
+  decon(histin,1,bfixed);
+  readandfiti(histin,filename,setpad);
 }
 
-void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
-{//assumes hProj is defined, npeaks
+void findpeaks(TString hname, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
+{//assumes npeaks is defined
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
   TSpectrum *spectrum=new TSpectrum();
   printf("Step 1: Searching for peaks... ");
   spectrum->SetResolution(resolution);
@@ -3957,8 +3958,9 @@ void findpeaks(Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, 
 
 Float_t gparameters[300];
 
-void gfindpeaks()
-{//assumes hname, positions[], npeaks, hProj are set
+void gfindpeaks(TString hname)
+{//assumes positions[], npeaks are set
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
   Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a non-overlapping gaussian...\n");
   printf("                         peak  | gaus     | diff     | 1D int | width \n");
@@ -3985,8 +3987,9 @@ void gfindpeaks()
   pm->Draw("same");
 }
 
-void decon(Int_t padno=1,Int_t bfixed=kFALSE)
+void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
 {//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
   const int npar=npeaks*3;
   Double_t par[npar];
   Float_t gfitwide=min_space;
@@ -4177,7 +4180,9 @@ void readandruth(Int_t detno=0, Int_t colno=0)
 
 TGraph *gFit = 0;
 
-void readandfit(Char_t *filename="",Int_t setpad=0) {
+void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
+{
+  hProj=(TH1F *) gROOT->FindObject(hname.Data());
   Float_t energies[100];
   Float_t slope,offset,width;
   Float_t ein;
@@ -4404,10 +4409,10 @@ void readandfit(Char_t *filename="",Int_t setpad=0) {
     hProj=(TH1F *) gROOT->FindObject(hname.Data());
     hProj->Draw(); 
 
-    findpeaks(resolution,sigma,threshold,option);
-    gfindpeaks();  
-    decon(2);
-    readandfit(filename,setpad);
+    findpeaks(hname,resolution,sigma,threshold,option);
+    gfindpeaks(hname);  
+    decon(hname,2);
+    readandfit(hname,filename,setpad);
   }
 
   void peakfity(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
@@ -4432,10 +4437,10 @@ void readandfit(Char_t *filename="",Int_t setpad=0) {
     hProj=(TH1F *) gROOT->FindObject(hname.Data());
     hProj->Draw(); 
   
-    findpeaks(resolution,sigma,threshold,option);
-    gfindpeaks();
-    decon(2);
-    readandfit(filename,setpad);
+    findpeaks(hname,resolution,sigma,threshold,option);
+    gfindpeaks(hname);
+    decon(hname,2);
+    readandfit(hname,filename,setpad);
   }
 
   //-------------------------------------------------------------------------------------
