@@ -3944,7 +3944,8 @@ void findpeaks(TString hname, Float_t resolution=2, Double_t sigma=3, Double_t t
     for(Int_t i=0;i<npeaks;i++){
       positions[i]=sorted[i];  
     }
-  }//end version IF 
+  }//end version IF
+  if(npeaks>0) {
   min_space=sorted[npeaks-1]-sorted[0];
   for (Int_t i=0; i<(npeaks-1); i++){//find min. peak spacing
     //printf("%f - %f = %f, min %f\n",positions[i+1], positions[i],positions[i+1]-positions[i],min_space);
@@ -3952,7 +3953,7 @@ void findpeaks(TString hname, Float_t resolution=2, Double_t sigma=3, Double_t t
       min_space=positions[i+1]-positions[i];
   }
   printf(" The minimum spacing between adjacent peaks is %f\n",min_space);
-  
+  }
   //delete spectrum;
 }
 
@@ -4067,7 +4068,7 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
       functions[i]->SetParameter(j,par[j+3*i]);
     }
 
-    if(fabs(par[1+3*i]-positions[i])>min_space)
+    if((npeaks>1)&&(fabs(par[1+3*i]-positions[i])>min_space))
       printf("**Probable error on peak %d!**\n",i);
     
     printf("  Peak %2d  centered at %7.3f | ",i,par[1+3*i]);
