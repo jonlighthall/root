@@ -4541,6 +4541,43 @@ void Gaus(double mean1, double sigma1, double mean2, double sigma2)
   //hist->SaveAs("fit.C");
 }
 
+void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=10000)
+{ //creates a 1D histogram of a 2 Gaussian distribution with given means and widths
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+
+  hname="data"; 
+  if ((TH1F *) gROOT->FindObject(hname)) {
+    gROOT->FindObject(hname)->Delete();  
+    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
+  }
+
+  Double_t lmean=mean1;
+  Double_t hmean=mean2;
+  Double_t bsigma=sigma1;
+
+  if(mean2<mean1) {
+    lmean=mean2;
+    hmean=mean1;
+  }
+  if(sigma2>sigma1)
+    bsigma=sigma2;
+  
+  TH1F * hist = new TH1F(hname, "random Gaussian distributions", 100, lmean-5*bsigma, hmean+5*bsigma);
+
+  for (int i = 0; i < counts; ++i) {
+    hist->Fill(gRandom->Gaus(mean1, sigma1));
+    hist->Fill(gRandom->Gaus(mean2, sigma2));
+  }
+
+  if(!((TCanvas *) gROOT->FindObject("c1")))
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+
+  hist->Draw();
+}
+
+
+
 void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0,Int_t bins=1000)
 {//creates a 2D histogram of a Gaussian distribution with given means and widths
 
