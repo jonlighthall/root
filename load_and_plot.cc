@@ -4519,7 +4519,7 @@ void printruns(Int_t run_start=480, Int_t run_stop=480, Bool_t plots=kFALSE)
 //-----------------------------------------------------------------------------------------------
 //macros for the EMMA IC-------------------------------------------------------------------------
 
-void Gaus(double mean1, double sigma1, double mean2, double sigma2)
+void Gaus(double mean1=50, double sigma1=15, double mean2=30, double sigma2=5)
 {//developed by Lily
  //creates a 2D histogram of a Gaussian distribution with given means and widths
   gROOT->SetStyle("Plain");
@@ -4529,28 +4529,30 @@ void Gaus(double mean1, double sigma1, double mean2, double sigma2)
 
   gRandom = new TRandom3();
 
-  TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+  hname="data";
+  if((TH2F *) gROOT->FindObject(hname.Data())) gROOT->FindObject(hname.Data())->Delete();  
+  TH2F * hist = new TH2F(hname, "hist", 100, 0.0, 100.0,100,0.0,100.0);
 
   for (int i = 0; i < 10000; ++i)
     hist->Fill(gRandom->Gaus(mean1, sigma1),gRandom->Gaus(mean2, sigma2));
 
-  TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
+  if(!((TCanvas *) gROOT->FindObject("c1")))
+    TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
 
   // hist->Fit("gaus");
-  hist->Draw();
+  hist->Draw("col");
   //hist->SaveAs("fit.C");
+
+  TF2 *f2 = new TF2("f2","[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])",0,100,0,100);
+  f2->SetParameters(1,mean1,sigma1,mean2,sigma2);
+  
+  hist->Fit(f2);
 }
 
 void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=10000)
 { //creates a 1D histogram of a 2 Gaussian distribution with given means and widths
   gRandom = new TRandom3();
   gRandom->SetSeed(0);
-
-  hname="data"; 
-  if ((TH1F *) gROOT->FindObject(hname)) {
-    gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }
 
   Double_t lmean=mean1;
   Double_t hmean=mean2;
@@ -4562,7 +4564,9 @@ void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=
   }
   if(sigma2>sigma1)
     bsigma=sigma2;
-  
+
+  hname="data";
+  if((TH1F *) gROOT->FindObject(hname.Data())) gROOT->FindObject(hname.Data())->Delete();  
   TH1F * hist = new TH1F(hname, "random Gaussian distributions", 100, lmean-5*bsigma, hmean+5*bsigma);
 
   for (int i = 0; i < counts; ++i) {
@@ -4572,11 +4576,10 @@ void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=
 
   if(!((TCanvas *) gROOT->FindObject("c1")))
     TCanvas * c1 = new TCanvas ("c1", "fitted data", 5, 5, 800, 600);
-
+  c1->cd();
+  
   hist->Draw();
 }
-
-
 
 void mkgaus2d(Char_t *histin,Int_t points=10000,double mean1, double sigma1, double mean2, double sigma2, Int_t color=2, Float_t blur=0.0,Int_t bins=1000)
 {//creates a 2D histogram of a Gaussian distribution with given means and widths
@@ -4640,7 +4643,9 @@ void smearedGaus(double mean1, double sigma1, double mean2, double sigma2, doubl
 
   gRandom = new TRandom3();
 
-  TH2F * hist = new TH2F("data", "hist", 100, 0.0, 100.0,100,0.0,100.0);
+  hname="data";
+  if((TH2F *) gROOT->FindObject(hname.Data())) gROOT->FindObject(hname.Data())->Delete();  
+  TH2F * hist = new TH2F(hname, "hist", 100, 0.0, 100.0,100,0.0,100.0);
 
   for (int i = 0; i < 10000; ++i)
     hist->Fill(gRandom->Gaus(mean1, sigma1)+gRandom->Gaus(0,2.3548*smear),gRandom->Gaus(mean2, sigma2)+gRandom->Gaus(0,2.3548*smear));
@@ -4852,11 +4857,7 @@ void Gaus1(double mean1=0, double sigma1=1,int counts=10000)
   gRandom->SetSeed(0);
   
   hname="data"; 
-  if ((TH1F *) gROOT->FindObject(hname)) {
-    gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }
-
+  if((TH1F *) gROOT->FindObject(hname)) gROOT->FindObject(hname)->Delete();  
   TH1F * hist = new TH1F(hname, "random Gaussian distribution", 100, mean1-5*sigma1, mean1+5*sigma1);
 
   for (int i = 0; i < counts; ++i)
@@ -4881,10 +4882,7 @@ void Gaus1b(double mean1, double sigma1, int bins, int width=5,int counts=1000)
   printf("Calculated bin width is %f\n",bwid);
 
   hname="data"; 
-  if ((TH1F *) gROOT->FindObject(hname)) {
-    gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }
+  if((TH1F *) gROOT->FindObject(hname)) gROOT->FindObject(hname)->Delete();  
   TH1F * hist = new TH1F(hname, "random Gausssian w/ 2N+1 bins", bins, xmin, xmax);
   printf("    Actual bin width is %f\n",hist->GetBinWidth(1));
   
@@ -4928,11 +4926,7 @@ void Gaus1bw(double mean1, double sigma1, double bwid, int width=5,int counts=10
   printf("%d bins to cover +/-%.1f sigma\n",bins,width);
 
   hname="data"; 
-  if ((TH1F *) gROOT->FindObject(hname)) {
-    gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }
-  
+  if((TH1F *) gROOT->FindObject(hname)) gROOT->FindObject(hname)->Delete();
   TH1F * hist = new TH1F(hname, "random Gaussian w/ fixed bin width", bins, xmin, xmax);
 
   printf("bin width is %f\n",hist->GetBinWidth(1));
@@ -4980,11 +4974,7 @@ void uni1bw(double mean1, double sigma1, double bwid, int width=5,int counts=100
   printf("%d bins to cover +/-%.1f * %.1f\n",bins,width,sigma1);
 
   hname="data"; 
-  if ((TH1F *) gROOT->FindObject(hname)) {
-    gROOT->FindObject(hname)->Delete();  
-    printf("Histogram \"%s\" already exists. Deleting old histogram.\n",hname.Data());
-  }
-  
+  if((TH1F *) gROOT->FindObject(hname)) gROOT->FindObject(hname)->Delete();  
   TH1F * hist = new TH1F(hname, "Uniform random w/ fixed bin width", bins, xmin, xmax);
 
   printf("bin width is %f\n",hist->GetBinWidth(1));
