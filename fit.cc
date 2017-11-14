@@ -1304,7 +1304,10 @@ void oplotall(Char_t *histin,Char_t *suffix="",Bool_t log=0,Float_t minX=0,Float
 	    }
 	    if(log)
 	      pOutput->SetLogy();  
-	    hProj->SetLineColor(i+1);
+	    if(i>8)//otherwise line color gets set to white
+	      hProj->SetLineColor(i+2);
+	    else
+	      hProj->SetLineColor(i+1);
 	    if(i==0)
 	      hProj->Draw("");
 	    else
@@ -5283,24 +5286,29 @@ File \"%s\" not written.\n",filename,size,errorline,output);
     }
   }
 
-  void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
-  {//extension to fillhist0() from util.cc, includes weight and reset option.  
-    //Fills a 1-dimensional histogram from a text file.
-    //File is to be formatted as x-value, weight.
-    Float_t x,y,w;
-    TH1F *hist1=(TH1F *) gROOT->FindObject(histname);
-    if (reset){
+void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
+{ //Extension to fillhist0() from util.cc, reads in weight and includes reset option.  
+  //Fills a 1-dimensional histogram from a text file.
+  //File is to be formatted as x-value, weight.
+  Float_t x,w;
+  TH1F *hist1;
+  if((TH1F *) gROOT->FindObject(histname)) {
+    hist1=(TH1F *) gROOT->FindObject(histname);
+    if(reset){
       printf("Resetting histogram \"%s\"\n",histname);
       hist1->Reset();
     }
     ifstream infile(filename);
+    //if(infile.is_open()) {
     while (infile >> x) {
-      //infile >> y;
       infile >> w;
       hist1->Fill(x,w);
     }
     hist1->Draw();
+    //} else cout << "Cannot open file " << filename <<endl;
   }
+  else printf("Histogram \"%s\" not found!\n",hname.Data());
+}
 
   void fillgraph(Char_t *filename, Char_t *graphname, Int_t npts, Int_t ierr=0)
   {//copied form util.cc
