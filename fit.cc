@@ -2393,14 +2393,13 @@ void gfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W
 void getdet(Char_t *histname)
 {
   hname=histname;
-  for(Int_t i=0;i<hname.Length();i++){//loop added by Jack
+  for(Int_t i=0;i<hname.Length();i++) {//loop added by Jack
     TString tempst="";
     tempst=hname(i,hname.Length()-i);
-    if(tempst.IsFloat())
-      {
-	det=tempst.Atoi();
-	break;
-      }
+    if(tempst.IsFloat()) {
+      det=tempst.Atoi();
+      break;
+    }
   }
   //printf("Detector number is %d from histogram title\n",det);
 }
@@ -3864,9 +3863,10 @@ Float_t min_space=25; //minimum space between adjacent peaks
 void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
 	     Double_t threshold=0.05, Char_t *option="", Int_t bfixed=kFALSE)
 {//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-  getdet(histin);
-  cFit->Clear();
+  if((TH1F *) gROOT->FindObject(histin)) {
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+    getdet(histin);
+    cFit->Clear();
  
   Int_t setpad=0;//set target canvas pad for peak search
   if(filename!="") 
@@ -3878,18 +3878,21 @@ void peakfit(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t
   hProj=(TH1F *) gROOT->FindObject(hname.Data());//hInput changed to hProj from here on.  
   hProj->Draw();
 
-  findpeaks(histin,resolution,sigma,threshold,option);
-  gfindpeaks(histin); 
-  decon(histin,1,bfixed);
-  readandfit(histin,filename,setpad);
+    findpeaks(histin,resolution,sigma,threshold,option);
+    gfindpeaks(histin); 
+    decon(histin,1,bfixed);
+    readandfit(histin,filename,setpad);
+  }
+  else printf("Histogram \"%s\" not found!\n",histin);
 }
 
 void peakfiti(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, 
 	      Double_t threshold=0.05, Char_t *option="", Int_t bfixed=kFALSE)
-{//Program by AHW.  Modified to run in fit.cc and in "modern" version of ROOT.
-  if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-  getdet(histin);
-  cFit->Clear();
+{//provides inverse fit from peakfit
+  if((TH1F *) gROOT->FindObject(histin)) {
+    if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
+    getdet(histin);
+    cFit->Clear();
  
   Int_t setpad=0;//set target canvas pad for peak search
   if(filename!="") 
@@ -3901,10 +3904,12 @@ void peakfiti(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_
   hProj=(TH1F *) gROOT->FindObject(hname.Data());//hInput changed to hProj from here on.  
   hProj->Draw();
 
-  findpeaks(histin,resolution,sigma,threshold,option);
-  gfindpeaks(histin); 
-  decon(histin,1,bfixed);
-  readandfiti(histin,filename,setpad);
+    findpeaks(histin,resolution,sigma,threshold,option);
+    gfindpeaks(histin); 
+    decon(histin,1,bfixed);
+    readandfiti(histin,filename,setpad);
+  }
+  else printf("Histogram \"%s\" not found!\n",histin);
 }
 
 void findpeaks(TString hname, Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
@@ -3991,6 +3996,8 @@ void gfindpeaks(TString hname)
   pm->Draw("same");
 }
 
+Float_t positionsg[100]={0};
+
 void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
 {//deconvolutes gaussian peaks in a spectrum; assumes hProj is defined with the position of peaks stored in positions[] array
   hProj=(TH1F *) gROOT->FindObject(hname.Data());
@@ -4068,6 +4075,8 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
     functions[i] = new TF1(fname,"gaus",gfitmin,gfitmax);
     for (Int_t j=0;j<3;j++) {
       par[j+3*i]=total->GetParameter(j+3*i);
+      if(j==1)
+	positionsg[i]=total->GetParameter(j+3*i);
       functions[i]->SetParameter(j,par[j+3*i]);
     }
 
@@ -4185,7 +4194,8 @@ void readandruth(Int_t detno=0, Int_t colno=0)
 TGraph *gFit = 0;
 
 void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
-{
+{ //reads in calibration file (energy) and fits to data (channels)
+  //returns fit as channels per energy (slope) and channel (offset)
   hProj=(TH1F *) gROOT->FindObject(hname.Data());
   Float_t energies[100];
   Float_t slope,offset,width;
@@ -4224,7 +4234,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     cFit->cd(setpad+1);
     if(npeaks==nlist) {
       if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
-      gFit = new TGraph(npeaks,energies,positions);
+      gFit = new TGraph(npeaks,energies,positionsg);
       TString title=hProj->GetTitle();
       title+=" Fit";
       gFit->SetTitle(title);
@@ -4250,8 +4260,8 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       leg->Draw();
       cFit->Update();
     
-      slope=fit->GetParameter(1);
-      offset=fit->GetParameter(0);
+      slope=fit3->GetParameter(1);
+      offset=fit3->GetParameter(0);
       //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
       //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
       //width=hProj->GetFunction("gaus")->GetParameter(2);
@@ -4263,7 +4273,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
       for (Int_t i=0; i<npeaks; i++) {
-	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],(positionsg[i]-offset)/slope,((positionsg[i]-offset)/slope)-energies[i]);
       }  
      
       FILE * outfile;
@@ -4274,16 +4284,10 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
       fclose(outfile);
       if(!(filefail)) {
-	outfile=fopen("temp.rob.lst","w");
-	fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
-	fclose(outfile);
-	outfile=fopen("temp_inv.rob.lst","w");
-	fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
-	fclose(outfile);
-	outfile=fopen("temp_off.rob.lst","w");
-	fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
-	fclose(outfile);
-
+	outfile=fopen("peakfit.lst","w");
+	for (Int_t i=0; i<npeaks; i++) {
+	  fprintf(outfile,"%2d\t%f\t%f\n",i,energies[i],positionsg[i]);
+	}  
       }
     }
     else
@@ -4291,8 +4295,10 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
   }
 }
 
-  void readandfiti(Char_t *filename="",Int_t setpad=0)
-  {
+  void readandfiti(TString hname,Char_t *filename="",Int_t setpad=0)
+  { //reads in calibration file (energy) and fits to data (channels); performs inverse fit
+  //returns fit as energy per channel (slope) and energy (offset)
+    hProj=(TH1F *) gROOT->FindObject(hname.Data());
     Float_t energies[100];
     Float_t slope,offset,width;
     Float_t ein;
@@ -4330,7 +4336,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       cFit->cd(setpad+1);
         
       if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
-      gFit = new TGraph(npeaks,positions,energies);
+      gFit = new TGraph(npeaks,positionsg,energies);
       TString title=hProj->GetTitle();
       title+=" Fit";
       gFit->SetTitle(title);
@@ -4356,8 +4362,8 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       leg->Draw();
       cFit->Update();
     
-      slope=fit->GetParameter(1);
-      offset=fit->GetParameter(0);
+      slope=fit3->GetParameter(1);
+      offset=fit3->GetParameter(0);
       //hProj->Fit("gaus","QW","",positions[npeaks-1]-min_space,positions[npeaks-1]+min_space);
       //hProj->Fit("gaus","Q","",positions[npeaks-1]-(b-a)/15,positions[npeaks-1]+(b-a)/15);
       //width=hProj->GetFunction("gaus")->GetParameter(2);
@@ -4368,9 +4374,15 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
+      Float_t maxdiff=0;
+      Float_t diff=(positionsg[i]*slope+offset)-energies[i];
       for (Int_t i=0; i<npeaks; i++){
-	printf("  Peak %2d at %f is %f (%f)\n",i,positions[i],(positions[i]-offset)/slope,((positions[i]-offset)/slope)-energies[i]);
+	diff=(positionsg[i]*slope+offset)-energies[i];
+	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],positionsg[i]*slope+offset,diff);
+	if(fabs(diff)>maxdiff) maxdiff=fabs(diff);
+     
       }  
+      printf("Maximum difference after fit is %f\n",maxdiff);
     }
    
     FILE * outfile;
@@ -4380,14 +4392,14 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     outfile=fopen("temp_inv.lst","w");
     fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
     fclose(outfile);
-    outfile=fopen("temp.rob.lst","w");
-    fprintf(outfile,"%g, %g\n",fit3->GetParameter(1),fit3->GetParameter(0));
-    fclose(outfile);
-    outfile=fopen("temp_inv.rob.lst","w");
-    fprintf(outfile,"%g, %g\n",1/fit3->GetParameter(1),-fit3->GetParameter(0)/fit3->GetParameter(1));
-    fclose(outfile);
-    outfile=fopen("temp_off.rob.lst","w");
-    fprintf(outfile,"%9g\t%11g\n",-fit3->GetParameter(0)/fit3->GetParameter(1),1/fit3->GetParameter(1));
+    outfile=fopen("peakfiti.lst","a");
+    fprintf(outfile,"Peaks from histogram %s and calibration file %s\n\n",hname.Data(),filename);
+    fprintf(outfile,"Slope \t Offset\n");
+    fprintf(outfile,"%g, %g\n\n",slope,offset);
+    fprintf(outfile,"Peak \t Center \t Calibration\n");
+    for (Int_t i=0; i<npeaks; i++) {
+      fprintf(outfile,"%2d \t %f \t %f\n",i,positionsg[i],energies[i]);
+    }  
     fclose(outfile);
   }
 
