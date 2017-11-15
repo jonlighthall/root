@@ -4452,19 +4452,13 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
   void bkgfit2(Char_t *histin, Float_t resolution=2, Double_t sigma=3, Double_t threshold=.05, Int_t niter=20, Char_t *option="")
   {//modified to run in fit.cc and automatically copy histin.
     if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();//added
-    if(!((TH1F *) gROOT->FindObject("hPeakFit"))) hFit=new TH1F("hPeakFit","hPeakFit",1000,0,100);  //added
-    hFit=(TH1F *) gROOT->FindObject("hPeakFit");//added
- 
     cFit->Clear();//cFitCanvas renamed to CFit
     cFit->Divide(1,2);
   
-    //  Float_t *positions;//* moved to start to avoid automatic variable warning
     Float_t energies[10];
     Float_t slope,offset,width;
     Float_t ein;
     Int_t nlist=0;
-    float result[2048];
-    Int_t nbins;
     TSpectrum *spectrum=new TSpectrum();
  
     //The non-histogram-declaration lines in the following block were added to copy the input histogram automatically.
@@ -4480,7 +4474,6 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     TString histout=hname.Data();
     TH1F *hRresult=(TH1F *) gROOT->FindObject(hname.Data());
 
-    hFit->Reset();
     cFit->cd(1);
     spectrum->SetResolution(resolution);
     spectrum->Search(hProj,sigma,option,threshold);
@@ -4490,9 +4483,11 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     for (Int_t i=0; i<npeaks; i++){
       cout<<"Peak " <<i<<" found at channel "<<positions[i]<<endl;
     }
-    cFit->cd(1);
+  
     hProj->Draw();
-    nbins=hProj->GetNbinsX();
+    Int_t dummy=hProj->GetNbinsX();
+    const Int_t nbins=dummy;
+    Float_t  result[nbins];
     for (Int_t i=0; i<nbins; i++){
       result[i]=hProj->GetBinContent(i);
     }
