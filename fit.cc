@@ -4375,7 +4375,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
       Float_t maxdiff=0;
-      Float_t diff=(positionsg[i]*slope+offset)-energies[i];
+      Float_t diff;
       for (Int_t i=0; i<npeaks; i++){
 	diff=(positionsg[i]*slope+offset)-energies[i];
 	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],positionsg[i]*slope+offset,diff);
@@ -5321,6 +5321,42 @@ void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
     //} else cout << "Cannot open file " << filename <<endl;
   }
   else printf("Histogram \"%s\" not found!\n",hname.Data());
+}
+
+void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1)
+{ //Extension to fillhist0() from util.cc, reads in weight and includes reset option.  
+  //Fills a 1-dimensional histogram from a text file.
+  //File is to be formatted as (x-value), weight.
+  char X[100];
+  Float_t x;
+  float w;
+  TH1F *hist1;
+  if((TH1F *) gROOT->FindObject(histname)) {
+    hist1=(TH1F *) gROOT->FindObject(histname);
+    if(reset) {
+      printf("Resetting histogram \"%s\"\n",histname);
+      hist1->Reset();
+    }
+    ifstream infile(filename);
+    if(infile.is_open()) {
+      string line;
+      for (Int_t i=0; i<7; i++) {
+	getline (infile,line);
+	cout << line << endl;
+      }
+      printf("reading in data...\n");
+      while (!infile.eof()) {
+	infile >> X >> w;
+	sscanf(X,"(%f)",&x);
+	//cout << X << "\t" << w << endl;
+	//cout << x << "\t" << w << endl;
+	if(!(x==-1)&&!(w==-1))
+	  hist1->Fill(x,w);
+      }
+      hist1->Draw();
+    } else cout << "Cannot open file " << filename <<endl;
+  }
+  else printf("Histogram \"%s\" not found!\n",histname);
 }
 
   void fillgraph(Char_t *filename, Char_t *graphname, Int_t npts, Int_t ierr=0)
