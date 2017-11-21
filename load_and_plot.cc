@@ -5896,3 +5896,49 @@ void fl2()
   cFit->SaveAs("TOF.pdf");
   cFit->SaveAs("TOF.png");
 }
+
+// plots for pulser tests
+void phists()
+{
+TH1F *hist[13];
+  TString hname;
+  TString htitle;
+  TString fname;
+  
+  for(Int_t i=0;i<13;++i) {
+    if(i==1||i==10) continue;
+    fname="run";
+    fname+=i+339;
+    htitle=fname;
+    fname+=".txt";
+    cout << "filename is " << fname << endl;
+    hname="h";
+    hname+=i;
+    
+    hist[i] = new TH1F(hname,htitle,4096,0,4096);
+    fill1(fname.Data(),hname.Data());
+  }
+}
+
+void phists2()
+{
+  const int size=21;
+  TH1F *hist[size];
+  TString hname;
+  TString htitle;
+  TString fname;
+    
+  for(Int_t i=0;i<size;++i) {
+    if(i==0||i==1||i==10||i==15) continue;
+    fname="run";
+    fname+=i+339;
+    htitle=fname;
+    fname+="_25.spec";
+    cout << "filename is " << fname << endl;
+    hname="h";
+    hname+=i;
+
+    hist[i] = new TH1F(hname,htitle,4096,0,4096);
+    spec2hist(fname.Data(),hname.Data());
+  }
+}
