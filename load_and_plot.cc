@@ -11,6 +11,8 @@
  *       fit.cc (most)
  *       psd_analyze.cc (some)
  */
+#include <iomanip>
+
 Bool_t bOrig=0;//Turn on/off settings for 1.91T
 Bool_t bw=0;//Turn on/off black and white figures
 Bool_t bThesis=1;//Turn on/off changes between thesis and NIM paper
@@ -5941,4 +5943,39 @@ void phists2()
     hist[i] = new TH1F(hname,htitle,4096,0,4096);
     spec2hist(fname.Data(),hname.Data());
   }
+}
+
+
+void intdiv(Long64_t nentries =1e3, Long64_t MaxEntries=1e6)
+{
+  cout << " nentries = " << nentries<<endl;
+  cout << " MaxEntries = " << MaxEntries<<endl;
+  Bool_t btrunc=kFALSE;
+  Long64_t nstep=nentries/MaxEntries;
+  cout << " nstep = " << MaxEntries<<endl;
+  Long64_t ncount = 0;
+  cout << "ratio = " << (Double_t)nentries/MaxEntries << endl;
+
+  if(nentries>MaxEntries) {
+    //if(nstep<2) nstep=2;
+    cout << " Max entries exceeded! truncating data set from " << nentries << " to " << MaxEntries << " or " << nentries/(nstep) <<endl;
+    cout << " processing 1 out of every " << nstep << " entries" <<endl;
+    //cout << " n step is " << nstep << endl;
+    btrunc=kTRUE;
+  }
+  
+  for (Long64_t global_evt=0; global_evt<nentries; global_evt++) {//loop over all entries in tree------
+    if(btrunc && global_evt%nstep>0) continue;
+   
+    if(global_evt%TMath::Nint(nentries*0.10)==0) { cout << endl << "  Done: "
+							<< right << fixed << setw(3)
+							<< TMath::Nint(global_evt*100./nentries) << "%" << std::flush;
+      cout << " global_evt = " << global_evt << ", ncount = " <<ncount<<endl;
+      
+    }
+    ncount++;
+    if(global_evt%TMath::Nint(nentries*0.01)==0 && global_evt>0) cout << "." << std::flush;
+   
+  }
+  cout << "ncount = " << ncount <<endl;
 }
