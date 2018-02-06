@@ -2486,7 +2486,7 @@ laplace->SetParNames("Constant","Mean","Scale");
 laplace->SetParLimits(2,1e-3,1e5);
 
 void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="", Bool_t estimate=kTRUE) {
-  emg->SetParNames("Constant","Mean","Sigma","Tau");
+  emg->SetParNames("G Amplitude","G Mean","G Sigma","E Tau");
   if(!(gROOT->FindObject(histname))) {
     printf("Histogram %s not found!\n",histname);
     return;
@@ -2504,18 +2504,26 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   hist1->SetAxisRange(xmin-wide/10,xmax+wide/10,"X");
   hist1->Fit("emg",option,"",xmin,xmax);
 
+  // printf("Fit parameters are:\n");
+  // printf("Gaussian component mean\t  %7.5e\n",emg->GetParameter(1));
+  // printf("Gaussian component sigma\t  %7.5e\n",emg->GetParameter(2));
+  // printf("Exponential component relaxation time\t  %7.5e\n",emg->GetParameter(3));
+  
   Float_t mean = emg->GetParameter(1)+emg->GetParameter(3);
   Float_t sigma = TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));
-  printf("Gaussian parameters are:\n");
+  printf("Fit parameters are:\n");
   printf("      Mean \t  %7.5e\n",mean);
   printf("      Sigma\t  %7.5e\n",sigma);
   g1 = new TF1("g1","gaus",xmin,xmax);
   g1->SetLineColor(4);
   g1->SetLineStyle(4);
-  //g1->FixParameter(0,emg->GetParameter(0));
+  g1->FixParameter(0,emg->GetParameter(0));
+  g1->FixParameter(1,emg->GetParameter(1));
+  g1->FixParameter(2,emg->GetParameter(2));
+  
   //g1->FixParameter(0,emg->GetMaximum());
-  g1->FixParameter(1,mean);
-  g1->FixParameter(2,sigma);
+  //g1->FixParameter(1,mean);
+  //g1->FixParameter(2,sigma);
   hist1->Fit("g1","+","",xmin,xmax);
   g1->Draw("same");
   g2 = new TF1("g2","gaus",xmin,xmax);
@@ -2526,8 +2534,8 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
 
   leg = new TLegend(0.1,0.8,0.3,0.9);
   leg->AddEntry(emg,"Exponentially-modified Gaussian","l");
-  leg->AddEntry(g1,"constrained Gaussian","l");
-  leg->AddEntry(g2,"unconstrained Gaussian, ROB=0.95","l");   
+  leg->AddEntry(g1,"component Gaussian","l");
+  leg->AddEntry(g2,"unconstrained Gaussian","l");   
   leg->Draw();
 }
 
@@ -2883,11 +2891,6 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   getdet(histin);
   printf("Detector number %d is being read.\n",det);
 
-  Float_t cp=0 ;  
-  Float_t a=0,b=0,c=0,d=0;  
-  Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
-  Float_t fits[10];
-    
   cFit->Clear();
   cFit->SetWindowPosition(0,0);
   cFit->Divide(1,2);
@@ -2951,8 +2954,12 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   hname="pol";
   hname+=ord;
   printf("Fit function is is \"%s\"\n",hname.Data()); 
-  hProf->Fit(hname,"V","",minfit,maxfit);
-  hProf->SetStats(kFALSE);
+  hProf->Fit(hname,"WV","",minfit,maxfit);
+  //hProf->SetStats(kFALSE);
+
+  Float_t a=0,b=0,c=0,d=0;  
+  Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
+  
   switch(ord){
   case 1://adapted from fitpfx() in linefit.cc
     p0=hProf->GetFunction("pol1")->GetParameter(0);
@@ -2964,9 +2971,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
       printf("Fit has no roots. Offset is %g.\n",offset);
     else {
       printf("Fit has root %f\n",-p0/p1);
-      printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
-      printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     }
+    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+    printf("Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
     if(fabs(p0)<hInput->GetYaxis()->GetBinWidth(1))
       printf("p0 = %7.3f is less than bin width.\n",p0);  
     if(slope<-1)
@@ -2974,6 +2981,9 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     else
       printf("Scale XF (y) by %f with slopexy(\"%s\",1,0,%f)\n",-1/slope,histin,-slope);
     FILE * outfile;    
+    outfile=fopen("temp.lst","w");
+    fprintf(outfile,"%g, %g\n",slope,offset);
+    fclose(outfile);
     outfile=fopen("temp_inv.lst","w");
     fprintf(outfile,"%g, %g\n",1/slope,-offset/slope);
     fclose(outfile);
@@ -2988,7 +2998,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
     p1=hProf->GetFunction("pol2")->GetParameter(1);//"b"
     p2=hProf->GetFunction("pol2")->GetParameter(2);//"a"
-    cp=(-p1/(2*p2)); //critical point
+    Float_t cp=(-p1/(2*p2)); //critical point
     Float_t zero1=(-p1-TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     Float_t zero2=(-p1+TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
     printf("p1 = %7.3f p2=%7.3f\n",p1,p2);
@@ -3091,7 +3101,7 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
     p2=hProf->GetFunction("pol4")->GetParameter(2);
     p3=hProf->GetFunction("pol4")->GetParameter(3);
     p4=hProf->GetFunction("pol4")->GetParameter(4);
-    printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\ncp = %7.3f\n",p1,p2,p3,p4);
+    printf("p1 = %5.0f, p2 = %5.0f, p3 = %5.0f, p4 = %5.0f\n",p1,p2,p3,p4);
     cFit->cd(1);
     pol4->SetRange(minfit,maxfit);
     pol4->Draw("same");
@@ -3112,46 +3122,54 @@ void fitpfx(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   fclose(outfile);
 }
 
-void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t scale=1)
+void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Float_t maxfit=0,Int_t ord=1,Int_t scale=1,Float_t minz=0, Float_t maxz=-1)
 {//adapted from linefit.cc
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   getdet(histin);
-
-  Float_t a=0,b=0,c=0,d=0; 
-  Float_t p0=0,p1=0,p2=0;
-
+  printf("Detector number %d is being read.\n",det);
+  
   cFit->Clear();
   cFit->Divide(1,2);
   cFit->cd(1);
-  TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
-    
-  if(maxpf==minpf){
-    minpf=hInput->GetXaxis()->GetXmin();
-    maxpf=hInput->GetXaxis()->GetXmax();
+
+  if(!((minz==0)&&(maxz==-1))) {
+    copy2(histin,minz,maxz,0);
+    hname=histin;
+    hname+="_copy";
+    histin=hname.Data();
   }
   
-  if(maxfit==minfit){
+  TH2F * hInput=(TH2F *) gROOT->FindObject(histin);
+  printf("Input histogram is %s\n",histin);     
+  if(maxpf==minpf) {
+    minpf=hInput->GetXaxis()->GetXmin();
+    maxpf=hInput->GetXaxis()->GetXmax();
+    hInput->SetAxisRange(minpf ,maxpf ,"X");
+  }
+  
+  if(maxfit==minfit) {
     minfit=hInput->GetYaxis()->GetXmin();
     maxfit=hInput->GetYaxis()->GetXmax();
+    hInput->SetAxisRange(minfit,maxfit,"Y");
   }
     
-  if(scale==1){
+  if(scale==1) {
     hInput->SetAxisRange(minfit,maxfit,"Y");
     hInput->SetAxisRange(minpf ,maxpf ,"X");
   }
   else{
-    hInput->SetAxisRange(-1,-1,"X");
-    hInput->SetAxisRange(-1,-1,"Y");
+    hInput->GetXaxis()->UnZoom();
+    hInput->GetYaxis()->UnZoom();
   }
-
+ Float_t  a=0,b=0,c=0,d=0; 
   hInput->Draw("COL2");
   cFit->cd(2); 
   a=minpf;
   b=maxpf;   
-  printf("Projection Limits are %d to %d\n",minpf,maxpf);  
+  printf("Projection Limits are %3.2f to %3.2f\n",minpf,maxpf);  
   minpf=hInput->GetXaxis()->FindBin(minpf);
   maxpf=hInput->GetXaxis()->FindBin(maxpf);
-  printf("Fit Limits are %d to %d\n",minfit,maxfit);
+  printf("Fit Limits are %3.2f to %3.2f\n",minfit,maxfit);
  
   hname=histin;
   hname+="_pfy"; 
@@ -3164,13 +3182,85 @@ void fitpfy(Char_t *histin,Float_t minpf=0,Float_t maxpf=0,Float_t minfit=0,Floa
   hProf->SetAxisRange(a,b,"Y");
   hProf->SetLineColor(2);
   hProf->Draw();
- 
-  hProf->Fit("pol1","V","",minfit,maxfit);
-  p0=hProf->GetFunction("pol1")->GetParameter(0);
-  p1=hProf->GetFunction("pol1")->GetParameter(1);
-  //  p2=hProf->GetFunction("pol2")->GetParameter(2);
-  // cp=(-p1/(2*p2));
-  printf("p1 = %7.3f\n",p1);
+
+  if(ord>9||ord<1) {
+    printf("Polynomial fits only valid for orders 1-9.\n");
+    ord=1;
+  }
+  hname="pol";
+  hname+=ord;
+  printf("Fit function is is \"%s\"\n",hname.Data()); 
+  hProf->Fit(hname,"WQ","",minfit,maxfit);
+
+  
+  Float_t p0=0,p1=0,p2=0,p3=0,p4=0;
+  
+  switch(ord) {
+  case 1:
+    p0=hProf->GetFunction("pol1")->GetParameter(0);
+    p1=hProf->GetFunction("pol1")->GetParameter(1);
+    Float_t slope=p1;
+    Float_t offset=p0;
+    printf("p1 = %7.3f\n",p1);
+    if(p1==0)
+      printf("Fit has no roots. Offset is %g.\n",offset);
+    else {
+      printf("Fit has root %f\n",-p0/p1);
+    }
+    printf("Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
+     
+    Float_t islope=1/slope;
+    Float_t ioffset=-offset/slope;
+    printf("Inverse fit parameters are slope %f, offset %f\n",islope,ioffset);
+    TF1 *ifit = new TF1("ifit","pol1");
+    ifit->SetParameter(0,ioffset);
+    ifit->SetParameter(1,islope);
+    ifit->SetRange(a,b);
+    cFit->cd(1);
+    ifit->Draw("same");
+    FILE * outfile;    
+    outfile=fopen("temp.lst","w");
+    fprintf(outfile,"%g, %g\n",slope,offset);
+    fclose(outfile);
+    outfile=fopen("temp_inv.lst","w");
+    fprintf(outfile,"%g, %g\n",islope,ioffset);
+    fclose(outfile);
+    
+    break;
+  case 2:
+    p0=hProf->GetFunction("pol2")->GetParameter(0);//"c"
+    p1=hProf->GetFunction("pol2")->GetParameter(1);//"b"
+    p2=hProf->GetFunction("pol2")->GetParameter(2);//"a"
+    Float_t cp=(-p1/(2*p2)); //critical point
+    Float_t zero1=(-p1-TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
+    Float_t zero2=(-p1+TMath::Sqrt(p1*p1-(4*p2*p0)))/(2*p2);
+    printf("p1 = %7.3f p2=%7.3f\n",p1,p2);
+    printf("Fit has critical point = %7.3f\n",cp);
+    Float_t slope=0;
+    if((p1*p1-(4*p2*p0))>0){
+      printf("Fit has roots = %.1f, %.1f\n",zero1,zero2);
+      
+      TLine *line = new TLine(0,p0,zero1,0);
+      line->SetLineStyle(2);
+      line->SetLineWidth(2);
+      line->Draw();
+      slope=(0-p0)/(zero1-0);
+      printf("Linear fit has slope %f\n",slope);
+
+    }
+    else{
+      printf("Fit has imaginary root(s).\n");
+      TLine *line = new TLine(minfit,minfit*minfit*p2+minfit*p1+p0,maxfit,maxfit*maxfit*p2+maxfit*p1+p0);
+      line->SetLineStyle(2);
+      line->SetLineWidth(2);
+      line->Draw();
+      slope=((maxfit*maxfit*p2+maxfit*p1+p0)-(minfit*minfit*p2+minfit*p1+p0))/(maxfit-minfit);
+      printf("Linear fit has slope %f\n",slope);
+    }
+    break;
+  default:
+    break; 
+  }
 }
 
 void timefit(Char_t *histin,Float_t minE=1,Float_t maxE=12,Int_t minpf=0,Int_t maxpf=1200)
@@ -4067,7 +4157,7 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
   TF1 **functions = new TF1*[npeaks];
   Float_t area=0;
   Float_t sig_av=0;
-  printf("Calculated fit parameters after deconvolution:\n");
+  printf(" Calculated fit parameters after deconvolution:\n");
   printf("                        center | int     | width \n");
   for (Int_t i=0;i<npeaks;i++) {
     char fname[20];
@@ -4627,12 +4717,12 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     printf("p0 average is %5.1f for %d entries\n",p0av,entries);
   }
 
-  void createfile(Int_t numbered=0)
+void createfile(Int_t numbered=0,Int_t ndets=24,Int_t start=1,Int_t vars=11)
   {//writes array[i][j] to file or creates blank file, adapted from linefit.cc
     ofstream outfile("calibration.cal");
-    for(int i=0;i<24;i++){
-      outfile<<i+1<<" ";
-      for(int j=0;j<11;j++){
+    for(int i=0;i<ndets;i++) {
+      outfile<<i+start<<" ";
+      for(int j=0;j<vars;j++){
 	switch(numbered){
 	case 0:
 	  outfile<<array[i][j]<<" ";
@@ -4860,7 +4950,7 @@ File \"%s\" not written.\n",filename,size,errorline,output);
       for(Int_t i=0;i<dets;i++){
 	fprintf(outfile,"%2.0f ",param[i][0]);
 	printf("%2.0f ",param[i][0]);
-	for(Int_t j=1;j<k-1;j++){
+	for(Int_t j=1;j<k-1;j++) {
 	  fprintf(outfile,"%g ",param[i][j]);
 	  printf("%5.0f ",param[i][j]);
 	}
@@ -5176,7 +5266,7 @@ File \"%s\" not written.\n",filename,size,errorline,output);
 
   //-------------------------------------------------------------------------------------
   // 5d). Fill (dump) a histogram from (to) a file---------------------------------------
-  void dump(Char_t *histname, Char_t *filename, Int_t ierr=0, Int_t zsupp=1)
+void dump(Char_t *histname, Char_t *filename, Bool_t ierr=kFALSE, Int_t zsupp=1,Bool_t ovun=kFALSE)
   {//copied form util.cc
     //   gDirectory->pwd();
     Int_t whatsit=0;
@@ -5204,11 +5294,17 @@ File \"%s\" not written.\n",filename,size,errorline,output);
     }
    
     ofstream outfile(filename);
+    Int_t start=1;
+    Int_t stop=1;
+    if(ovun) {
+      start=0;
+      stop=2;
+    }
+    
    
     if (whatsit==1 || whatsit==2 || whatsit==6) {//1D object
-      
-      for (Int_t ibin=0; ibin < hist1->GetNbinsX()+1;ibin++) {//includes underflow bin
-	if (ierr==0) {
+      for (Int_t ibin=start; ibin < hist1->GetNbinsX()+stop;ibin++) {
+	if (!ierr) {
 	  if ((zsupp==1 && hist1->GetBinContent(ibin)!=0) ||
 	      zsupp==0) {
 	    outfile<< hist1->GetBinCenter(ibin) << " " <<
@@ -5226,20 +5322,17 @@ File \"%s\" not written.\n",filename,size,errorline,output);
     }
    
     if (whatsit==3 ||  whatsit==4) {//2D object
-      for (Int_t ixbin=0; ixbin < hist2->GetNbinsX();ixbin++) {
-	for (Int_t iybin=0; iybin<hist2->GetNbinsY();iybin++) {
-	    
+      for (Int_t ixbin=stop; ixbin < (hist2->GetNbinsX()+stop);ixbin++) {
+	for (Int_t iybin=start; iybin < (hist2->GetNbinsY()+stop) ;iybin++) {
 	  Float_t content=hist2->GetBinContent(ixbin,iybin);
 	  Float_t xbin=hist2->GetXaxis()->GetBinCenter(ixbin);
 	  Float_t ybin=hist2->GetYaxis()->GetBinCenter(iybin);
-	  if (ierr==0) {
-	    if ((zsupp==1 && content!=0) ||
-		zsupp==0) {
-	      outfile<< xbin << " " << ybin <<" "<<content<<endl;
+	  if (ierr) {
+	    if ((zsupp==1 && content!=0) || zsupp==0) {
+	      outfile<< xbin << " " << ybin <<" "<<content << " " << hist2->GetBinError(ixbin,iybin) <<endl;
 	    }
 	  } else {
-	    if ((zsupp==1 && content!=0) ||
-		zsupp==0) {
+	    if ((zsupp==1 && content!=0) || zsupp==0) {
 	      outfile<<xbin<<" "<< ybin<<" "<<content<<endl;
 	    }
 	  }
