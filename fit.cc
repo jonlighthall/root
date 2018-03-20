@@ -2361,13 +2361,14 @@ double findTheta (double x, double y, double z) {
   return theta;
 }
 
+Float_t sigmafwhm=2*sqrt(2*log(2));
 void ginfo (void)
 {//prints generic information about a gaussian fit and saves it to a file
   Float_t sigma=0, width=0, mean=0;
   Float_t gxmin=0, gxmax=0, grange=0; 
   sigma=gaus->GetParameter(2);
   mean=gaus->GetParameter(1);
-  width=sigma*2.35482;
+  width=sigma*sigmafwhm;
   printf("Width of peak is %f or %f FWHM (%.2f%%)\n",sigma,width,width/mean*100);
   //printf("Width of peak is %f ns or %f FWHM ns, mean %f ns indiv %f FWHM\n",sigma/5.,width/5.,mean/5.,width/5./TMath::Sqrt(2));
   //printf("Width of peak is %f mm or %f FWHM mm, mean %f mm\n",sigma/5./2.5,width/5./2.5,mean/5./2.5);
@@ -2443,7 +2444,7 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   if(center==-1) {//find peak with TSpectrum
     TSpectrum *spectrum=new TSpectrum();
     Float_t *gpositions;//moved * before variable name
-    spectrum->Search(hist1,sigma);//,sigma,option,threshold);
+    spectrum->Search(hist1,sigma,"",threshold);//,fit_option,threshold);
     gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
     center=gpositions[0];
   }
@@ -2477,8 +2478,14 @@ void gfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma=2
   pm->SetPoint(1,gaus->GetParameter(1),gaus->GetParameter(0));
   pm->Draw("same");
 }
-
+//exponentially modified gaussian
 TF1 *emg = new TF1("emg","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])*TMath::Erfc(1/sqrt(2)*([2]/[3]-(x-[1])/[2]))");
+
+//skew normal distribution
+TF1 *snd = new TF1("snd","[0]*exp(-0.5*((x-[1])/[2])^2)*0.5*(1+TMath::Erfc([3]*((x-[1])/[2])/sqrt(2)))");
+
+//log normal distriubution
+TF1 *lnd = new TF1("lnd","1/x*[0]*exp(-0.5*((log(x)-[1])/[2])^2)");
 
 TF1 *laplace = new TF1("laplace","[0]/(2*[2])*exp(-TMath::Abs(x-[1])/[2])");
 
@@ -2514,6 +2521,16 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   printf("Fit parameters are:\n");
   printf("      Mean \t  %7.5e\n",mean);
   printf("      Sigma\t  %7.5e\n",sigma);
+
+  Float_t max = emg->GetMaximum();
+  TLine *line = new TLine(mean,0,mean,max);
+  line->SetLineColor(3);
+  line->Draw("same");
+
+  TLine *line2 = new TLine(mean-sigmafwhm/2*sigma,max/2,mean+sigmafwhm/2*sigma,max/2);
+  line2->SetLineColor(2);
+  line2->Draw("same");
+
   g1 = new TF1("g1","gaus",xmin,xmax);
   g1->SetLineColor(4);
   g1->SetLineStyle(4);
@@ -2547,7 +2564,7 @@ void emgfitcp(Char_t *histname, Float_t center=-1, Float_t wide=1, Float_t sigma
   TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
   TSpectrum *spectrum=new TSpectrum();
   Float_t *gpositions;//moved * before variable name
-  spectrum->Search(hist1,sigma);//,sigma,option,threshold);
+  spectrum->Search(hist1,sigma,"",threshold);
   gpositions=spectrum->GetPositionX();//in ROOT 5.26+ this array is ordered by peak height!
   center=gpositions[0];
   
@@ -2576,15 +2593,15 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   cFit->Clear();
   if(!((TCanvas *) gROOT->FindObject("cFit4"))) {
     mkCanvas2("cFit4","cFit4");
-    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);
+    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY());
   }
   cFit4->Clear();
   
-  for (Int_t i=0; i<size; i++){
+  for (Int_t i=0; i<size; i++) {
     gain[i]=start+i*delta;
     printf("Step %d of %d:\n",i+1,size);
     printf(" gain = %f\n",gain[i]);
-    printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
+    printf(" plotting \"%s-%f*%s>>%s(%d)\" given \"%s\"\n",var1,gain[i],var2,histname,bins,condition);
     cFit->cd();
     tree1->Draw(Form("%s-%f*%s>>%s(%d)",var1,gain[i],var2,histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
@@ -2593,9 +2610,8 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
     
      cFit4->cd();
      emgfitcp(histname,-1,40);
-     width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
-     //width[i]=emg->GetParameter(2);//sig
-     //width[i]=emg->GetParameter(0);//sig  
+     //width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//full sig
+     width[i]=emg->GetParameter(2);//sig of component gaus
      height[i]=emg->GetMaximum();
      printf(" width = %f\n",width[i]);
      printf(" gwidth = %f\n", g2->GetParameter(2));
@@ -2604,7 +2620,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
 
   if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
     mkCanvas2("cFit2","cFit2");
-    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY()-22);      
+    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY());      
   }
   cFit2->Clear();
 
@@ -2613,6 +2629,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   gFit->GetHistogram()->GetXaxis()->SetTitle("Gain");
   gFit->GetHistogram()->GetYaxis()->SetTitle("Width");
   gFit->Draw("AP*");
+  cout << "Fitting peak width vs. gain..." << endl;
   gFit->Fit("pol2","ROB");
 
   Float_t cp=0 ;  
@@ -2629,7 +2646,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   
   if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
     mkCanvas2("cFit3","cFit3");
-    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY()-22);      
+    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY());      
   }
   cFit3->Clear();
   
@@ -2638,6 +2655,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   gFit2->GetHistogram()->GetXaxis()->SetTitle("Gain");
   gFit2->GetHistogram()->GetYaxis()->SetTitle("Height");
   gFit2->Draw("AP*");
+  cout << "Fitting peak height vs. gain..." << endl;
   gFit2->Fit("pol2","ROB");
 
   b=pol2->GetParameter(1);//"b"
@@ -2697,7 +2715,7 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
   cFit->Clear();
   if(!((TCanvas *) gROOT->FindObject("cFit4"))) {
     mkCanvas2("cFit4","cFit4");
-    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY()-22);
+    cFit4->SetWindowPosition(cFit->GetWindowTopX()+cFit->GetWindowWidth(),cFit->GetWindowTopY());
   }
   cFit4->Clear();
   
@@ -2705,7 +2723,7 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
     offset[i]=start+i*delta;
     printf("Step %d of %d:\n",i+1,size);
     printf(" gain = %f\n",offset[i]);
-    printf(" plotting \"%s*%f-%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
+    printf(" plotting \"fmod(%s-%f*%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
     cFit->cd();
     tree1->Draw(Form("fmod(%s-%f*%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
@@ -2714,7 +2732,8 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
 
     cFit4->cd();
     emgfitcp(histname,-1,center/10,center/10);
-    width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+    //width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+    width[i]=emg->GetParameter(2);//sig of component gaus
     height[i]=emg->GetMaximum();
     printf(" width = %f\n",width[i]);
     printf(" gwidth = %f\n", g2->GetParameter(2));
@@ -2723,7 +2742,7 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
 
 if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
     mkCanvas2("cFit2","cFit2");
-    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY()-22);      
+    cFit2->SetWindowPosition(cFit4->GetWindowTopX()+cFit4->GetWindowWidth(),cFit4->GetWindowTopY());      
   }
   cFit2->Clear();
 
@@ -4358,7 +4377,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
       printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
       printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
-      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
+      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*sigmafwhm);
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
@@ -4460,7 +4479,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       //cout<<"Fit parameters are:  Slope= "<<slope<<" offset= "<<offset<<" sigma(peak "<<npeaks-1<<")="<<width<<endl;
       printf(" Fit parameters are: Slope = %3.3f, Offset = %3.3f\n",slope,offset);
       printf(" Inverse fit parameters are slope %f, offset %f\n",1/slope,-offset/slope); 
-      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*2.35482);
+      //printf("Resolution of peak %.0f is = %3.3f MeV or %3.3f MeV FWHM \n",npeaks-1,(width)/slope,(width)/slope*sigmafwhm);
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
