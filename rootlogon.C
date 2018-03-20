@@ -1,5 +1,5 @@
 {
-  printf("GitHub version of rootlogon.C being used.\n");
+  printf("Using GitHub version of rootlogon.C.\n");
   //Set macro location in .rootrc
 
   //------------------------------------
@@ -38,4 +38,13 @@
   //setangles(0,4.5,0,360);
   //setresm(0.6);
   //source();
+
+  //------------------------------------
+  //Load ANASEN trees
+  //------------------------------------
+  //printf("loading tree_structure.h...\n");
+  //gROOT->LoadMacro("/home/lighthall/anasen/analysis_software/tree_structure.h");
+  //gROOT->ProcessLine(".L /home/lighthall/anasen/analysis_software/tree_structure.h");
+  Double_t radius=3.846284509;
+  Double_t gold_pos=27.7495;
 }
