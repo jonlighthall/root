@@ -5435,7 +5435,7 @@ void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
   else printf("Histogram \"%s\" not found!\n",hname.Data());
 }
 
-void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1)
+void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1,Int_t bins=4096)
 { //Extension to fillhist0() from util.cc, reads in weight and includes reset option.  
   //Fills a 1-dimensional histogram from a text file.
   //File is to be formatted as (x-value), weight.
@@ -5446,15 +5446,22 @@ void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1)
   if((TH1F *) gROOT->FindObject(histname)) {
     hist1=(TH1F *) gROOT->FindObject(histname);
     if(reset) {
-      printf("Resetting histogram \"%s\"\n",histname);
-      hist1->Reset();
+      printf("Redefining histogram \"%s\"\n",histname);
+      hist1->Delete();
+      hist1 = new TH1F(histname,"spec2hist",bins,0,0);
     }
-    ifstream infile(filename);
+  }
+  else {
+    printf("Histogram \"%s\" not found! Creating new histogram with %d bins.\n",histname,bins);
+    hist1 = new TH1F(histname,"spec2hist",bins,0,0);
+  }
+  ifstream infile(filename);
     if(infile.is_open()) {
       string line;
+      cout << "printing file header..." << endl;
       for (Int_t i=0; i<7; i++) {
 	getline (infile,line);
-	cout << line << endl;
+	cout << "  " << line << endl;
       }
       printf("reading in data...\n");
       while (!infile.eof()) {
@@ -5467,8 +5474,6 @@ void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1)
       }
       hist1->Draw();
     } else cout << "Cannot open file " << filename <<endl;
-  }
-  else printf("Histogram \"%s\" not found!\n",histname);
 }
 
   void fillgraph(Char_t *filename, Char_t *graphname, Int_t npts, Int_t ierr=0)
