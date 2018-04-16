@@ -47,4 +47,13 @@
   //gROOT->ProcessLine(".L /home/lighthall/anasen/analysis_software/tree_structure.h");
   Double_t radius=3.846284509;
   Double_t gold_pos=27.7495;
+  TF1 *wfit = new TF1("wfit","[0]*sin(fmod(6-x+24,24)*TMath::TwoPi()/24+[1])+[2]",0,24);
+  Double_t spacer[8]={27.7495,
+		       22.8988,
+		       16.8789,
+		       15.6083,
+		       12.4741,
+		       7.4268,
+		       61.5495,
+		      -2.8505};
 }
