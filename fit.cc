@@ -4124,7 +4124,7 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
   for (Int_t i=1; i<npeaks; i++) {
     fform+=Form("+gaus(%d)",3*i);
   }
-  
+  if(npeaks<10){
   printf(" %d peaks found! Attempting deconvolution...\n",npeaks);
   printf(" fuction name is %s\n",fform.Data());
   if((TF1 *)gROOT->FindObject("total"))total->Delete();//added
@@ -4138,11 +4138,20 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
   total->SetParameters(par);
 
   if(bfixed) {//use previously-determined peak centers for fit
+    Float_t sigma_limit=0.0625;
     for (Int_t i=0;i<npeaks;i++) {
-      if(bfixed==1)
-	total->FixParameter(1+3*i,positions[i]);//use centers from TSpectrum search (step 1)
-      if(bfixed==2)
-	total->FixParameter(1+3*i,par[1+3*i]);//use centers from non-overlapping fit (step 2)
+      if(bfixed==1) {//use centers from TSpectrum search (step 1)
+	total->FixParameter(1+3*i,positions[i]);
+	total->SetParameter(2+3*i,min_space);
+	total->SetParLimits(2+3*i,min_space*(1-sigma_limit),min_space*(1+sigma_limit));
+	//printf("parameter %d has limits %f to %f\n",1+3*i,min_space*(1-sigma_limit),min_space*(1+sigma_limit));
+      }
+      if(bfixed==2) {//use centers from non-overlapping fit (step 2)
+	total->FixParameter(1+3*i,par[1+3*i]);
+	total->SetParameter(2+3*i,par[2+3*i]);
+	total->SetParLimits(2+3*i,par[2+3*i]*(1-sigma_limit),par[2+3*i]*(1+sigma_limit));
+	//printf("parameter %d has limits %f to %f\n",1+3*i,par[2+3*i]*(1-sigma_limit),par[2+3*i]*(1+sigma_limit));
+      }
     }
   }
   
@@ -4222,6 +4231,8 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
   hFit3->SetMarkerColor(1);
   hFit3->SetMarkerSize(3);
   hFit3->Draw("P");
+  }
+  else cout << " " << npeaks << " peaks is too many peaks! Deconvolution disabled." << endl;
 }
 
 Float_t x_pos=0;
