@@ -4075,11 +4075,11 @@ void findpeaks(TString hname, Float_t resolution=2, Double_t sigma=3, Double_t t
 }
 
 Float_t gparameters[300];
+Float_t sig_av;
 
 void gfindpeaks(TString hname)
 {//assumes positions[], npeaks are set
   hProj=(TH1F *) gROOT->FindObject(hname.Data());
-  Float_t sig_av=0;
   printf("Step 2: Fitting each peak with a non-overlapping gaussian...\n");
   printf("                         peak  | gaus     | diff     | 1D int | width \n");
   pm=new TPolyMarker(npeaks);
@@ -4087,6 +4087,7 @@ void gfindpeaks(TString hname)
   pm->SetMarkerStyle(23);
   pm->SetMarkerSize(2);
   pm->SetMarkerColor(4);
+  sig_av=0;
   for (Int_t i=0; i<npeaks; i++) {
     printf("  Peak %2d  centered at %7.3f | ",i,positions[i]);
     gfitc(hname.Data(),positions[i],min_space/2,"+q");
@@ -4101,7 +4102,8 @@ void gfindpeaks(TString hname)
       gparameters[(3*i)+j]=gaus->GetParameter(j);
     }
   }
-  printf(" Average peak width is %f\n",sig_av/npeaks);
+  sig_av/=npeaks;
+  printf(" Average peak width is %f (%f FWHM)\n",sig_av,sig_av*sigmafwhm);
   pm->Draw("same");
 }
 
@@ -4175,7 +4177,7 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
 
   TF1 **functions = new TF1*[npeaks];
   Float_t area=0;
-  Float_t sig_av=0;
+  sig_av=0;
   printf(" Calculated fit parameters after deconvolution:\n");
   printf("                        center | int     | width \n");
   for (Int_t i=0;i<npeaks;i++) {
@@ -4206,7 +4208,8 @@ void decon(TString hname,Int_t padno=1,Int_t bfixed=kFALSE)
     //cFit->cd(2);
     functions[i]->Draw("same");
   }
-  printf(" Average peak width is %f\n",sig_av/npeaks);  
+  sig_av/=npeaks;
+  printf(" Average peak width is %f (%f FWHM)\n",sig_av,sig_av*sigmafwhm);  
   
   cFit2->cd(1);
   hFit2->SetMarkerStyle(2);
@@ -4381,9 +4384,16 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       
       cFit->cd(setpad+1);
       printf(" Testing fit:\n");
+      Float_t maxdiff=0;
+      Float_t diff;
       for (Int_t i=0; i<npeaks; i++) {
-	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],(positionsg[i]-offset)/slope,((positionsg[i]-offset)/slope)-energies[i]);
-      }  
+	diff=((positionsg[i]-offset)/slope)-energies[i];
+	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],(positionsg[i]-offset)/slope,diff);
+	       if(fabs(diff)>maxdiff) maxdiff=fabs(diff);
+      }
+	  printf("Maximum difference after fit is %f\n",maxdiff);
+      sig_av/=slope;
+      printf(" Average peak width is %f (%f FWHM)\n",sig_av,sig_av*sigmafwhm);      
      
       FILE * outfile;
       outfile=fopen("temp.lst","w");
@@ -4433,7 +4443,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
 	nlist++;
       }
       printf(" Read in %d peaks from file.\n",nlist);
-      if(nlist<=1){
+      if(nlist<=1) {
 	printf("WARNING: Only %d energy found in file \"%s\"\n         Check file to ensure there is a carriage return on the last line!\n",nlist,filename);
       }
     }
@@ -4443,7 +4453,7 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
 
     if(!(filefail)) {
       cFit->cd(setpad+1);
-        
+      if(npeaks==nlist) {
       if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
       gFit = new TGraph(npeaks,positionsg,energies);
       TString title=hProj->GetTitle();
@@ -4485,13 +4495,15 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
       printf(" Testing fit:\n");
       Float_t maxdiff=0;
       Float_t diff;
-      for (Int_t i=0; i<npeaks; i++){
+      for (Int_t i=0; i<npeaks; i++) {
 	diff=(positionsg[i]*slope+offset)-energies[i];
 	printf("  Peak %2d at %f is %f (%f)\n",i,positionsg[i],positionsg[i]*slope+offset,diff);
 	if(fabs(diff)>maxdiff) maxdiff=fabs(diff);
      
       }  
       printf("Maximum difference after fit is %f\n",maxdiff);
+      sig_av*=slope;
+      printf(" Average peak width is %f (%f FWHM)\n",sig_av,sig_av*sigmafwhm); 
     }
    
     FILE * outfile;
@@ -4511,6 +4523,10 @@ void readandfit(TString hname,Char_t *filename="",Int_t setpad=0)
     }  
     fclose(outfile);
   }
+    }
+    else
+      printf("Number of peaks %d does not equal number of energies from file %d!\n",npeaks,nlist);
+
 
   void peakfitx(Char_t *histin, Char_t *filename="", Float_t resolution=2, Double_t sigma=3, Double_t threshold=0.05, Char_t *option="")
   {//extension of peakfit() - takes a 2D histogram as input
@@ -5436,9 +5452,8 @@ void fill1(Char_t *filename,Char_t *histname,Int_t reset=1)
 }
 
 void spec2hist(Char_t *filename,Char_t *histname,Int_t reset=1,Int_t bins=4096)
-{ //Extension to fillhist0() from util.cc, reads in weight and includes reset option.  
-  //Fills a 1-dimensional histogram from a text file.
-  //File is to be formatted as (x-value), weight.
+{ //Fills a 1-dimensional histogram from a SpecTcl (.spec) file.
+  //File is to be formatted as "(x-value), weight" with a 7-line header.
   char X[100];
   Float_t x;
   float w;
