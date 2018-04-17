@@ -4551,7 +4551,7 @@ void Gaus(double mean1=50, double sigma1=15, double mean2=30, double sigma2=5)
   hist->Fit(f2);
 }
 
-void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=10000)
+void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts1=10000, int counts2=10000)
 { //creates a 1D histogram of a 2 Gaussian distribution with given means and widths
   gRandom = new TRandom3();
   gRandom->SetSeed(0);
@@ -4571,8 +4571,11 @@ void Gaus2(double mean1, double sigma1, double mean2, double sigma2, int counts=
   if((TH1F *) gROOT->FindObject(hname.Data())) gROOT->FindObject(hname.Data())->Delete();  
   TH1F * hist = new TH1F(hname, "random Gaussian distributions", 100, lmean-5*bsigma, hmean+5*bsigma);
 
-  for (int i = 0; i < counts; ++i) {
+  for (int i = 0; i < counts1; ++i) {
     hist->Fill(gRandom->Gaus(mean1, sigma1));
+  }
+
+  for (int i = 0; i < counts2; ++i) {
     hist->Fill(gRandom->Gaus(mean2, sigma2));
   }
 
