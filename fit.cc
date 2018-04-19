@@ -2666,8 +2666,8 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   chi[1]=pol2->GetChisquare();
   if(chi[1]<chi[0]) {
     printf("Peak hight fit has better chi squared than peak width fit\n");
+    mgain=cp;
   }
-  mgain=cp;
   
   laplace->SetParameter(0,height[steps/2]);
   laplace->SetParameter(1,center);
@@ -2691,7 +2691,7 @@ void emgfitmin(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="",Fl
   printf("Optimum gain is %f\n",mgain);
 
   cFit->cd();
-  tree1->Draw(Form("%s*%f-%s>>%s(%d)",var1,mgain,var2,histname,bins),condition);
+  tree1->Draw(Form("%s-%f*%s>>%s(%d)",var1,mgain,var2,histname,bins),condition);
 }
 
 Float_t moffset;
@@ -2704,12 +2704,13 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
   Float_t delta=(stop-start)/steps;
   printf("step size is %f\n",delta);
   steps++;
-  //printf("size is %d\n",steps);
+  printf("size is %d\n",steps);
   const int size=steps;
   printf("size is %d\n",size);
   Float_t offset[size];
   Float_t width[size];
   Float_t height[size];
+  Float_t chi[3];
 
   if(!((TCanvas *) gROOT->FindObject("cFit"))) mkCanvas2();
   cFit->Clear();
@@ -2719,20 +2720,20 @@ void emgfitminm(Char_t *tree, Char_t *var1, Char_t *var2, Char_t *condition="", 
   }
   cFit4->Clear();
   
-  for (Int_t i=0; i<size; i++){
+  for (Int_t i=0; i<size; i++) {
     offset[i]=start+i*delta;
     printf("Step %d of %d:\n",i+1,size);
-    printf(" gain = %f\n",offset[i]);
-    printf(" plotting \"fmod(%s-%f*%s>>%s(%d)\" given \"%s\"\n",var1,offset[i],var2,histname,bins,condition);
+    printf(" offset = %f\n",offset[i]);
+    printf(" plotting \"fmod(%s-%f*%s+5*%f,%f)>>%s(%d)\" given \"%s\"\n",var1,mgain,var2,offset[i],offset[i],histname,bins,condition);
     cFit->cd();
-    tree1->Draw(Form("fmod(%s-%f*%s+4*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
+    tree1->Draw(Form("fmod(%s-%f*%s+5*%f,%f)>>%s(%d)",var1,mgain,var2,offset[i],offset[i],histname,bins),condition);
     TH1F *htemp = (TH1F*)gPad->GetPrimitive(histname);    
     htemp->GetXaxis()->UnZoom();
     cFit->Update();
 
     cFit4->cd();
     emgfitcp(histname,-1,center/10,center/10);
-    //width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//gaus sig
+    //width[i]=TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));//full sig
     width[i]=emg->GetParameter(2);//sig of component gaus
     height[i]=emg->GetMaximum();
     printf(" width = %f\n",width[i]);
@@ -2748,9 +2749,10 @@ if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
 
   if(gROOT->FindObject("gFit"))gFit->Delete();//added, moved
   gFit = new TGraph(size,offset,width);
-  gFit->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit->GetHistogram()->GetXaxis()->SetTitle("Offset");
   gFit->GetHistogram()->GetYaxis()->SetTitle("Width");
   gFit->Draw("AP*");
+  cout << "Fitting peak width vs. offset..." << endl;
   gFit->Fit("pol2","ROB");
 
   Float_t cp=0 ;  
@@ -2762,18 +2764,21 @@ if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
   
   cp=(-b/(2*a)); //critical point
   printf("Fit has critical point = %7.4f\n",cp);
+  chi[0]=pol2->GetChisquare();
+  moffset=cp;
 
   if(!((TCanvas *) gROOT->FindObject("cFit3"))) {
     mkCanvas2("cFit3","cFit3");
-    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY()-22);      
+    cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit2->GetWindowTopY());      
   }
   cFit3->Clear();
   
   if(gROOT->FindObject("gFit2"))gFit2->Delete();//added, moved
   gFit2 = new TGraph(size,offset,height);
-  gFit2->GetHistogram()->GetXaxis()->SetTitle("Gain");
+  gFit2->GetHistogram()->GetXaxis()->SetTitle("Offset");
   gFit2->GetHistogram()->GetYaxis()->SetTitle("Height");
   gFit2->Draw("AP*");
+  cout << "Fitting peak height vs. offset..." << endl;
   gFit2->Fit("pol2","ROB");
 
   b=pol2->GetParameter(1);//"b"
@@ -2781,7 +2786,35 @@ if(!((TCanvas *) gROOT->FindObject("cFit2"))) {
   
   cp=(-b/(2*a)); //critical point
   printf("Fit has critical point = %7.4f\n",cp);
-  moffset=cp;
+  chi[1]=pol2->GetChisquare();
+  if(chi[1]<chi[0]) {
+    printf("Peak height fit has better chi squared than peak width fit.\n");
+    moffset=cp;
+  }
+
+  laplace->SetParameter(0,height[steps/2]);
+  laplace->SetParameter(1,center);
+  laplace->SetParameter(2,1);
+  laplace->SetLineColor(3);
+  gFit2->Fit("laplace","+","",start,stop);
+  printf("Center of Laplace fit =  %f\n",laplace->GetParameter(1));
+  chi[2]=laplace->GetChisquare();
+  
+  if(TMath::IsNaN(cp)) {
+    printf("Polynomial fit invalid. Range is probably too wide. Use Laplace fit");
+    moffset=laplace->GetParameter(1);
+  }
+
+  if(chi[2]<chi[1]) {
+    printf("Laplace fit of peak height gives best chi squared\n");
+    moffset=laplace->GetParameter(1);
+  }
+  else
+    printf("Using previous offset.\n");
+  printf("Optimum offset is %f\n",moffset);
+
+  cFit->cd();
+  tree1->Draw(Form("fmod(%s-%f*%s+5*%f,%f)>>%s(%d)",var1,mgain,var2,moffset,moffset,histname,bins),condition);
 }
 
 void pfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999,Int_t order=1)
