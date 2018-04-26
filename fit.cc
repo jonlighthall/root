@@ -2555,12 +2555,36 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
     TLine *line = new TLine(mean,0,mean,max);
     line->SetLineColor(3);
     line->Draw("same");
+    leg->AddEntry(line,"Maximum at mean","l");
     
     TLine *line2 = new TLine(mean-sigmafwhm/2*sigma,max/2,mean+sigmafwhm/2*sigma,max/2);
     line2->SetLineColor(2);
     line2->Draw("same");
+    leg->AddEntry(line2,"FWHM","l");
 
   }
+  if(print>3) {
+    TF1 *res = new TF1("res","emg/g1",xmin,xmax);
+    res->SetLineColor(7);
+    res->SetLineStyle(4);
+    res->Draw("same");
+    leg->AddEntry(res,"Exponential","l");
+    TF1 *comp1 = new TF1("comp1","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])",xmin,xmax);
+    comp1->FixParameter(0,emg->GetParameter(0));
+    comp1->FixParameter(1,emg->GetParameter(1));
+    comp1->FixParameter(2,emg->GetParameter(2));
+    comp1->FixParameter(3,emg->GetParameter(3));
+    comp1->Draw("same");
+    leg->AddEntry(comp1,"exponential component","l");
+
+    TF1 *comp2 = new TF1("comp2","TMath::Erfc(1/sqrt(2)*([1]/[2]-(x-[0])/[1]))",xmin,xmax);
+    comp2->FixParameter(0,emg->GetParameter(1));
+    comp2->FixParameter(1,emg->GetParameter(2));
+    comp2->FixParameter(2,emg->GetParameter(3));
+    comp2->Draw("same");
+    leg->AddEntry(comp2,"complementary error function component","l");
+  }
+  
   if(print>-1)
     leg->Draw();
 }
