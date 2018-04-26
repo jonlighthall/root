@@ -5982,3 +5982,21 @@ void intdiv(Long64_t nentries =1e3, Long64_t MaxEntries=1e6)
   }
   cout << "ncount = " << ncount <<endl;
 }
+
+void fl3()
+{
+  MainTree->Draw("PCEnergy*sin(Theta):SiEnergy>>hede","TrackType==1 && PCEnergy >-1 && sqrt((100*PCEnergy)^2+SiEnergy^2)>1.5 && MCPTime>0 && MCPTime<3800 && RFTime>575 && RFTime <1120 && TOFwTime>120 && TOFwTime<140","colz");
+  hede->SetTitle("E#DeltaE gated on ^{17}F");
+  hede->GetYaxis()->SetTitle("Energy Loss, angle corrected (Volts)");
+  hede->GetXaxis()->SetTitle("Residual Energy (MeV)");
+  prop(1.618,1,1000,"c1");
+  hede->GetXaxis()->SetRangeUser(0,30);
+  hede->GetYaxis()->SetRangeUser(0,0.2);
+  c1->SaveAs("figures/hede_17F.pdf");
+
+  MainTree->Draw("PCEnergy*sin(Theta):SiEnergy>>hede","TrackType==1 && PCEnergy >-1 && sqrt((100*PCEnergy)^2+SiEnergy^2)>1.5 && MCPTime>0 && MCPTime<3800 && RFTime>575 && RFTime <1120 && TOFwTime>176","colz");
+  hede->SetTitle("E#DeltaE gated on ^{16}O");
+  hede->GetXaxis()->SetRangeUser(0,30);
+  hede->GetYaxis()->SetRangeUser(0,0.2);
+  c1->SaveAs("figures/hede_16O.pdf");
+}
