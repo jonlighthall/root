@@ -11,7 +11,7 @@
  *       fit.cc (most)
  *       psd_analyze.cc (some)
  */
-#include <iomanip>
+//#include <iomanip>
 
 Bool_t bOrig=0;//Turn on/off settings for 1.91T
 Bool_t bw=0;//Turn on/off black and white figures
@@ -5955,32 +5955,48 @@ void intdiv(Long64_t nentries =1e3, Long64_t MaxEntries=1e6)
   cout << " MaxEntries = " << MaxEntries<<endl;
   Bool_t btrunc=kFALSE;
   Long64_t nstep=nentries/MaxEntries;
-  cout << " nstep = " << MaxEntries<<endl;
+  cout << " nstep = " << nstep<<endl;
   Long64_t ncount = 0;
-  cout << "ratio = " << (Double_t)nentries/MaxEntries << endl;
+  Double_t ratio=(Double_t)nentries/MaxEntries;
+  cout << " ratio = " << ratio  << endl;
+  ratio*=10;
+    cout << " ratio = " << ratio  << endl;
+    ratio=(Int_t)ratio;
+    cout << " ratio = " << ratio  << endl;
+    
+    ratio/=10;
+    cout << " ratio = " << ratio  << endl;
 
   if(nentries>MaxEntries) {
     //if(nstep<2) nstep=2;
-    cout << " Max entries exceeded! truncating data set from " << nentries << " to " << MaxEntries << " or " << nentries/(nstep) <<endl;
+    cout << " Max entries exceeded! truncating data set from " << nentries << " to " << nentries/nstep <<endl;
     cout << " processing 1 out of every " << nstep << " entries" <<endl;
-    //cout << " n step is " << nstep << endl;
     btrunc=kTRUE;
   }
   
   for (Long64_t global_evt=0; global_evt<nentries; global_evt++) {//loop over all entries in tree------
-    if(btrunc && global_evt%nstep>0) continue;
+    if(nstep>0)
+      //if(btrunc && (global_evt*10)%TMath::Nint(nstep*10)>0) continue;
+      if(btrunc && ((global_evt*10)%(Int_t)(ratio*10))>0) continue;
+    //if(btrunc && global_evt%nstep>0) continue;
    
-    if(global_evt%TMath::Nint(nentries*0.10)==0) { cout << endl << "  Done: "
-							<< right << fixed << setw(3)
-							<< TMath::Nint(global_evt*100./nentries) << "%" << std::flush;
-      cout << " global_evt = " << global_evt << ", ncount = " <<ncount<<endl;
-      
+    if(btrunc) {
+      if(ncount%TMath::Nint(MaxEntries*0.10)==0) { cout << endl << "  Done: " << setw(3) << (Int_t)TMath::Nint(ncount*100./MaxEntries) << "%" << std::flush;
+	cout << " global_evt = " << global_evt << ", ncount = " <<ncount;
+      }
+      if(TMath::Nint(MaxEntries*0.01)>0)
+	if(ncount%TMath::Nint(MaxEntries*0.01)==0 && global_evt>0) cout << "." << std::flush;
+    }
+    else {
+      if(global_evt%TMath::Nint(nentries*0.10)==0) { cout << endl << "  Done: " << setw(3) << (Int_t)TMath::Nint(global_evt*100./nentries) << "%" << std::flush;
+	cout << " global_evt = " << global_evt << ", ncount = " <<ncount;
+      }
+      if(TMath::Nint(nentries*0.01)>0)
+	if(global_evt%TMath::Nint(nentries*0.01)==0 && global_evt>0) cout << "." << std::flush;
     }
     ncount++;
-    if(global_evt%TMath::Nint(nentries*0.01)==0 && global_evt>0) cout << "." << std::flush;
-   
   }
-  cout << "ncount = " << ncount <<endl;
+  cout <<endl << endl << "ncount = " << ncount << " " << (Float_t)nentries/ncount<<endl;
 }
 
 void fl3()
