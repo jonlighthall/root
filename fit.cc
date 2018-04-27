@@ -2492,6 +2492,103 @@ TF1 *laplace = new TF1("laplace","[0]/(2*[2])*exp(-TMath::Abs(x-[1])/[2])");
 laplace->SetParNames("Constant","Mean","Scale");
 laplace->SetParLimits(2,1e-3,1e5);
 
+void emgfit2(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="", Bool_t estimate=kTRUE, Int_t print=3) {
+  emg->SetParNames("G Amplitude","G Mean","G Sigma","E Tau");
+  if(!(gROOT->FindObject(histname))) {
+    printf("Histogram %s not found!\n",histname);
+    return;
+  }
+  TH1F *hist1=(TH1F*) gROOT->FindObject(histname);
+  Float_t wide=(xmax-xmin);
+  Float_t mid=xmin+wide/2;
+  if(estimate) {
+    emg->SetParameter(0,hist1->GetBinContent(hist1->FindBin(mid)));
+    emg->SetParameter(1,mid);
+    emg->SetParameter(2,wide/5);
+    emg->SetParameter(3,wide/10);
+  }
+  emg->SetRange(xmin,xmax);
+  hist1->SetAxisRange(xmin-wide/10,xmax+wide/10,"X");
+  hist1->Fit("emg",option,"",xmin,xmax);
+
+  // printf("Fit parameters are:\n");
+  // printf("Gaussian component mean\t  %7.5e\n",emg->GetParameter(1));
+  // printf("Gaussian component sigma\t  %7.5e\n",emg->GetParameter(2));
+  // printf("Exponential component relaxation time\t  %7.5e\n",emg->GetParameter(3));
+  
+  Float_t mean = emg->GetParameter(1)+emg->GetParameter(3);
+  Float_t sigma = TMath::Sqrt(TMath::Power(emg->GetParameter(2),2)+TMath::Power(emg->GetParameter(3),2));
+  printf("Fit parameters are:\n");
+  printf("      Mean \t  %7.5e\n",mean);
+  printf("      Sigma\t  %7.5e\n",sigma);
+
+  if(print>-1) {
+    leg = new TLegend(0.1,0.8,0.3,0.9);
+    leg->AddEntry(histname,"data","l");
+    leg->AddEntry(emg,"Exponentially-modified Gaussian","l");
+  }
+  if(print>0) {
+    g1 = new TF1("g1","gaus",xmin,xmax);
+    g1->SetLineColor(4);
+    g1->SetLineStyle(4);
+    g1->FixParameter(0,emg->GetParameter(0));
+    g1->FixParameter(1,emg->GetParameter(1));
+    g1->FixParameter(2,emg->GetParameter(2));
+    //g1->FixParameter(0,emg->GetMaximum());
+    //g1->FixParameter(1,mean);
+    //g1->FixParameter(2,sigma);
+    hist1->Fit("g1","+","",xmin,xmax);
+    g1->Draw("same");
+    leg->AddEntry(g1,"component Gaussian","l");
+  }
+  if(print>1) {
+    g2 = new TF1("g2","gaus",xmin,xmax);
+    g2->SetLineColor(3);
+    g2->SetLineStyle(4);
+    //g2->FixParameter(1,emg->GetMaximumX());
+    hist1->Fit("g2","+","",xmin,xmax);
+
+    leg->AddEntry(g2,"unconstrained Gaussian","l");
+  }
+  if(print>2) {
+    Float_t max = emg->GetMaximum();
+    TLine *line = new TLine(mean,0,mean,max);
+    line->SetLineColor(3);
+    line->Draw("same");
+    leg->AddEntry(line,"Maximum at mean","l");
+    
+    TLine *line2 = new TLine(mean-sigmafwhm/2*sigma,max/2,mean+sigmafwhm/2*sigma,max/2);
+    line2->SetLineColor(2);
+    line2->Draw("same");
+    leg->AddEntry(line2,"FWHM","l");
+
+  }
+  if(print>3) {
+    TF1 *res = new TF1("res","emg/g1",xmin,xmax);
+    res->SetLineColor(7);
+    res->SetLineStyle(4);
+    res->Draw("same");
+    leg->AddEntry(res,"Exponential","l");
+    TF1 *comp1 = new TF1("comp1","([0]*[2]/[3])*sqrt(TMath::PiOver2())*exp(0.5*([2]/[3])^2-(x-[1])/[3])",xmin,xmax);
+    comp1->FixParameter(0,emg->GetParameter(0));
+    comp1->FixParameter(1,emg->GetParameter(1));
+    comp1->FixParameter(2,emg->GetParameter(2));
+    comp1->FixParameter(3,emg->GetParameter(3));
+    comp1->Draw("same");
+    leg->AddEntry(comp1,"exponential component","l");
+
+    TF1 *comp2 = new TF1("comp2","TMath::Erfc(1/sqrt(2)*([1]/[2]-(x-[0])/[1]))",xmin,xmax);
+    comp2->FixParameter(0,emg->GetParameter(1));
+    comp2->FixParameter(1,emg->GetParameter(2));
+    comp2->FixParameter(2,emg->GetParameter(3));
+    comp2->Draw("same");
+    leg->AddEntry(comp2,"complementary error function component","l");
+  }
+  
+  if(print>-1)
+    leg->Draw();
+}
+
 void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t *option="", Bool_t estimate=kTRUE, Int_t print=3) {
   emg->SetParNames("G Amplitude","G Mean","G Sigma","E Tau");
   if(!(gROOT->FindObject(histname))) {
@@ -2588,6 +2685,7 @@ void emgfit(Char_t *histname, Float_t xmin=-999999., Float_t xmax=999999, Char_t
   if(print>-1)
     leg->Draw();
 }
+
 
 void emgfitc(Char_t *histname, Float_t center=0, Float_t wide=1, Char_t *option="W", Bool_t estimate=kTRUE, Int_t print=3) {
   emgfit(histname,center-wide,center+wide,option,estimate,print);
