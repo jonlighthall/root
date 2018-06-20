@@ -6016,3 +6016,13 @@ void fl3()
   hede->GetYaxis()->SetRangeUser(0,0.2);
   c1->SaveAs("figures/hede_16O.pdf");
 }
+
+void plotsps() {
+  mkhist1("hist2",4096,4096);
+  hist2->SetStats(kFALSE);
+  DataTree->Draw("TAC>>hist2","CUTG","col");
+  hist2->GetXaxis()->SetRangeUser(400,1600);
+  hist2->SetTitle("^{50}Ti(d,p) at 45#circ");
+  hist2->GetXaxis()->SetTitle("Focal Plane Position");
+  prop();
+}
