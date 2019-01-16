@@ -4,7 +4,9 @@ This repository contains ROOT macros developed for data analysis.
 
 ## Installation
 Use either of the following commands to download a copy of the git repository.
+
 `git clone https://github.com/jonlighthall/root.git` (HTTPS)
+
 `git clone git@github.com:jonlighthall/root.git` (SSH)
 
 ## Loading
@@ -19,7 +21,6 @@ WinNT.*.Root.MacroPath:     .;C:\Users\jonli\OneDrive\Documents\.cygwin_home\roo
 Alternatively, the macros can be loaded via the `rootlogon.C`.
 
 ## Contents
-## Procedure 
 1. [fit.cc](#fit.cc)
 2. [load_and_plot.cc](#load_and_plot.cc)
 3. [generator.cc](#generator.cc)
@@ -27,9 +28,21 @@ Alternatively, the macros can be loaded via the `rootlogon.C`.
 3. [rootlogon.C](#rootlogon.C)
 3. [util_new.cc](#util_new.cc)
 
-# fit.cc
+### fit.cc
 The file `fit.cc` contains macros that are generally applicable to any data set.
 
-# load_and_plot.cc
+### load_and_plot.cc
 The file `load_and_plot.cc` contains macros for loading and plotting specific data sets.
 They have been used by the author for various publications.
+
+### generator.cc
+A set of macros simulating EMMA data
+
+### online_plot_tools.cc
+for use with Scarlet at Argonne
+
+### rootlogon.C
+settings and macros to load on ROOT logon
+
+### util_new.cc
+macros for plotting in ROOT, emulating Daphne commands
