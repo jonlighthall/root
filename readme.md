@@ -3,10 +3,9 @@
 This repository contains ROOT macros developed for data analysis.
 
 ## Installation
-Use the following command to download a copy of the git repository.
-````
-git clone https://github.com/jonlighthall/root.git
-````
+Use either of the following commands to download a copy of the git repository.
+`git clone https://github.com/jonlighthall/root.git` (HTTPS)
+`git clone git@github.com:jonlighthall/root.git` (SSH)
 
 ## Loading
 Set the macro path in '.rootrc' to include this directory.
