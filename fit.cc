@@ -4431,10 +4431,17 @@ void readandruth(Int_t detno=0, Int_t colno=0)
       cFit3->SetWindowPosition(cFit2->GetWindowTopX()+cFit2->GetWindowWidth(),cFit->GetWindowTopY()-22);      
     }
     cFit3->Clear();
+    cFit3->Divide(1,2);
+
     if(gROOT->FindObject("hFit4"))hFit4->Delete();//added
     h1("hFit4","Scattering angle",1000,1,180);
     hFit4->SetXTitle("Scattering angle (#theta)");
     hFit4->SetYTitle("Calculated area under Gaussian");
+
+    if(gROOT->FindObject("hFit5"))hFit5->Delete();
+    h2("hFit5","Ratio of Rutherford versus measured counts",1000,1,180);
+    hFit5->SetXTitle("Scattering angle (#theta)");
+    hFit5->SetYTitle("Ratio of predicted to measured area under peak");
     
     Float_t theta=0;
     y_pos-=27;
@@ -4449,11 +4456,20 @@ void readandruth(Int_t detno=0, Int_t colno=0)
       Float_t int=gparameters[0+3*i]*gparameters[2+3*i]*TMath::Sqrt(TMath::TwoPi());
       hFit4->Fill(theta,int);
       printf(" theta = %f, int = %f\n",theta,int);
+      
+      //Float_t ratio=ruth(theta)/int;
+      //hFit5->Fill(theta,ratio);
     }
-    cFit3->cd();
+    cFit3->cd(1);
     hFit4->SetMarkerStyle(2);
     hFit4->SetMarkerColor(1);
     hFit4->SetMarkerSize(3);
+
+    cFit3->cd(2);
+    hFit5->SetMarkerStyle(2);
+    hFit5->SetMarkerColor(1);
+    hFit5->SetMarkerSize(3);
+
     ruthdef();
     //cFit3->SetLogy();
     Float_t umin=0,umax=0,umar=0;
@@ -4464,6 +4480,9 @@ void readandruth(Int_t detno=0, Int_t colno=0)
     hFit4->GetXaxis()->SetRangeUser(umin,umax);//set x-axis range
     hFit4->Fit("ruth","m","",umin,umax);
     hFit4->Draw("P");
+
+    hFit5->GetXAxis()->SetRangeUser(umin,umax);
+    hFit5->Draw("P");
     
     break;
   case 1:
